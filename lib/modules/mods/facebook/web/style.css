@@ -90,6 +90,7 @@ body {
  width: 300px; */
  /* margin-left: 10px; */
  padding-top: 5px;
+ margin-bottom: 15px;
 }
 .following_label {
  color: #365899;
@@ -295,8 +296,10 @@ body {
 
 
 
-
-
+/* .lightbox_follow {
+    display: flex;
+    justify-content: center;
+} */
 
 .lightbox_follow_input {
  padding: 4px;
