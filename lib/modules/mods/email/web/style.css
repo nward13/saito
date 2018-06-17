@@ -720,6 +720,8 @@ td .from {
     margin-left: 12px;
   }
 
+
+
   .inner_message .from {
     width: 120px;
     max-width: 120px;
@@ -742,7 +744,7 @@ td .from {
     padding-left: 0px;
   }
 
-  .mail-controls-settings {
+  .settings-wrapper {
     display: none;
   }
   .mail-controls-btn {
@@ -752,6 +754,7 @@ td .from {
   .mail-controls {
    min-width: 140px;
    align-self: top;
+   padding-bottom:14px;
   }
 
   .mail-controls-back {
