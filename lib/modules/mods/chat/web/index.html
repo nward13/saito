@@ -23,59 +23,40 @@
   </head>
   <body>
 
-  <div class="loader">
+  <div class="chat_loader">
     Saito is currently loading....
     <p></p>
     We are downloading the application itself into your browser from our server in Los Angeles. The download is reasonably fast in the United States, but can take up to a minute in China due to its size (~1.6 MB). Please be patient.
   </div>
 
-  <div class="main" style="display:none">
+  <div class="chat_main" style="display:none">
 
     <div id="Chat_browser_active"></div>
-    <!-- <div id="addUserModal" class="modal">
-      <div class="addUserModalContainer">
-        <span class="close">&times;</span>
-        <p>Some text in the Modal..</p>
-      </div>
-    </div> -->
-    <div id="container">
-      <section id="header">
+    <div id="chat_container">
+      <section id="chat_header">
         <div style="display:flex; flex-direction: row;width: 207px;">
           <a href="/" style="text-decoration:none;color:inherits">
-            <img id="saitoLogo" src="/img/saito_logo_black.png" />
+            <img id="chat_saitoLogo" src="/img/saito_logo_black.png" />
           </a>
           <a href="/" style="text-decoration:none;color:inherits">
             <div style="font-family:Georgia;padding-top:5px;color:#444;">saito chat</div>
           </a>
         </div>
-        <select class="chat-room-selector">
+        <select class="chat_chat-room-selector">
         </select>
-        <!-- <button class="addUser">+</button> -->
       </section>
-      <div id="main" class="mainchat">
-        <!-- The Modal -->
+      <div id="chat_main" class="chat_chat_main">
 
-        <!-- <div id="lightbox_compose" style="display:none">
-          <div class="lightbox_compose_address_area">
-            <div class="lightbox_compose_compose">
-              <div class="send" id="send">SEND</div>
-            </div>
-          </div>
-        </div> -->
+        <section id="chat_messages-list">Messages:</section>
 
-        <section id="messages-list">Messages:</section>
-
-        <section id="messages-list">
-          <ul class="messages-list" id="All">
-            <p id="message_id_0" class="message">
-              <i>BearGuy</i>: Welcome to Saito!
-            </p>
+        <section id="chat_messages-list">
+          <ul class="chat_messages-list" id="All">
+            <p id="chat_message_id_0" class="chat_message"><i>BearGuy</i>: Welcome to Saito!</p>
           </ul>
         </section>
       </div>
-      <section id="new-message">
-        <input class="new-message-input" id="new-message-input">
-        </input>
+      <section id="chat_new-message">
+        <input class="chat_new-message-input" id="chat_new-message-input"></input>
       </section>
     </div>
     </div>
