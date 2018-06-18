@@ -23,7 +23,7 @@ body {
 
 #main {
     grid-area: main;
-    overflow-y: auto;
+    overflow-y: scroll;
 }
 
 #header {
