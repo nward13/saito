@@ -12,7 +12,7 @@ body {
 
 #chat_container {
     display: grid;
-    position: fixed;
+    position: inherit;
     grid-template-columns: 1fr;
     grid-template-rows: 3.2em auto 3.0em;
     grid-template-areas: "chat_header" "chat_main" ".";
