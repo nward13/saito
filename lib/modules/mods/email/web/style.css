@@ -358,6 +358,7 @@ td .from {
 .module_editable_space {
   grid-area: compose_module_edit_area;
   clear: both;
+  max-width: 95vw;
   min-height: 411px;
   font-size: 1rem;
   line-height: 1.2em;
