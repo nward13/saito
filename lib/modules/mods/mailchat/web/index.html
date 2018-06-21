@@ -87,7 +87,7 @@
 
   </div>
 
-  <div class="mail_chat_popup">
+  <div class="mail_chat_popup" style="display:none">
 
     <div id="Chat_browser_active"></div>
     <div id="chat_container">
@@ -172,7 +172,7 @@
     $('#chat_header').on('click', function(e) {
 
       // check we are not chat-selector
-      if($(e.target).is(".chat_chat-room-selector")) {
+      if ($(e.target).is(".chat_chat-room-selector")) {
         return;
       }
 
