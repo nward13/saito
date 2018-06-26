@@ -1,0 +1,9 @@
+{
+"wallet":{"balance":0,"privateKey":"a4337f0d178863599b3d05cf91963007a8cb1abc7f95068cfaae98dd63bc5786","publicKey":"nR2ecdN7cW91nxVaDR4uXqW35GbAdGU5abzPJ9PkE8Mn","identifier":"","utxi":[],"utxo":[],"version":1.52,"default_fee":2},
+"server":{"host":"localhost","port":12101,"publickey":""},
+"dns":[{"domain":"saito","host":"localhost","port":12101,"publickey":"nR2ecdN7cW91nxVaDR4uXqW35GbAdGU5abzPJ9PkE8Mn"}],
+"blockchain":{"latest_block_ts":-1,"latest_block_hash":"","latest_block_id":0,"genesis_block_id":0,"fork_id":""},
+"voter":{"vote_on_difficulty":0,"target_difficulty":2,"vote_on_paysplit":0,"target_paysplit":0.5},
+"keys":[]
+}
+
