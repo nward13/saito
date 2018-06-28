@@ -45,6 +45,22 @@ directory. A good way to get familiar with Saito (and find out how it
 works under the hood) is to look at these modules. Existing apps can 
 act as simple tutorials on how to code your own applications.  
 
+While we're testing our network, we will be changing the public keys
+of both the Bank and Archive modules. To test these modules in development, make sure the keys are set to the following values:
+- Bank:
+```
+this.bank_publickey = "nR2ecdN7cW91nxVaDR4uXqW35GbAdGU5abzPJ9PkE8Mn"
+this.bank_privatekey = app.wallet.returnPrivateKey();
+```
+- Registry:
+```
+this.publickey = "nR2ecdN7cW91nxVaDR4uXqW35GbAdGU5abzPJ9PkE8Mn";
+```
+- Archive:
+```
+this.publickey = this.app.wallet.returnPublicKey();`
+```
+
 If you have any questions or need help please get in touch:  
 
 * david@saito
