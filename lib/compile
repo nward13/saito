@@ -17,6 +17,8 @@ rm -f modules/mod/registry/web/addresses.txt
 rm -f logs/*
 
 if [ -e ./options.server ]; then
+    cp options.bank options
+elif [ -e ./options.server ]; then
     cp options.server options
 else
     cp options.conf options
