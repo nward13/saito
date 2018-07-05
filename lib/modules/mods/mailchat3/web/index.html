@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css" type="text/css" media="screen" />
 
   <link rel="stylesheet" type="text/css" href="/chat/style.css" />
-  <link rel="stylesheet" type="text/css" href="/combo/style.css" />
+  <link rel="stylesheet" type="text/css" href="/email/style.css" />
 
   <link rel="icon" media="all" type="image/x-icon" href="/favicon.ico?v=2"/>
 
@@ -88,10 +88,7 @@
       <div class="message" id="message" style="display:none"></div>
       <table class="message-table" id="message-table"></table>
     </div>
-
   </div>
-
-
 
 
   <div class="mail_chat_popup" style="display:none">
@@ -123,8 +120,6 @@
 
     </div>
   </div>
-
-
 
 
   <style class="text/css">
@@ -234,6 +229,12 @@
 
     var chat_container_height = 500;
     var chat_messages = $("#All > p").length;
+    var sidechat_length = 0;
+
+    // check speed must be faster than init speed
+    var chat_check_speed = 3000;
+    var chat_init_speed  = 1000;
+
 
     var chat_check_timer = setInterval(function() {
       let tmpcm = $("#All > p").length;
@@ -242,9 +243,16 @@
         if (chat_container_height == 40) {
           $('#chat_header').css('background-color','#9deca1');
           $('#chat_saitoText').css('color', '#444');
+	  init_length = tmpcm;
         }
       }
-    }, 3000);
+
+      // and check if we have added a user
+      if ($(".chat_chat-room-option").length > sidechat_length) {
+	initialize_sidechat();
+      }
+
+    }, chat_check_speed);
 
 
     $('.sidechat_controls_add').off();
@@ -295,11 +303,16 @@
     $('#chat_header').click();
 
 
+    setTimeout(function() { initialize_sidechat(); }, chat_init_speed);
 
-    setTimeout(function() {
+  
 
-      // initialize sidechat
+    function initialize_sidechat() {
+
       $('.chat_chat-room-option').each(function() {
+
+        chat_messages = $("#All > p").length;
+        sidechat_length++;
 
         if ($(this).html() != "All") {
 
@@ -315,17 +328,18 @@
           $('.sidechat_contact').on('click', function() {
             $('.chat_chat-room-selector').val($(this).attr('id'));
             $('.chat_chat-room-selector').change();
-
-            if (chat_container_height < 500) {
-              $('#chat_header').click();
-            }
-
+            if (chat_container_height < 500) { $('#chat_header').click(); }
+            $('#chat_new-message-input').focus();
           });
 
         }
       });
 
-    }, 1000);
+      if (sidechat_length > 1) {
+	$('.mail_chat_popup').show();
+      }
+
+    }
 
   </script>
 
