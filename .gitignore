@@ -19,6 +19,7 @@ lib/saito.log
 lib/saito.err
 lib/debug
 lib/debug.js
+lib/options.1
 lib/options.bank
 lib/options.server
 lib/options.good
