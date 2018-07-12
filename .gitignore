@@ -15,8 +15,11 @@ lib/data/database.bk2
 lib/data/blocks/*.blk
 lib/test.js
 website/
+lib/saito.log
+lib/saito.err
 lib/debug
 lib/debug.js
+lib/options.1
 lib/options.bank
 lib/options.server
 lib/options.good
