@@ -1,5 +1,7 @@
 # Install Saito
 
+## Dependencies
+- Python 2.x
 
 ## Server Configuration (pre-install)
 
