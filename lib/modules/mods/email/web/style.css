@@ -345,7 +345,7 @@ td .from {
 }
 
 .lightbox_message_text {
-  grdi-area: text;
+  grid-area: text;
   font-size: 1.2em;
   margin-top: 10px;
   padding-top: 10px;
