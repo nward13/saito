@@ -203,6 +203,7 @@
 }
 .mail {
  grid-area: mail;
+ overflow: scroll;
  float: left;
 }
 
@@ -345,7 +346,7 @@ td .from {
 }
 
 .lightbox_message_text {
-  grdi-area: text;
+  grid-area: text;
   font-size: 1.2em;
   margin-top: 10px;
   padding-top: 10px;
@@ -549,6 +550,9 @@ td .from {
   border: 1px solid #b0281a;
 }
 
+.message {
+  overflow: scroll;
+}
 
 .message_container {
   margin-left: 1em;
