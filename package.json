@@ -32,6 +32,7 @@
     "browserify": "^16.2.0",
     "crx": "^3.2.1",
     "ethereumjs-util": "^5.2.0",
+    "ethereumjs-wallet": "^0.6.0",
     "express": "^4.16.3",
     "express-fileupload": "^0.4.0",
     "keythereum": "^1.0.3",
