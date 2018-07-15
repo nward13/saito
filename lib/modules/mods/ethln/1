@@ -3,6 +3,7 @@ var ModTemplate = require('../../template');
 var util = require('util');
 var account = require('./account.js');
 
+const { randomBytes }   = require('crypto');
 
 
 //////////////////
@@ -19,7 +20,7 @@ function Ethln(app) {
   this.name            = "Ethln";
   this.browser_active  = 0;
   this.handlesEmail    = 1;
-  this.emailAppName    = "Ethereum Lightning Cluster";
+  this.emailAppName    = "Lightning Cluster";
 
   this.account         = null;
   this.accounts        = null;
@@ -56,9 +57,15 @@ Ethln.prototype.initializeLightningCluster = function initializeLightningCluster
 
 
   if (this.app.options.ethereum == undefined) {
-    this.account = new account();
-    this.account.initialize();
-    this.app.options.ethereum = JSON.stringify(this.account.keys);
+    alert("No Ethereum Keys Found: it takes about 45 seconds to initialize a Cluster. Your browser may seem to freeze -- it has not -- please wait as we generate your keypair. You will not need to do this again.");
+
+    let privateKey = randomBytes(32);
+alert("PRIVATEKEY: " + privateKey);
+alert("Done");
+
+//    this.account = new account();
+//    this.account.initialize();
+//    this.app.options.ethereum = JSON.stringify(this.account.keys);
     this.app.storage.saveOptions();
   } else {
     this.account = new account();
@@ -174,7 +181,6 @@ Ethln.prototype.returnScriptWithdraw = function returnScriptWithdraw() {
 ////////////////////////////////
 Ethln.prototype.displayEmailForm = function displayEmailForm(app) {
 
-
   console.log("display email FORM");
 
   this.initializeLightningCluster();
@@ -228,7 +234,6 @@ Ethln.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
         if (tx.isFrom(app.wallet.returnPublicKey()) == 0) {
 
         if (tx.transaction.msg.request == "ethln open request") {
-
           msg                 = {};
           msg.id              = tx.transaction.id;
           msg.from            = tx.transaction.from[0].add;
@@ -368,7 +373,7 @@ Ethln.prototype.attachEmailEvents = function attachEmailEvents(app) {
       // transactions.
       app.mempool.addTransaction(newtx);
 
-      app.modules.returnModule("Email").closeMessage();
+      $.fancybox.close();
     }
   });
 
@@ -379,53 +384,42 @@ Ethln.prototype.attachEmailEvents = function attachEmailEvents(app) {
   $('.ethln_confirm').off();
   $('.ethln_confirm').on('click', function() {
 
-alert("TESTING A");
-
     var to = "";
     var amount = 0.0;
     var fee = 2.0;
 
-alert("TESTING A");
     if (ethln_self.accounts.length < 1) { alert("Unexpected error in Lightning Cluster module"); return; }
-alert("TESTING A");
 
-alert(JSON.stringify(ethln_self.accounts));
-
-    var newtx = ethln_self.app.wallet.createUnsignedTransactionWithDefaultFee(ethln_self.accounts[0].saitokey, amount);
+    var newtx = app.wallet.createUnsignedTransactionWithDefaultFee(ethln_self.accounts[0].saitokey, amount);
     newtx.transaction.msg.module   = ethln_self.name;
     newtx.transaction.msg.request  = "ethln confirm";
     newtx.transaction.msg.data     = JSON.stringify(ethln_self.accounts);
     newtx.transaction.msg.title    = "Lightning Cluster Created!";
     newtx.transaction.msg.markdown = 0;
     for (var k = 1; k < ethln_self.accounts.length; k++) {
-      newtx = ethln_self.app.wallet.addRecipientToTransaction(newtx, ethln_self.accounts[k].saitokey);
+      newtx = app.wallet.addRecipientToTransaction(newtx, ethln_self.accounts[k].saitokey);
     }
-    newtx = ethln_self.app.wallet.signTransaction(newtx);
-
-console.log("SENDING ETHLN TX:");
-console.log(JSON.stringify(newtx));
+    newtx = app.wallet.signTransaction(newtx);
 
     // because we are a server, we add this to our mempool
     // before we send it out. This prevents the transaction
     // from getting rejected if sent back to us and never
     // included in a block if we are the only one handling
     // transactions.
-    ethln_self.app.mempool.addTransaction(newtx, 1);
+    app.mempool.addTransaction(newtx);
 
-alert("TESTING B");
     // send yourself confirmation email
     msg                 = {};
-    msg.id              = ethln_self.app.crypt.hash(new Date().getTime());
-    msg.from            = ethln_self.app.wallet.returnPublicKey();;
-    msg.time            = newtx.transaction.ts;
+    msg.id              = tx.transaction.id;
+    msg.from            = app.wallet.returnPublicKey();;
+    msg.time            = tx.transaction.ts;
     msg.module          = "Email";
     msg.title           = "Lightning Cluster Requested";
     msg.data            = 'You have sent a request to open a Lightning Cluster. You will need to wait until the other person accepts to send and receive ETH.';
-alert("TESTING A");
-    ethln_self.app.modules.returnModule("Email").attachMessage(msg, app);
+    app.modules.returnModule("Email").attachMessage(msg, app);
+    app.archives.saveMessage(tx);
 
-alert("TESTING C");
-    ethln_self.app.modules.returnModule("Email").closeMessage();
+    $.fancybox.close();
 
   });
 
@@ -466,10 +460,51 @@ alert("TESTING C");
       // transactions.
       app.mempool.addTransaction(newtx);
 
-      app.modules.returnModule("Email").closeMessage();
+      $.fancybox.close();
     }
   });
 
+
+
+   
+
+
+
+
+
+
+
+  $('.ethln_confirm').off();
+  $('.ethln_confirm').on('click', function() {
+
+    var to = "";
+    var amount = 0.0;
+    var fee = 2.0;
+
+    if (ethln_self.accounts.length > 2) { alert("This button only works with two person payment"); return; }
+    if (ethln_self.accounts.length < 1) { alert("Unexpected error in Lightning Cluster module"); return; }
+
+    var newtx = app.wallet.createUnsignedTransactionWithDefaultFee(ethln_self.accounts[0].saitokey, amount);
+    newtx.transaction.msg.module   = ethln_self.name;
+    newtx.transaction.msg.request  = "ethln confirm";
+    newtx.transaction.msg.data     = JSON.stringify(ethln_self.accounts);
+    newtx.transaction.msg.title    = "Lightning Cluster Created!";
+    newtx.transaction.msg.markdown = 0;
+    for (var k = 1; k < ethln_self.accounts.length; k++) {
+      newtx = app.wallet.addRecipientToTransaction(newtx, ethln_self.accounts[k].saitokey);
+    }
+    newtx = app.wallet.signTransaction(newtx);
+
+    // because we are a server, we add this to our mempool
+    // before we send it out. This prevents the transaction
+    // from getting rejected if sent back to us and never
+    // included in a block if we are the only one handling
+    // transactions.
+    app.mempool.addTransaction(newtx);
+
+    $.fancybox.close();
+
+  });
 
 }
 
