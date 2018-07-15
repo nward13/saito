@@ -264,18 +264,26 @@ int insert_new_slip(std::string slipname, int spent_value_of_zero) {
 // validate existing slip //
 ////////////////////////////
 int validate_existing_slip(std::string slipname, int current_block_id) {
-  if (slips[slipname] == 0) { return 0; }
-  if (slips[slipname] == -1) { return 1; }
-  if (slips[slipname] >= current_block_id) { return 1; }
+  int x = slips[slipname];
+  if (x == 0) { return 0; }
+  if (x == -1) { return 1; }
+  if (x >= current_block_id) { return 1; }
   return 0;
 }
 ///////////////////
 // is slip spent //
 ///////////////////
 int validate_slip_spent(std::string slipname, int current_block_id) {
-  if (slips[slipname] >= 0) { return 1; }
-  if (slips[slipname] == -1) { return 0; }
+  int x = slips[slipname];
+  if (x >= 0) { return 1; }
+  if (x == -1) { return 0; }
   return 0;
+}
+/////////////////
+// slip value //
+/////////////////
+int slip_value(std::string slipname) {
+  return slips[slipname];
 }
 /////////////////
 // delete slip //

@@ -31,6 +31,7 @@ lib/modules/mods/advert/web/cache/*.png
 lib/modules/mods/registry/web/addresses.txt
 lib/modules/mods/appstore/saitolib/*
 lib/modules/mods/appstore/web/cache/*
+lib/modules/mods/explorer/web/index.html
 extras/chrome/key.pem
 extras/chrome/modules/mods/*
 
