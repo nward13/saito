@@ -609,13 +609,16 @@ textarea {
         grid-template-rows: auto auto;
         grid-template-columns: 1fr;
         grid-template-areas:
-        "content" 
+        "content"
         "sidebar";
     }
     .balance {
         position: absolute;
         top: 0.5rem;
         right: 5.5rem;
+    }
+    .content{
+        max-width: 300px;
     }
     .submit {
         position: absolute;
