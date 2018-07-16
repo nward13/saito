@@ -203,7 +203,7 @@
 }
 .mail {
  grid-area: mail;
- overflow: scroll;
+ overflow: auto;
  float: left;
 }
 
@@ -354,7 +354,7 @@ td .from {
   min-height: 520px;
   height: 520px;
   line-height: 27px;
-  overflow-x: scroll;
+  overflow-x: auto;
 }
 
 .module_editable_space {
@@ -551,7 +551,7 @@ td .from {
 }
 
 .message {
-  overflow: scroll;
+  overflow: auto;
 }
 
 .message_container {
@@ -821,5 +821,3 @@ td .from {
   }
 
 }
-
-
