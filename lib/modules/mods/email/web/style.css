@@ -87,6 +87,7 @@
  float: left;
 }
 #blockchain_syncfade {
+ width:140px;
  max-width:140px;
  margin-left:auto;
  margin-right:auto;
