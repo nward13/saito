@@ -663,6 +663,32 @@ td .from {
     line-height: 21px;
   }
 
+
+#blockchain_syncfade {
+ max-width:140px;
+ margin-left:auto;
+ margin-right:auto;
+}
+#blockchain_syncbox {
+ background-color:#f7f7f7;
+ height:20px;
+ border: 1px solid #888;
+}
+#blockchain_syncbar {
+ background-color: #5af541;
+ width: 0%;
+ height:20px;
+ overflow: none;
+ float:left;
+}
+#blockchain_synclabel {
+ font-size:0.95em;
+ margin-top:15px;
+ margin-top:5px;
+ color: #888;
+}
+
+
   .sidebar {
     display: flex;
     flex-direction: row;
