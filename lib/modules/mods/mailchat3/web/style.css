@@ -46,6 +46,14 @@
  color:inherits
 }
 
+.settings_button {
+ padding-top:4px;
+ padding-bottom:4px;
+ padding-left:6px;
+ padding-right:6px;
+ font-size:1.em;
+}
+
 .logo_text {
  font-family:Georgia;
  padding-top:6px;
