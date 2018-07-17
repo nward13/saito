@@ -203,7 +203,7 @@
 }
 .mail {
  grid-area: mail;
- overflow: scroll;
+ overflow: auto;
  float: left;
 }
 
@@ -354,7 +354,7 @@ td .from {
   min-height: 520px;
   height: 520px;
   line-height: 27px;
-  overflow-x: scroll;
+  overflow-x: auto;
 }
 
 .module_editable_space {
@@ -551,7 +551,7 @@ td .from {
 }
 
 .message {
-  overflow: scroll;
+  overflow: auto;
 }
 
 .message_container {
@@ -632,6 +632,30 @@ td .from {
   display:block
 }
 
+#blockchain_syncfade {
+ max-width:140px;
+ margin-left:auto;
+ margin-right:auto;
+}
+#blockchain_syncbox {
+ background-color:#f7f7f7;
+ height:20px;
+ border: 1px solid #888;
+}
+#blockchain_syncbar {
+ background-color: #5af541;
+ width: 0%;
+ height:20px;
+ overflow: none;
+ float:left;
+}
+#blockchain_synclabel {
+ font-size:0.95em;
+ margin-top:15px;
+ margin-top:5px;
+ color: #888;
+}
+
 
 
 
@@ -662,6 +686,8 @@ td .from {
     font-size:1.1em;
     line-height: 21px;
   }
+
+
 
   .sidebar {
     display: flex;
@@ -795,5 +821,3 @@ td .from {
   }
 
 }
-
-
