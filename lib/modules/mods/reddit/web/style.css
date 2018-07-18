@@ -458,6 +458,9 @@ textarea {
  margin-bottom: 8px;
  color: #373737;
 }
+.comment_header_clickable {
+ cursor:pointer;
+}
 .comment_links {
  font-size: 0.8em;
  margin-top: 8px;
