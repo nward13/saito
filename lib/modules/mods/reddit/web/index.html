@@ -126,7 +126,8 @@
     var load_content_on_load = 1;
     var offset = 0;
 
-    $.getScript( "/browser.js?id=8234243", function( data, textStatus, jqxhr ) {
+    $.ajaxSetup({ cache: true });
+    $.getScript( "/browser.js", function( data, textStatus, jqxhr ) {
       $('.loader').hide();
       $('.main').show();
     });
