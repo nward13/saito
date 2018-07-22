@@ -1,0 +1,14 @@
+{
+    "server": {
+        "host":"localhost",
+        "port":12101
+    },
+    "peers": [
+        {
+            "host": "apps.saito.network",
+            "port": 443,
+            "protocol": "https",
+            "synctype": "full"
+        }
+    ]
+}

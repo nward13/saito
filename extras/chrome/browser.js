@@ -174,12 +174,12 @@ this.mods.push(require('./mods/facebook/facebook')(this.app));
 this.mods.push(require('./mods/raw/raw')(this.app));
 this.mods.push(require('./mods/settings/settings')(this.app));
 
-  if (this.app.options.modules == null) { 
-    this.app.options.modules = []; 
+  if (this.app.options.modules == null) {
+    this.app.options.modules = [];
     for (let i = 0; i < this.mods.length; i++) {
       mi = 0;
       for (let j = 0; j < this.app.options.modules.length; j++) { if (this.mods[i].name == this.app.options.modules[j]) { mi = 1; }}
-      if (mi == 0) { 
+      if (mi == 0) {
         this.mods[i].installModule(this.app);
         this.app.options.modules.push(this.mods[i].name);
       };
@@ -321,7 +321,7 @@ Mods.prototype.onChainReorganization = function onChainReorganization(block_id, 
 //
 // This module monitors the blockchain and our
 // unspent transaction inputs. It creates fake
-// transactions to speed up block production 
+// transactions to speed up block production
 // for testing purposes.`
 //
 var saito = require('../../../saito');
@@ -378,7 +378,7 @@ Advert.prototype.installModule = function installModule() {
   this.app.storage.execDatabase(sql, {}, function() {
 
     let sql3 = "INSERT INTO mod_advert_users (publickey, views) VALUES ($publickey, 0)";
-    let params3 = { 
+    let params3 = {
       $publickey : advert_self.app.wallet.returnPublicKey()
     };
     advert_self.app.storage.execDatabase(sql3, params3, function() {});
@@ -401,229 +401,229 @@ Advert.prototype.installModule = function installModule() {
     let params4 = {};
 
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "1.png",
       $link      : "/remix"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "2.png",
       $link      : "/remix"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "3.png",
       $link      : "http://org.saito.tech"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "4.png",
       $link      : "/r"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "5.png",
       $link      : "/faucet"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "6.png",
       $link      : "/facebook"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "7.png",
       $link      : "http://saito.tech"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "8.png",
       $link      : "/email"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "9.png",
       $link      : "/email"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "10.png",
       $link      : "/email"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "11.png",
       $link      : "/email"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "12.png",
       $link      : "http://saito.tech"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "13.png",
       $link      : "/email"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "14.png",
       $link      : "/facebook"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "15.png",
       $link      : "/facebook"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "16.png",
       $link      : "/facebook"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "17.png",
       $link      : "/facebook"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "18.png",
       $link      : "/faucet"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "19.png",
       $link      : "http://saito.tech/saito-whitepaper.pdf"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "20.png",
       $link      : "/advert"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "21.png",
       $link      : "/email"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "22.png",
       $link      : "http://saito.tech/saito-whitepaper.pdf"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "23.png",
       $link      : "/r"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "24.png",
       $link      : "http://saito.tech"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "25.png",
       $link      : "http://saito.tech/saito-whitepaper.pdf"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "26.png",
       $link      : "/advert"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "27.png",
       $link      : "http://org.saito.tech"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
     sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
+    params4  = {
       $publickey : advert_self.app.wallet.returnPublicKey(),
       $adfile    : "28.png",
       $link      : "http://org.saito.tech"
     };
     advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
+
   });
 
 }
@@ -1047,7 +1047,7 @@ Advert.prototype.displayEmailForm = function displayEmailForm(app) {
 
 
   element_to_edit.html(element_to_edit_html);
-  
+
   // auto-input correct address and payment amount
   $('#lightbox_compose_to_address').val(app.wallet.returnPublicKey());
   $('#lightbox_compose_payment').val(0.0);
@@ -1072,7 +1072,7 @@ Advert.prototype.attachAdvertEvents = function attachAdvertEvents(app) {
 
   $(".disable_advertising").off();
   $(".disable_advertising").on('click', function() {
-    app.options.display_adverts = 0;    
+    app.options.display_adverts = 0;
     app.storage.saveOptions();
     $.fancybox.close();
   });
@@ -1118,8 +1118,8 @@ util.inherits(Aquifer, ModTemplate);
 // Confirmation //
 //////////////////
 //
-// This callback is run by every computer running your module every time 
-// a "Aquifer" transaction receives a confirmation. This is why we check 
+// This callback is run by every computer running your module every time
+// a "Aquifer" transaction receives a confirmation. This is why we check
 // to see if we are the recipient...
 //
 Aquifer.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
@@ -1160,7 +1160,7 @@ Aquifer.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
 // Email Callbacks //
 /////////////////////
 //
-// This callback controls how your Application shows up in the email client. 
+// This callback controls how your Application shows up in the email client.
 // Use HTML to display information or create a form.
 //
 Aquifer.prototype.displayEmailForm = function displayEmailForm(app) {
@@ -1342,7 +1342,7 @@ Auth.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
     var msgkey           = tx.transaction.msg.key;
     var msgvalue         = tx.transaction.msg.value;
     var msgrequest       = tx.transaction.msg.request;  // "request"
-		
+
     /////////////////////////
     // requests made to us //
     /////////////////////////
@@ -1612,7 +1612,7 @@ Email.prototype.loadAllFromArchives = function loadAllFromArchives(app) {
       try {
         if (txarray[bv].transaction.msg.module == "Email" || txarray[bv].transaction.msg.module == "Encrypt") {
           console.log("Adding message to Inbox")
-          console.log(txarray[bv])
+          //console.log(txarray[bv])
           email_self.addMessageToInbox(txarray[bv], app);
         }
       } catch (err) {
@@ -1749,7 +1749,7 @@ Email.prototype.attachEvents = function attachEvents(app) {
     $('.mail-module-label').html(modname);
     $('.mail-module-label').show();
     $('.mail-controls-btn').hide();
-    $('.mail-controls-back').show();   
+    $('.mail-controls-back').show();
   });
 
   $('.mail-controls-apps').off();
@@ -2760,7 +2760,7 @@ Facebook.prototype.installModule = function installModule() {
 
 
 // we save the latest 2 POSTS by default -- so we can populate new
-// browsers with some shared content on-connect. This is just a 
+// browsers with some shared content on-connect. This is just a
 // usability hack so that the social network won't seem entirely
 // dead.
 Facebook.prototype.saveFacebookPost = function saveFacebookPost(tx) {
@@ -2877,9 +2877,9 @@ Facebook.prototype.initializeHTML = function initializeHTML(app) {
   // update keys to names with DNS check
   //
   // check DNS on timeout so our network
-  // has time to bootstrap and fetch 
+  // has time to bootstrap and fetch
   // public keys, etc.
-  // 
+  //
   // run 2 seconds after page launch
   setTimeout(function() {
 
@@ -2915,7 +2915,7 @@ Facebook.prototype.initializeHTML = function initializeHTML(app) {
 
     for (cfg = 0; cfg < keystocheck.length; cfg++) {
 
-      thispublickey = keystocheck[cfg];   
+      thispublickey = keystocheck[cfg];
 
       // fetch the ID for this KEY and update if FOUND
       app.dns.fetchIdentifier(thispublickey, function(answer) {
@@ -2926,7 +2926,7 @@ Facebook.prototype.initializeHTML = function initializeHTML(app) {
           console.log(dns_response.err);
           return;
         }
-    
+
         myidentifier = dns_response.identifier;
         mypublickey = dns_response.publickey;
 
@@ -3007,7 +3007,7 @@ Facebook.prototype.addPostToWall = function addPostToWall(tx, app, prepend = 0) 
     msg.time   = tx.transaction.ts;
 
 
-    if (tx.transaction.from == null) { 
+    if (tx.transaction.from == null) {
       alert("Your account balance is currently zero");
       return;
     }
@@ -3018,9 +3018,9 @@ Facebook.prototype.addPostToWall = function addPostToWall(tx, app, prepend = 0) 
     msg.data   = tx.transaction.msg.data;
 
 
-    // if we already have a post with this ID then 
+    // if we already have a post with this ID then
     // it is probably a confirmation of a post we have
-    // already added getting re-added on page reload, 
+    // already added getting re-added on page reload,
     // so ignore.
     tmpselector = "#post_box_"+msg.id;
     if ($(tmpselector).length > 0) { return; }
@@ -3070,9 +3070,9 @@ Facebook.prototype.addPostToWall = function addPostToWall(tx, app, prepend = 0) 
       this.mylastposttime = msg.time;
     } else {
       tocheck = "#post_box_"+tx.transaction.id;
-      if ($(tocheck).length > 0) { 
+      if ($(tocheck).length > 0) {
         //console.log("POST ALREADY FOUND -- not adding");
-        return; 
+        return;
       }
     }
 
@@ -3093,7 +3093,7 @@ Facebook.prototype.formatComment = function formatComment(msg, app) {
         <div class="comment_name" id="comment_name_${msg.id}">${this.formatAuthor(msg.from, app, msg)}</div> - <div class="comment_text">${markdown.toHTML(msg.data)}</div>
         </td>
       </tr>
-    </table> 
+    </table>
   </div> \
 `;
 }
@@ -3101,11 +3101,11 @@ Facebook.prototype.formatComment = function formatComment(msg, app) {
 Facebook.prototype.formatNewPost = function formatNewPost(app) {
   return `
     <div class="post_box" id="post_box_create">
-      <div class="post_header"> 
-        <div class="post_header_avatar load_information"> 
+      <div class="post_header">
+        <div class="post_header_avatar load_information">
         </div>
-        <div class="post_header_titlebox"> 
-          <div class="post_header_name">${this.formatAuthor(app.wallet.returnPublicKey(), app)}</div> 
+        <div class="post_header_titlebox">
+          <div class="post_header_name">${this.formatAuthor(app.wallet.returnPublicKey(), app)}</div>
           <div class="post_header_date">${this.formatDate(new Date().getTime())}</div>
         </div>
       </div>
@@ -3114,7 +3114,7 @@ Facebook.prototype.formatNewPost = function formatNewPost(app) {
         </textarea>
       </div>
       <div class="facebook_button publish_button" id="publish_button" alt="publish">
-        <i class="fa fa-upload"></i> 
+        <i class="fa fa-upload"></i>
         <div class="post_controls_label">PUBLISH</div>
       </div>
     </div>
@@ -3124,28 +3124,28 @@ Facebook.prototype.formatNewPost = function formatNewPost(app) {
 Facebook.prototype.formatPost = function formatPost(msg, app) {
   return `
     <div class="post_box" id="post_box_'+msg.id+'">
-      <div class="post_header"> 
-        <div class="post_header_avatar load_information"> 
-        </div> 
-        <div class="post_header_titlebox"> 
-          <div class="post_header_name">${this.formatAuthor(msg.from, app, msg)}</div> 
-          <div class="post_header_date">${this.formatDate(msg.time)}</div> 
-          <div class="post_header_address">${msg.from}</div> 
-        </div> 
-      </div> 
-      <div class="post_content">${markdown.toHTML(msg.data)}</div> 
-      <div class="post_controls"> 
-        <div id="post_controls_delete_${msg.id}" class="post_controls_item post_controls_delete" alt="delete"><i class="fa fa-trash-o"></i> <div class="post_controls_label">DELETE</div></div> 
-        <div id="post_controls_comment_${msg.id}" class="post_controls_item post_controls_comment" alt="comment"><i class="fa fa-comment-o"></i> <div class="post_controls_label">COMMENT</div></div> 
-        <div id="post_controls_share_${msg.id}" class="post_controls_item post_controls_share" alt="share"><i class="fa fa-share-alt"></i> <div class="post_controls_label">SHARE</div></div> 
-      </div> 
-      <div class="post_commentbox"> 
-        <div class="post_comments"> 
-        </div> 
-        <div class="post_comments_create"> 
-        </div> 
-      </div> 
-    </div> 
+      <div class="post_header">
+        <div class="post_header_avatar load_information">
+        </div>
+        <div class="post_header_titlebox">
+          <div class="post_header_name">${this.formatAuthor(msg.from, app, msg)}</div>
+          <div class="post_header_date">${this.formatDate(msg.time)}</div>
+          <div class="post_header_address">${msg.from}</div>
+        </div>
+      </div>
+      <div class="post_content">${markdown.toHTML(msg.data)}</div>
+      <div class="post_controls">
+        <div id="post_controls_delete_${msg.id}" class="post_controls_item post_controls_delete" alt="delete"><i class="fa fa-trash-o"></i> <div class="post_controls_label">DELETE</div></div>
+        <div id="post_controls_comment_${msg.id}" class="post_controls_item post_controls_comment" alt="comment"><i class="fa fa-comment-o"></i> <div class="post_controls_label">COMMENT</div></div>
+        <div id="post_controls_share_${msg.id}" class="post_controls_item post_controls_share" alt="share"><i class="fa fa-share-alt"></i> <div class="post_controls_label">SHARE</div></div>
+      </div>
+      <div class="post_commentbox">
+        <div class="post_comments">
+        </div>
+        <div class="post_comments_create">
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -3229,7 +3229,7 @@ Facebook.prototype.attachEvents = function attachEvents(app) {
   $('.following_friend').on('click', function() {
     var purgeuser = confirm("Do you want to unfollow this user?");
     if (purgeuser) {
-      identifier = $(this).text(); 
+      identifier = $(this).text();
       // purge user with key
       app.keys.removeKeyByIdentifierAndKeyword(identifier, "Facebook");
       app.keys.saveKeys();
@@ -3243,8 +3243,8 @@ Facebook.prototype.attachEvents = function attachEvents(app) {
   $('.post_header_name').on('click', function() {
     var addthisuser = confirm("Do you want to follow this user?");
     if (addthisuser) {
-      identifier = $(this).text(); 
-      publickey  = $(this).next().next().text(); 
+      identifier = $(this).text();
+      publickey  = $(this).next().next().text();
 
       if (publickey == "") {
         app.dns.fetchPublicKey(newfriend, function(answer) {
@@ -3260,7 +3260,7 @@ Facebook.prototype.attachEvents = function attachEvents(app) {
           facebook_self.attachEvents(app);
 	      });
 
-      } else {    
+      } else {
         // follow user with key
         app.keys.addKey(publickey, identifier, 1, "Facebook");
         app.keys.saveKeys();
@@ -3382,7 +3382,7 @@ Facebook.prototype.attachEvents = function attachEvents(app) {
           newfriend = $('.lightbox_follow_input').val();
 	        if (facebook_self.isPublicKey(newfriend) == 1) {
 
-            // if the user entered a publickey as the 
+            // if the user entered a publickey as the
             // friend value, we create an abridged version
             // of it to serve as the identifier and add
             // it to the keylist.
@@ -3402,7 +3402,7 @@ Facebook.prototype.attachEvents = function attachEvents(app) {
           } else {
 
             // if the user submitted an address, we check our
-            // DNS server for the record and add the account 
+            // DNS server for the record and add the account
             // if we can find it.
             app.dns.fetchPublicKey(newfriend.toLowerCase(), function(answer) {
 
@@ -3528,7 +3528,7 @@ Is now following your broadcast messages on the Saito network. \
      id = $(this).attr('id');
      msg = {}; msg.id = id.substring(22);
      pcc = facebook_self.formatNewComment(msg,app);
-     
+
      tmpselector  = "#post_box_" + msg.id + " > .post_commentbox > .post_comments_create";
      $('.post_comments_create').hide();
      $('.post_comments_create').empty();
@@ -3625,7 +3625,7 @@ Is now following your broadcast messages on the Saito network. \
 
     post_to_share = postbody + '<p></p><b>original poster: </b>';
     if (postauthorpk != "") { post_to_share += '<span class="comment_name">'+postauthorid+'</span>'; }
-    post_to_share += '<br><div class="publickey_small">'+postauthorpk+'</div>'; 
+    post_to_share += '<br><div class="publickey_small">'+postauthorpk+'</div>';
 
     myid = "";
     if (facebook_self.app.wallet.returnIdentifier() != "") { myid = facebook_self.app.wallet.returnIdentifier() + "<br />"; }
@@ -3874,7 +3874,7 @@ Facebook.prototype.formatDate = function formateDate(unixtime) {
 
   x    = new Date(unixtime);
   nowx = new Date();
-  
+
   y = "";
 
   if (x.getMonth()+1 == 1) { y += "Jan "; }
@@ -3897,12 +3897,12 @@ Facebook.prototype.formatDate = function formateDate(unixtime) {
     y += x.getFullYear();
   } else {
     if (x.getMonth() == nowx.getMonth() && x.getDate() == nowx.getDate()) {
-      
+
       am_or_pm = "am";
-      
+
       tmphour = x.getHours();
       tmpmins = x.getMinutes();
-  
+
       if (tmphour >= 12) { if (tmphour > 12) { tmphour -= 12; }; am_or_pm = "pm"; }
       if (tmphour == 0) { tmphour = 12; };
       if (tmpmins < 10) {
@@ -3910,7 +3910,7 @@ Facebook.prototype.formatDate = function formateDate(unixtime) {
       } else {
         y = tmphour + ":" + tmpmins + " "+am_or_pm;
       }
-    
+
     }
   }
 
@@ -3924,7 +3924,7 @@ Facebook.prototype.formatAuthor = function formatAuthor(author, app, msg=null) {
 
   if (x != null) { if (x.identifiers.length > 0) { return x.identifiers[0]; } }
 
-  if (this.isPublicKey(author) == 1) { 
+  if (this.isPublicKey(author) == 1) {
     if (msg != null) {
       app.dns.fetchIdentifier(author, function(answer) {
         dns_response = JSON.parse(answer);
@@ -3977,7 +3977,7 @@ Facebook.prototype.generateTransactionByPostId = function generateTransactionByP
   console.log(tmpselect + " -----> " + newtx.transaction.msg.data);
 
   tmpselect = "#post_box_" + post_id + " > .post_header > .post_header_titlebox > .post_header_address";
-  newtx.transaction.msg.poster_address = $(tmpselect).text();  
+  newtx.transaction.msg.poster_address = $(tmpselect).text();
   console.log(tmpselect + " -----> " + newtx.transaction.msg.poster_address);
 
   tmpselect = "#post_box_" + post_id + " > .post_header > .post_header_titlebox > .post_header_date";
@@ -4053,7 +4053,7 @@ Raw.prototype.displayEmailForm = function displayEmailForm(app) {
     var txjson = $('.rawtx').val();
 console.log("1: "+txjson);
     var newtx = new saito.transaction(txjson);
-  
+
     if (newtx == null) {
       alert("ERROR: malformed transaction #1");
     }
@@ -4061,7 +4061,7 @@ console.log("1: "+txjson);
 //      alert("ERROR: malformed transaction #2");
 //    }
 
-    console.log("2: "+JSON.stringify(newtx)); 
+    console.log("2: "+JSON.stringify(newtx));
 
     newtx = app.wallet.signTransaction(newtx);
 
@@ -4436,7 +4436,7 @@ module.exports = ModTemplate
 
 
 ////////////////////////////
-// Extend these Functions // 
+// Extend these Functions //
 ////////////////////////////
 
 //
@@ -4457,9 +4457,9 @@ ModTemplate.prototype.initialize = function initialize(app) {};
 // IS BROWSER ACTIVE
 //
 // this callback returns 0 if the user is not browsing a webpage
-// from the application, and 1 if it is browsing a webpage from 
+// from the application, and 1 if it is browsing a webpage from
 // an application. We use it to selectively disable code when
-// browsers are running. 
+// browsers are running.
 //
 ModTemplate.prototype.isBrowserActive = function isBrowserActive(app) {
   return 0;
@@ -4485,7 +4485,7 @@ ModTemplate.prototype.attachEvents = function attachEvents() {}
 // LOAD FROM ARCHIVES
 //
 // this callback is run whenever our archives loads additional data
-// either from its local memory or whenever it is fetched from a 
+// either from its local memory or whenever it is fetched from a
 // remote server
 //
 ModTemplate.prototype.loadFromArchives = function loadFromArchives(app, tx) {}
@@ -4493,8 +4493,8 @@ ModTemplate.prototype.loadFromArchives = function loadFromArchives(app, tx) {}
 //
 // ON CONFIRMATION
 //
-// this callback is run every time a block receives a confirmation. 
-// this is where the most important code in your module should go, 
+// this callback is run every time a block receives a confirmation.
+// this is where the most important code in your module should go,
 // listening to requests that come in over the blockchain and replying.
 //
 ModTemplate.prototype.onConfirmation  = function onConfirmation(tx, confnum, app) {}
@@ -4506,8 +4506,8 @@ ModTemplate.prototype.onConfirmation  = function onConfirmation(tx, confnum, app
 // this callback is run every time a block is added to the longest_chain
 // it differs from the onConfirmation function in that it is not linked to
 // individual transactions -- i.e. it will only be run once per block, while
-// the onConfirmation function is run by every TRANSACTION tagged as 
-// this is where the most important code in your module should go, 
+// the onConfirmation function is run by every TRANSACTION tagged as
+// this is where the most important code in your module should go,
 // listening to requests that come in over the blockchain and replying.
 //
 ModTemplate.prototype.onNewBlock  = function onNewBlock(blk) {}
@@ -4518,9 +4518,9 @@ ModTemplate.prototype.onNewBlock  = function onNewBlock(blk) {}
 // ON CHAIN REORGANIZATION
 //
 // this callback is run everytime the chain is reorganized, for every block
-// with a status that is changed. so it is invoked first to notify us when 
+// with a status that is changed. so it is invoked first to notify us when
 // longest_chain is set to ZERO as we unmark the previously dominant chain
-// and then it is run a second time setting the LC to 1 for all of the 
+// and then it is run a second time setting the LC to 1 for all of the
 // blocks that are moved (back?) into the longest_chain
 //
 ModTemplate.prototype.onChainReorganization  = function onChainReorganization(block_id, block_hash, lc) {}
@@ -4542,7 +4542,7 @@ ModTemplate.prototype.shouldAffixCallbackToModule = function shouldAffixCallback
 // SERVER
 //
 // this callback allows the module to serve pages through the main application
-// server, by listening to specific route-requests and serving data from its own 
+// server, by listening to specific route-requests and serving data from its own
 // separate web directory.
 //
 // checkout the server.js class for an example of how to do this.
@@ -4567,7 +4567,7 @@ ModTemplate.prototype.updateBalance  = function updateBalance(app) {}
 // EMAIL FUNCTIONS //
 /////////////////////
 //
-// these three functions are used if you want your module to interact with 
+// these three functions are used if you want your module to interact with
 // the default Saito email client. They allow you to format and return
 // HTML data that can be displayed in the main body of the email client
 //
@@ -4576,7 +4576,7 @@ ModTemplate.prototype.updateBalance  = function updateBalance(app) {}
 // DISPLAY EMAIL FORM
 //
 // this prepares the HTML form that we use to enter the information
-// needed by our module. In the email client this is what displays 
+// needed by our module. In the email client this is what displays
 // the title and email inputs into which the users can type their
 // email.
 //
@@ -4585,12 +4585,12 @@ ModTemplate.prototype.displayEmailForm = function displayEmailForm(app) {}
 //
 // DISPLAY EMAIL MESSAGE
 //
-// this formats our transaction so that it can be displayed in the 
+// this formats our transaction so that it can be displayed in the
 // body of an email if needed
 //
 ModTemplate.prototype.displayEmailMessage = function displayEmailMessage(message_id, app) {
 
-  // by default we just stick the JSON text field into the text element 
+  // by default we just stick the JSON text field into the text element
   // and display it to the user. This assumes that the content isn't JSON
   // but modules can parse and handle JSON themselves if they really need
   // to do this.
@@ -4603,7 +4603,7 @@ ModTemplate.prototype.displayEmailMessage = function displayEmailMessage(message
 //
 // FORMAT EMAIL TRANSACTION
 //
-// this is invoked when a user decides to send a transaction through the 
+// this is invoked when a user decides to send a transaction through the
 // default email client. It should grab the submitted data and structure
 // it into the transaction in a way that can be understood by other modules
 // listening on the network.
@@ -4646,18 +4646,18 @@ ModTemplate.prototype.handleDomainRequest = function handleDomainRequest(app, me
 //
 // HANDLE PEER REQUEST
 //
-// not all messages sent from peer-to-peer need to be transactions. the 
-// underlying software structure supports a number of alternatives, 
-// including requests for transmitting blocks, transactions, etc. 
+// not all messages sent from peer-to-peer need to be transactions. the
+// underlying software structure supports a number of alternatives,
+// including requests for transmitting blocks, transactions, etc.
 //
-// DNS messages are one example, and are treated specially because of 
+// DNS messages are one example, and are treated specially because of
 // the importance of the DNS system for routing data. This is a more
 // generic way to plug into P2P routing.
 //
-// if your web application defines a lower-level massage format, it can 
+// if your web application defines a lower-level massage format, it can
 // send and receive data WITHOUT the need for that data to be confirmed
-// in the blockchain. See our search module for an example of this in 
-// action. This is useful for applications that are happy to pass data 
+// in the blockchain. See our search module for an example of this in
+// action. This is useful for applications that are happy to pass data
 // directly between peers, but still want to use the blockchain for peer
 // discovery (i.e. "what is your IP address" requests)
 //
@@ -5480,7 +5480,7 @@ console.log("\n\n\nADDING TX TO BLOCK SELF: ");
 	//
 	// TODO
 	//
-	// clear new txs so that they do not claim to be rebroadcast 
+	// clear new txs so that they do not claim to be rebroadcast
         //
         // check that only the txs we have rebroadcast are the rebroadcasting ones
         //
@@ -6152,8 +6152,8 @@ Block.prototype.returnAverageFee = function returnAverageFee() {
   var total_txs  = 0;
 
   for (let i = 0; i < this.transactions.length; i++) {
-    if (this.transactions[i].transaction.rb == 0) { 
-      total_txs++; 
+    if (this.transactions[i].transaction.rb == 0) {
+      total_txs++;
       total_fees = this.transactions[i].returnFeeTotal();
     }
   }
@@ -6422,7 +6422,7 @@ Blockchain.prototype.validateBlockAndQueueInMempool = function validateBlockAndQ
     if (relay_on_validate == 1) {
 
       //
-      // our attempts to control flooding attacks use the 
+      // our attempts to control flooding attacks use the
       // reliability metrics in the peer class to determine
       // whether or not it can be trusted. untrusted peers
       // have their blocks processed, but not forwarded by
@@ -6957,13 +6957,13 @@ Blockchain.prototype.addBlockToBlockchain = function addBlockToBlockchain(newblo
     //
     // we are trying to catch an eddge-case for browsers that
     // receive blocks in the wrong order, and only start marking
-    // blocks as part of the longest chain once they have 
+    // blocks as part of the longest chain once they have
     //
     // in this case LC should be set at ZERO from this (our first)
     // LC-identified block back to the -1 point of origin
     //
     if (shared_ancestor_index_pos == -1 && this.index.lc[0] == 0) {
-      // 
+      //
       // if last 10 LC are all zero....
       // we are probably in a bad browser
       // sync which may affect some UTXI
@@ -6976,8 +6976,8 @@ Blockchain.prototype.addBlockToBlockchain = function addBlockToBlockchain(newblo
       }
 
       //
-      // quick fix - we should check and only do this to nodes in the 
-      // longest chain, but for now since this affects lite-clients 
+      // quick fix - we should check and only do this to nodes in the
+      // longest chain, but for now since this affects lite-clients
       // only we just approve anything before the longest chain
       //
       if (rewrite_from_start == 1 && this.blocks.length > 0) {
@@ -7457,7 +7457,7 @@ Blockchain.prototype.binaryInsert = function binaryInsert(list, item, compare, s
 Blockchain.prototype.importBlock = function importBlock(blkjson, expected_block_hash="", relay_on_validate=1, originating_peer="") {
   var nb = new saito.block(this.app, blkjson);
 
-  // 
+  //
   // track who sent this
   //
   nb.originating_peer = originating_peer;
@@ -8186,19 +8186,19 @@ module.exports = Browser;
 ////////////////
 //
 // when Saito starts up, we check for a _browser_active
-// div on the webpage that is executing the javascript. 
+// div on the webpage that is executing the javascript.
 // this is used so that the software can figure out what
 // module is running, and only execute UI/UX code for that
 // module.
 //
-// One we know what module is running, we can initialize 
+// One we know what module is running, we can initialize
 // the HTML for that module and attach events.
 //
 Browser.prototype.initialize = function initialize() {
 
     if (this.app.BROWSER == 0) { return; }
 
-    // set the browser_active variable to 1 for modules we 
+    // set the browser_active variable to 1 for modules we
     // are interacting with. This avoids running unnecessary
     // interface code that might conflict in DOM management
     for (var m = 0; m < this.app.modules.mods.length; m++) {
@@ -8230,8 +8230,8 @@ Browser.prototype.initialize = function initialize() {
 //////////////////////////
 //
 // Modules can include "templates" which are common
-// HTML/JS bundles that will work the same across 
-// many modules. 
+// HTML/JS bundles that will work the same across
+// many modules.
 //
 Browser.prototype.attachTemplateEvents = function attachTemplateEvents(template_name, module_self) {
 
@@ -8253,8 +8253,8 @@ Browser.prototype.attachTemplateEvents = function attachTemplateEvents(template_
 //////////////////////////
 //
 // Modules can include "templates" which are common
-// HTML/JS bundles that will work the same across 
-// many modules. 
+// HTML/JS bundles that will work the same across
+// many modules.
 //
 Browser.prototype.insertTemplateHTML = function insertTemplateHTML(template_name) {
 
@@ -8328,7 +8328,7 @@ module.exports = Crypt;
 // @params {string} tstring to hash
 // @returns {string} hash of string
 //
-Crypt.prototype.hash = function hash(text) { 
+Crypt.prototype.hash = function hash(text) {
   return sha256(sha256(text));
 }
 
@@ -8461,8 +8461,8 @@ Crypt.prototype.uncompressPublicKey = function uncompressPublicKey(pubkey) {
 Crypt.prototype.verifyMessage = function verifyMessage(msg, sig, pubkey) {
   try {
   return secp256k1.verify(Buffer.from(this.hash(Buffer.from(msg, 'utf-8').toString('base64')),'hex'), Buffer.from(this.fromBase58(sig),'hex'), Buffer.from(this.uncompressPublicKey(pubkey),'hex'));
-  } catch (err) { 
-    return false; 
+  } catch (err) {
+    return false;
   }
 }
 
@@ -8519,10 +8519,10 @@ Crypt.prototype.returnMerkleTree = function returnMerkleTree(inarray) {
 ////////////////////
 //
 // The DiffieHellman process allows two people to generate a shared
-// secret in an environment where all information exchanged between 
+// secret in an environment where all information exchanged between
 // the two can be observed by others.
 //
-// It is used by our encryption module to generate shared secrets, 
+// It is used by our encryption module to generate shared secrets,
 // but is generally useful enough that we include it in our core
 // cryptography class
 //
@@ -8537,7 +8537,7 @@ Crypt.prototype.returnMerkleTree = function returnMerkleTree(inarray) {
 // @params {string} public key
 // @params {string} private key
 // @returns {DiffieHellman object} ecdh
-//  
+//
 Crypt.prototype.createDiffieHellman = function createDiffieHellman(pubkey="",privkey="") {
   var ecdh   = crypto.createECDH("secp256k1");
   ecdh.generateKeys();
@@ -8592,7 +8592,7 @@ Crypt.prototype.createDiffieHellmanSecret = function createDiffieHellmanSecret(a
 ////////////////////////////////
 //
 // once we have a shared secret (possibly generated through the
-// Diffie-Hellman method above), we can use it to encrypt and 
+// Diffie-Hellman method above), we can use it to encrypt and
 // decrypt communications using a symmetrical encryption method
 // like AES.
 //
@@ -8637,7 +8637,7 @@ var saito = require('../saito');
 // connect to the servers provided as part of the configuration file
 // to fetch the data on which addresses translate to which domains.
 //
-// Servers can setup domains by running Registry modules and 
+// Servers can setup domains by running Registry modules and
 // configuring them for whatever domain they want to support.
 //
 function DNS(app) {
@@ -8662,7 +8662,7 @@ module.exports = DNS;
 // initialize //
 ////////////////
 //
-// we figure out which DNS servers we are supposed to be using and 
+// we figure out which DNS servers we are supposed to be using and
 // connect to them if we are not already connected to then, remembering
 // to specify that we will not send blocks, transactions or golden
 // tickets to DNS servers.
@@ -8695,7 +8695,7 @@ DNS.prototype.initialize = function initialize() {
 // send publickey to remote server and get identifier associated
 // with it, if exists.
 //
-// @params {string} publickey 
+// @params {string} publickey
 // @params {callback}
 //
 DNS.prototype.fetchIdentifier = function fetchIdentifier(publickey, mycallback) {
@@ -8753,7 +8753,7 @@ DNS.prototype.fetchPublicKey = function fetchPublicKey(id, mycallback) {
   }
 
   for (var s = 0; s < this.dns.domains.length; s++) {
-    if (this.dns.domains[s].domain == domain) { 
+    if (this.dns.domains[s].domain == domain) {
       alternate_server_exists = 1;
       for (var t = 0; t < this.app.network.peers.length; t++) {
 	if (this.dns.domains[s].publickey == this.app.network.peers[t].peer.publickey && this.app.network.peers[t].peer.publickey != "") {
@@ -8800,7 +8800,7 @@ DNS.prototype.fetchPublicKey = function fetchPublicKey(id, mycallback) {
 //
 // @params {js obj} response from one of the fetch functions
 //		    above provided by a foreign server
-// @returns 
+// @returns
 DNS.prototype.isRecordValid = function isRecordValid(answer) {
 
   var obj = JSON.parse(answer);
@@ -8855,7 +8855,7 @@ function GoldenTicket(app, gtjson="") {
       return null;
     }
   }
-  
+
   return this;
 
 }
@@ -8934,7 +8934,7 @@ GoldenTicket.prototype.calculatePaysplit = function calculatePaysplit(prevblock)
 ////////////////////
 //
 // given an accurate solution to a golden ticket (block) calculate
-// all of the information we will need to include in a solution and 
+// all of the information we will need to include in a solution and
 // flesh out that data here in our Golden Ticket object.
 //
 // @params {saito.block} block w/ golden ticket
@@ -8949,12 +8949,12 @@ GoldenTicket.prototype.createSolution = function createSolution(block_to_solve, 
   //
   // 1. the "validate" Golden Ticket function below
   // 2. block validation of treasury and coinbase (validateReclaimedFunds)
-  // 3. block creation of treasury and coinbase 
+  // 3. block creation of treasury and coinbase
   //
   // TODO
   //
   // figure out a clean way to avoid having to repeat
-  // this code in multiple places 
+  // this code in multiple places
   //
   let txfees_needed = parseFloat(0.0 + block_to_solve.returnTransactionFeesNeeded(block_to_solve.block.prevhash)).toFixed(8);
   let total_revenue = parseFloat(txfees_needed) + parseFloat(block_to_solve.block.coinbase);
@@ -8972,7 +8972,7 @@ GoldenTicket.prototype.createSolution = function createSolution(block_to_solve, 
   this.solution.miner_share     = miner_share;
   this.solution.node_share      = node_share;
   this.solution.sig             = this.app.crypt.signMessage(this.returnSignatureSource(), solution_private_key);
-    
+
 }
 
 
@@ -8980,7 +8980,7 @@ GoldenTicket.prototype.createSolution = function createSolution(block_to_solve, 
 // findWinners //
 //////////////////
 //
-// given a solution, we figure out who the recipients of the 
+// given a solution, we figure out who the recipients of the
 // token issuance are going to be and return them in an array
 //
 // @params {saito.block} previous block
@@ -9018,9 +9018,9 @@ GoldenTicket.prototype.findWinners = function findWinners(block_to_solve) {
 // @returns {string} string-to-sign
 //
 GoldenTicket.prototype.returnSignatureSource = function returnSignatureSource() {
- return this.solution.target + 
-	this.solution.difficulty_vote + 
-	this.solution.paysplit_vote + 
+ return this.solution.target +
+	this.solution.difficulty_vote +
+	this.solution.paysplit_vote +
 	this.solution.miner_share +
 	this.solution.node_share;
 }
@@ -9031,7 +9031,7 @@ GoldenTicket.prototype.returnSignatureSource = function returnSignatureSource() 
 //////////////
 //
 // validate that this golden ticket is a valid solution
-// to the previous block, and that this block has the 
+// to the previous block, and that this block has the
 // appropriate difficulty and monetary settings.
 //
 // @params {saito.block} previous block
@@ -9095,7 +9095,7 @@ GoldenTicket.prototype.validate = function validate(prevblk, thisblk) {
   }
 
   //
-  // this is essentially a copy of the code used to create the 
+  // this is essentially a copy of the code used to create the
   // solution. If changes are needed see this.createSolution()
   //
   let txfees_needed = parseFloat(0.0 + prevblk.returnTransactionFeesNeeded(prevblk.block.prevhash)).toFixed(8);
@@ -9144,11 +9144,11 @@ GoldenTicket.prototype.validateMonetaryPolicy = function validateMonetaryPolicy(
 
   let mp = this.calculateMonetaryPolicy(prevblock);
 
-  if (mp[0] != adjusted_treasury) { 
+  if (mp[0] != adjusted_treasury) {
     console.log("Treasury invalid: " + adjusted_treasury + " -- " + mp[0]);
     return 0;
   }
-  if (mp[1] != adjusted_coinbase) { 
+  if (mp[1] != adjusted_coinbase) {
     console.log("Coinbase invalid: " + adjusted_coinbase + " -- " + mp[1]);
     return 0;
   }
@@ -9175,7 +9175,7 @@ function Key() {
   this.tags           = [];
   this.identifiers    = [];
   this.watched        = 0;
-  this.lock_block     = 0; // after this bid, cannot be reorganized 
+  this.lock_block     = 0; // after this bid, cannot be reorganized
   this.aes_publickey  = "";
   this.aes_privatekey = "";
   this.aes_secret     = "";
@@ -9204,7 +9204,7 @@ Key.prototype.addTag = function addTag(tag) {
 // addIdentifier //
 ///////////////////
 //
-// an identifier is an address that can be registered 
+// an identifier is an address that can be registered
 // through our DNS system and used in lieu of a pkey
 //
 // @params {string} identifier
@@ -9327,7 +9327,7 @@ function Keys(app) {
   this.keys        = [];
 
   return this;
-  
+
 }
 module.exports = Keys;
 
@@ -9899,9 +9899,9 @@ Mempool.prototype.initialize = function initialize() {
 
   if (mempool_self.app.BROWSER == 0 || mempool_self.app.SPVMODE == 0) {
 
-    // use a timeout to get network class a 
+    // use a timeout to get network class a
     // bit of time to initialize. otherwise
-    // we can have problems with calls to 
+    // we can have problems with calls to
     // returnNumberOfPeers() etc.
     setTimeout(function() {
       mempool_self.startBundling();
@@ -9965,13 +9965,13 @@ Mempool.prototype.addTransaction = function addTransaction(tx, relay_on_validate
   if (tx.transaction == null)            { return; }
   if (tx.is_valid == 0) 		 { return; }
 
-  
+
   //
   // do not add if this pushes us past our limit
   //
   if ( (tx.size + this.transaction_size_current) > this.transaction_size_cap) {
     return;
-  } 
+  }
 
 
 
@@ -9989,12 +9989,12 @@ Mempool.prototype.addTransaction = function addTransaction(tx, relay_on_validate
 
 	  //
 	  // if we already have a golden ticket solution, we will
-	  // replace it with this new one if the new one pays us 
+	  // replace it with this new one if the new one pays us
 	  // more in fees and/or is going to pay us money.
 	  //
           if (
    	    tx.returnFeeUsable() > this.transactions[z].returnFeeUsable() || (
-	      this.transactions[z].transaction.from[0].add != this.app.wallet.returnPublicKey() && 
+	      this.transactions[z].transaction.from[0].add != this.app.wallet.returnPublicKey() &&
 	      tx.transaction.from[0].add == this.app.wallet.returnPublicKey()
 	    )
 	  ) {
@@ -10041,7 +10041,7 @@ Mempool.prototype.addTransaction = function addTransaction(tx, relay_on_validate
 // bundleBlock //
 /////////////////
 //
-// we believe we have enough fees to produce a block, so we 
+// we believe we have enough fees to produce a block, so we
 // set the paysplit vote and bundle in the transactions we
 // can, then submit the block to the block class to finalize.
 //
@@ -10081,32 +10081,32 @@ console.log("bundling block...");
   //
   for (let i = 0; i < this.transactions.length; i++) {
     let addtx = 1;
-    if (this.transactions[i].transaction.gt != null) { 
+    if (this.transactions[i].transaction.gt != null) {
 
       //
       // this will happen if we run into a Golden Ticket for an older
       // block. we do not want to include this as it will make our
       // block invalid.
       //
-      // this GT will be removed from our mempool automatically the 
+      // this GT will be removed from our mempool automatically the
       // next time we receive a golden ticket from someone else.
       //
-      if (this.transactions[i].transaction.gt.target != prevblk.returnHash()) { 
-        addtx = 0; 
-      } 
+      if (this.transactions[i].transaction.gt.target != prevblk.returnHash()) {
+        addtx = 0;
+      }
     }
     if (nb.paysplit_vote == -1) {
-      if (this.transactions[i].transaction.ps == 1) { 
+      if (this.transactions[i].transaction.ps == 1) {
 	addtx = 0;
       }
     }
     if (nb.paysplit_vote == 1) {
-      if (this.transactions[i].transaction.ps == -1) { 
+      if (this.transactions[i].transaction.ps == -1) {
 	addtx = 0;
       }
     }
-    if (addtx == 1) { 
-      nb.addTransaction(this.transactions[i]); 
+    if (addtx == 1) {
+      nb.addTransaction(this.transactions[i]);
     }
   }
 
@@ -10183,7 +10183,7 @@ Mempool.prototype.containsTransaction = function containsTransaction(tx) {
   // TODO
   //
   // if we insert the transactions into the array based on their sig
-  // data we can optimize searching through the mempool once it is 
+  // data we can optimize searching through the mempool once it is
   // sizeable. another option might be using a hashmap to search.
   //
   // we check by looking for the signature of the transaction, as that
@@ -10204,7 +10204,7 @@ Mempool.prototype.containsTransaction = function containsTransaction(tx) {
 ////////////////
 //
 // after a peer informs us that a block is
-// available, we come here to fetch it and 
+// available, we come here to fetch it and
 // add it to our queue as needed.
 //
 Mempool.prototype.fetchBlock = function fetchBlock(peer, block_hash) {
@@ -10255,7 +10255,7 @@ Mempool.prototype.fetchBlock = function fetchBlock(peer, block_hash) {
       // TODO
       //
       // there is a possible attack by making the downloaded file large
-      // enough that it alone crashes the system. we should mitigate 
+      // enough that it alone crashes the system. we should mitigate
       // this.
       //
       try {
@@ -10379,9 +10379,9 @@ Mempool.prototype.importTransaction = function importTransaction(txjson) {
 //
 Mempool.prototype.processBlocks = function processBlocks() {
 
-  if (this.currently_processing == 1) { 
+  if (this.currently_processing == 1) {
     console.log("Mempool processing.... not adding new block to blockchain");
-    return; 
+    return;
   }
 
   if (this.blocks.length == 0) {
@@ -10407,7 +10407,7 @@ Mempool.prototype.processBlocks = function processBlocks() {
 
       // FIFO adding from our queue
       var blk = mempool_self.returnBlock();
-      if (blk == null) { 
+      if (blk == null) {
 	mempool_self.currently_processing = 0;
         return;
       }
@@ -10621,8 +10621,8 @@ Mempool.prototype.returnNormalTransactionsInMempool = function returnNormalTrans
 // returnUsableTransactionFees //
 /////////////////////////////////
 //
-// returns the total value of the transaction fees in the 
-// mempool that can be used to produce a block with a 
+// returns the total value of the transaction fees in the
+// mempool that can be used to produce a block with a
 // certain paysplit vote.
 //
 // @params {integer} paysplit_vote
@@ -10682,7 +10682,7 @@ Mempool.prototype.stopBundling = function stopBundling() {
 // tryToBundleBlock //
 //////////////////////
 //
-// bundling a block is the process of taking the transactions in 
+// bundling a block is the process of taking the transactions in
 // our mempool and putting them in a block that will validate. the
 // first step in this process is checking to see if we have enough
 // transactions to actually produce a valid block.
@@ -10712,9 +10712,9 @@ Mempool.prototype.tryToBundleBlock = function tryToBundleBlock() {
     // fetch the block we are building atop
     //
     var latestBlk = mempool_self.app.blockchain.returnLatestBlock();
-    if (latestBlk == null) { 
-      latestBlk = new saito.block(mempool_self.app); 
-      latestBlk.block.id = 0; 
+    if (latestBlk == null) {
+      latestBlk = new saito.block(mempool_self.app);
+      latestBlk.block.id = 0;
     } else {
       block_paysplit_vote = mempool_self.app.voter.returnPaysplitVote(latestBlk.block.paysplit);
     }
@@ -10742,7 +10742,7 @@ Mempool.prototype.tryToBundleBlock = function tryToBundleBlock() {
     console.log((new Date()) + ": " + fees_needed.toFixed(8) + " ---- " + fees_available + " (" + mempool_self.transactions.length + "/"+mempool_self.returnNormalTransactionsInMempool()+" -- "+mempool_self.app.wallet.returnBalance()+")");
 
     //
-    // can we bundle a block? 
+    // can we bundle a block?
     //
     if (mempool_self.bundling_fees_needed <= 0) {
 
@@ -10766,7 +10766,7 @@ if (mempool_self.app.wallet.returnBalance() < 100 && mempool_self.app.wallet.ret
         if (mempool_self.app.options.peers != null) {
           if (mempool_self.app.options.peers.length > 0) {
             if (mempool_self.app.options.server != null) {
-              if (mempool_self.app.options.peers.length == 1 && mempool_self.app.options.peers[0].host == mempool_self.app.options.server.host) {} else { 
+              if (mempool_self.app.options.peers.length == 1 && mempool_self.app.options.peers[0].host == mempool_self.app.options.server.host) {} else {
 	        return;
 	      }
             } else {
@@ -10804,12 +10804,12 @@ if (mempool_self.app.wallet.returnBalance() < 100 && mempool_self.app.wallet.ret
 	// 3. and our mempool doesn't have blocks queued
 	//
 	if (mempool_self.blocks.length == 0) {
-	 
+
 	  //
 	  // UNCOMMENT FOR SPAMMER MODULE TESTING
-	  // 
-	  // if stress-testing the network, we need to make sure 
-	  // we have enough time to generate a golden ticket in 
+	  //
+	  // if stress-testing the network, we need to make sure
+	  // we have enough time to generate a golden ticket in
 	  // order to avoid never generating new transaction slips.
 	  //
 	  if (mempool_self.containsGoldenTicket() == 1 || mempool_self.app.blockchain.index.hash.length == 0) {
@@ -10927,7 +10927,7 @@ Miner.prototype.attemptSolution = function attemptSolution(prevblock) {
 // startMining //
 /////////////////
 //
-// start a timer that tries to find solutions to 
+// start a timer that tries to find solutions to
 // golden tickets
 //
 // @params {saito.block} prevblock
@@ -11062,13 +11062,13 @@ module.exports = Network;
 // initialize //
 ////////////////
 //
-// We check our options to see to which peers we should 
+// We check our options to see to which peers we should
 // be connecting, and start the connection process. Note
-// that connections are not instant, which is why the 
+// that connections are not instant, which is why the
 // mempool class checks the options file to see if we
 // have active peers.
 //
-// Once peers are setup, we start a timer that monitors 
+// Once peers are setup, we start a timer that monitors
 // them to handle socket disconnections, etc.
 //
 Network.prototype.initialize = function initialize() {
@@ -11280,13 +11280,13 @@ Network.prototype.isPeerConnected = function isPeerConnected(publickey="") {
 // propagates a block to the network
 //
 // right now this directly calls the "sendBlock" function
-// but we have a separate function here as in the future 
-// we may wish to be more selective about the nodes to 
-// which we send blocks as part of active bandwidth 
+// but we have a separate function here as in the future
+// we may wish to be more selective about the nodes to
+// which we send blocks as part of active bandwidth
 // management.
 //
 // We should aim to have the code send blocks here if they
-// want the network class to deal with them, or directly to 
+// want the network class to deal with them, or directly to
 // sendBlock if they want to send it to all connections.
 //
 // @params {saito.block} block
@@ -11320,7 +11320,7 @@ Network.prototype.propagateGoldenTicket = function propagateGoldenTicket(gttx) {
 //
 // propagate a transaction out onto the network
 //
-// note that golden tickets piggy-back on this 
+// note that golden tickets piggy-back on this
 // by changing the outboundMessage, which is why
 // it is not hard-coded.
 //
@@ -11365,8 +11365,8 @@ Network.prototype.propagateTransaction = function propagateTransaction(tx, outbo
       try {
         var tmptx = new saito.transaction();
             tmptx.transaction = JSON.parse(JSON.stringify(tx.transaction));
-      } catch (err) { 
-	      return; 
+      } catch (err) {
+	      return;
       }
 
       // add our path
@@ -11390,7 +11390,7 @@ Network.prototype.propagateTransaction = function propagateTransaction(tx, outbo
 // propagateTransactionWithCallback //
 //////////////////////////////////////
 //
-// socket.io allows us to send messages and have the 
+// socket.io allows us to send messages and have the
 // other peer invoke a callback. this function wraps
 // this functionality. it is provided so that modules
 // can confirm.
@@ -11398,9 +11398,9 @@ Network.prototype.propagateTransaction = function propagateTransaction(tx, outbo
 // TODO:
 //
 // make callback messages secure/encrypted by default
-// if a key exists between us and our target peer. 
+// if a key exists between us and our target peer.
 //
-// make sure callback message only fires X times, 
+// make sure callback message only fires X times,
 // instead of once for every peer that receives it.
 //
 Network.prototype.propagateTransactionWithCallback = function propagateTransactionWithCallback(tx, mycallback=null) {
@@ -11457,7 +11457,7 @@ Network.prototype.sendRequest = function sendRequest(message, data="") {
 /////////////////////
 //
 // we know we need to fetch the blockchain, so lets do that
-// this informs our peers that we would like to sync the 
+// this informs our peers that we would like to sync the
 // blockchain. it passes control individually to the individual
 // peers.
 //
@@ -11495,7 +11495,7 @@ Network.prototype.close = function close() {
 // updatePeerReliability //
 ///////////////////////////
 //
-// updates the reliability value of the peer with the specified 
+// updates the reliability value of the peer with the specified
 // key. this is used to track how reliable the peers are in order
 // to provide a basic defense against flooding attacks.
 //
@@ -11664,17 +11664,17 @@ module.exports = Peer;
 // is originating a connection and the node that is receiving
 // the connection.
 //
-// The general structure is that the node that wants to 
+// The general structure is that the node that wants to
 // initiate the connection will create a peer object and update
 // it with the relevant information (host, post, etc.) and then
 // call the function:
 //
 //   connect
 //
-// This will format a JS request and send it to the remote 
+// This will format a JS request and send it to the remote
 // server through a websocket it will open. The remote server
 // will create a REPLY message and send it back to this server.
-// Both machines will automatically start syncing blocks to 
+// Both machines will automatically start syncing blocks to
 // each other depending on where they are in the chain.
 //
 // Once the connection has been established, the most important
@@ -11682,7 +11682,7 @@ module.exports = Peer;
 //
 //   addSocketEvents
 //
-// As this is where the code is written that specifies what 
+// As this is where the code is written that specifies what
 // we do with the requests that we receive over the network
 // once a connection is established.
 //
@@ -11692,9 +11692,9 @@ module.exports = Peer;
 // addSocketEvents //
 /////////////////////
 //
-// After we connect to a remote node, we add events to the 
+// After we connect to a remote node, we add events to the
 // socket. This function creates those events, which fire
-// on connection / disconnection and whenever we receive 
+// on connection / disconnection and whenever we receive
 // data from the remote node.
 //
 // This is the HEART of the peer class. All of the important
@@ -11830,7 +11830,7 @@ Peer.prototype.addSocketEvents = function addSocketEvents() {
         // out our last shared block and send them everything after that.
         //
         // using this method to find the proper syncing point prevents an edge-case
-        // wherein our remote node has produced a block on its own and only asks us 
+        // wherein our remote node has produced a block on its own and only asks us
         // for blocks FOLLOWING it, while we have no knowledge of that block as we
         // are on the proper chain.
         //
@@ -11842,8 +11842,8 @@ Peer.prototype.addSocketEvents = function addSocketEvents() {
         }
 
         //
-        // if a lite-client tells us they want everything from scratch, we don't 
-        // believe them and reset the peer_last_bid to nothing so that we will 
+        // if a lite-client tells us they want everything from scratch, we don't
+        // believe them and reset the peer_last_bid to nothing so that we will
         // only sync them the latest blocks needed to get them started.
         //
         if (peer_last_bid == 0 && peer_self.peer.synctype == "lite") {
@@ -11895,8 +11895,8 @@ Peer.prototype.addSocketEvents = function addSocketEvents() {
           //
           // TODO
           //
-          // what if a full-node wants to sync from a point 
-          // that is too far back in the transient chain 
+          // what if a full-node wants to sync from a point
+          // that is too far back in the transient chain
           // for us to handle? we should notify them.
           //
           } else {
@@ -12058,7 +12058,7 @@ Peer.prototype.addSocketEvents = function addSocketEvents() {
       // to connect to a full-node. But it isn't critical for now.
       //
       // note that the block hash may not match for lite clients
-      // because we may have pruned transactions. The blockchain 
+      // because we may have pruned transactions. The blockchain
       // class will have to deal with this edge case, but we note
       // it here.
       //
@@ -12178,7 +12178,7 @@ Peer.prototype.connect = function connect(remote = 0) {
     // sanity check: do not connect to myself
     //
     if (this.app.options.server != null) {
-      if ((this.peer.port == this.app.options.server.port && this.peer.host == this.app.options.server.host) && this.app.BROWSER == 0) { 
+      if ((this.peer.port == this.app.options.server.port && this.peer.host == this.app.options.server.host) && this.app.BROWSER == 0) {
         return;
       }
     }
@@ -12288,13 +12288,13 @@ Peer.prototype.isConnected = function isConnected() {
 //////////////////////////
 //
 // Once we open the socket, we send this message to the
-// remote server. This will be processed by the remote 
-// server through the functionality that is part of the 
-// addSocketEvents class. They will send us a response, 
+// remote server. This will be processed by the remote
+// server through the functionality that is part of the
+// addSocketEvents class. They will send us a response,
 // through the function:
 //
-//   returnConnectResponseMessage 
-// 
+//   returnConnectResponseMessage
+//
 // We will then read their response and sync them up-to-
 // date as needed while making sure we have thei public
 // key and other key information saved.
@@ -12422,7 +12422,7 @@ Peer.prototype.returnPublicKey = function returnPublicKey() {
 // TODO
 //
 // this is a a rather brutal firehose of data at scale
-// and we need to improve the way we handle this but for 
+// and we need to improve the way we handle this but for
 // now, when someone asks for the blockchain, they get it.
 //
 // @params {integer} block_id to send from
@@ -12432,12 +12432,12 @@ Peer.prototype.sendBlockchain = function sendBlockchain(start_bid, type="full") 
 
   console.log("SENDING BLOCKS FROM DATABASE STARTING WITH BLOCK: "+start_bid + " and type " + type);
 
-  if (start_bid == null) { 
+  if (start_bid == null) {
     let tmpx = this.app.blockchain.returnLatestBlock();
     if (tmpx != null) {
       tmpx = tmpx.returnId()-10;
       if (tmpx < 0) { tmpx = 9; }
-      start_bid = tmpx;  
+      start_bid = tmpx;
     } else {
       start_bid = 0;
     }
@@ -12742,9 +12742,9 @@ module.exports = Server;
 // initialize //
 ////////////////
 //
-// this function creates the server that will feed 
-// out our HTML files. It then passes control to 
-// all of its installed modules, which can affix 
+// this function creates the server that will feed
+// out our HTML files. It then passes control to
+// all of its installed modules, which can affix
 // their own content to the web-server.
 //
 Server.prototype.initialize = function initialize() {
@@ -12875,9 +12875,9 @@ Server.prototype.initialize = function initialize() {
     // may be useful in the future, if we gzip
     // files before releasing for production
     //
-    // gzipped, cached -- if you enable cached 
-    // and gzipped, be sure to manually edit the 
-    // content-length to reflect the size of the 
+    // gzipped, cached -- if you enable cached
+    // and gzipped, be sure to manually edit the
+    // content-length to reflect the size of the
     // file
     //
     //res.setHeader("Cache-Control", "public");
@@ -12950,6 +12950,12 @@ Server.prototype.initialize = function initialize() {
     res.sendFile(__dirname + imgf);
     return;
   });
+  app.get('/pace/:filename', function (req, res) {
+    var imgf = '/web/lib/pace/'+req.params.filename;
+    if (imgf.indexOf("\/") != false) { return; }
+    res.sendFile(__dirname + imgf);
+    return;
+  });
 
 
   /////////////////
@@ -12985,7 +12991,7 @@ function Slip(add="", amt=0.0, gt=0, bid=0, tid=0, sid=0, bhash="", lc=1, ft=0, 
   this.add    = add;
   this.amt    = amt;
   this.gt     = gt;
-  this.bid    = bid; 
+  this.bid    = bid;
   this.tid    = tid;
   this.sid    = sid;
   this.bhash  = bhash;
@@ -13259,7 +13265,7 @@ Storage.prototype.purgeBlockStorage = function purgeBlockStorage(block_hash) {
 //
 Storage.prototype.execDatabase = function execDatabase(sql, params, callback=null) {
   var storage_self = this;
-  
+
   if (this.app.BROWSER == 1) { return; }
   this.db.run(sql, params, function (err, row) {
     if (callback != null) {
@@ -13286,12 +13292,12 @@ Storage.prototype.isSlipSpent = function isSlipSpent(slip, current_bid) {
 // loadBlocksFromDisk //
 ////////////////////////
 //
-// This function is called by teh Blockchain class when it 
+// This function is called by teh Blockchain class when it
 // initializes. It looks to see if we have any blocks saved
 // to disk and -- if so -- force-adds them to the blockchain.
 //
 // This is done in chunks in order to avoid exhausting all of
-// our memory. Logically, we should have no more than two 
+// our memory. Logically, we should have no more than two
 // blocks getting processed at a time -- one working its way
 // through the addBlockToBlockchain process in the blockchain
 // class and another sitting queued up in the mempool.
@@ -13311,7 +13317,7 @@ Storage.prototype.loadBlocksFromDisk = function loadBlocksFromDisk(mylimit=0) {
   //
   let dir   = storage_self.data_directory + "blocks/";
   //
-  // if this takes a long time, our server can 
+  // if this takes a long time, our server can
   // just refuse to sync the initial connection
   // as when it starts to connect, currently_reindexing
   // will be set at 1
@@ -14396,8 +14402,8 @@ Storage.prototype.validateBlockInputs = function validateBlockInputs(newblock, p
 
 	  //
 	  // if this transaction is rebroadcast, we accept it as we check
-	  // for the validity of rebroadcast transactions during our 
-	  // initial check of block validity (i.e. there cannot be 
+	  // for the validity of rebroadcast transactions during our
+	  // initial check of block validity (i.e. there cannot be
 	  // extra.
 	  //
 	  if (newblock.transactions[b].transaction.rb == 1) {} else {
@@ -14803,7 +14809,7 @@ function Transaction(txjson="") {
   this.transaction.from          = [];
   this.transaction.to            = [];
   this.transaction.ts            = "";
-  this.transaction.sig           = ""; 
+  this.transaction.sig           = "";
   this.transaction.ver           = 1.0;
   this.transaction.path          = [];
   this.transaction.gt            = null;
@@ -14883,11 +14889,11 @@ Transaction.prototype.validateRebroadcastTransaction = function validateRebroadc
       console.log("ERROR: rebroadcast transaction does not have fee transaction");
       return 0;
     }
-    if (this.transaction.to[1].amt < fee) { 
+    if (this.transaction.to[1].amt < fee) {
       console.log("ERROR: rebroadcast transaction fee inadequate");
       return 0;
     }
-    if (this.transaction.to[1].add != this.trapdoor) { 
+    if (this.transaction.to[1].add != this.trapdoor) {
       console.log("ERROR: rebroadcast transaction fee not trapdoor address");
       return 0;
     }
@@ -14901,9 +14907,9 @@ Transaction.prototype.validateRebroadcastTransaction = function validateRebroadc
 // accepts the old tx and creates one that will validate
 Transaction.prototype.generateRebroadcastTransaction = function generateRebroadcastTransaction(slip_id, avg_fee=2) {
 
-  if (this.transaction.to.length == 0) { 
+  if (this.transaction.to.length == 0) {
     console.log("THERE ARE NO TO ADDRESSES IN THIS TX");
-    return null; 
+    return null;
   }
 
   var newtx = new saito.transaction();
@@ -14920,7 +14926,7 @@ Transaction.prototype.generateRebroadcastTransaction = function generateRebroadc
     }
   }
 
-  
+
   if (this.transaction.rb == -1) {
     // secure tokens for early supporters
     newtx.transaction.rb = this.transaction.rb;
@@ -14939,7 +14945,7 @@ Transaction.prototype.generateRebroadcastTransaction = function generateRebroadc
 
   //
   // TODO
-  // 
+  //
   if (amt < 0) { fee = this.transaction.to[slip_id].amt; amt = 0; }
 
 console.log("AMOUNT: " + amt + " / " + fee);
@@ -15069,8 +15075,8 @@ Transaction.prototype.returnMessageSignatureSource = function returnMessageSigna
   return JSON.stringify(this.transaction.msg);
 }
 Transaction.prototype.returnSignatureSource = function returnSignatureSource() {
-  return JSON.stringify(this.transaction.from) + 
-         JSON.stringify(this.transaction.to) + 
+  return JSON.stringify(this.transaction.from) +
+         JSON.stringify(this.transaction.to) +
          this.transaction.ts +
          this.transaction.ps +
          this.transaction.rb +
@@ -15154,7 +15160,7 @@ Transaction.prototype.validate = function validate(app, paysplit_vote=0, block_i
   for (var tidx = 0; tidx < this.transaction.from.length; tidx++) {
     if (this.transaction.from[tidx].bid < acceptable_lower_block_limit && this.transaction.ft != 1 && this.transaction.from[tidx].gt != 1) {
       console.log("transaction outdated: tries to spend input from block "+this.transaction.from[tidx].bid);
-      console.log(this.transaction.from[tidx]); 
+      console.log(this.transaction.from[tidx]);
       app.mempool.removeTransaction(this);
       return 0;
     }
@@ -15164,12 +15170,12 @@ Transaction.prototype.validate = function validate(app, paysplit_vote=0, block_i
   /////////////////////////////////
   // min one sender and receiver //
   /////////////////////////////////
-  if (this.transaction.from.length < 1) { 
+  if (this.transaction.from.length < 1) {
     console.log("no from address in transaction");
     app.mempool.removeTransaction(this);
     return 0;
   }
-  if (this.transaction.to.length < 1) { 
+  if (this.transaction.to.length < 1) {
     console.log("no to address in transaction");
     app.mempool.removeTransaction(this);
     return 0;
@@ -15367,18 +15373,18 @@ function Wallet(app) {
   // hashmap //
   /////////////
   //
-  // Bitcoin refers generally to all slips as UTXO. In Saito 
+  // Bitcoin refers generally to all slips as UTXO. In Saito
   // we distinguish between UTXI (slips we have yet to spent
   // which are valid to spend) and UTXO (slips we have spent
   // which may or may not be valid for others to spend).
   //
-  // We make this distinction mostly for ease for reference 
+  // We make this distinction mostly for ease for reference
   // here in the wallet class.
   //
-  // These hashmaps are used to speed up the process of 
+  // These hashmaps are used to speed up the process of
   // checking whether inputs/outputs already exist. It is
-  // possible for them to be inaccurate in that UTXI may 
-  // be reported as existing which are already spent, but 
+  // possible for them to be inaccurate in that UTXI may
+  // be reported as existing which are already spent, but
   // since we use them to check for duplicate inserts when
   // syncing the chain this is not a problem.
   //
@@ -15393,8 +15399,8 @@ function Wallet(app) {
   /////////////////////////
   //
   // we do not store all UTXO in perpetuity, as that would
-  // cause our options file to expand out of control. And 
-  // storing large amounts of UTXO makes it slower to add 
+  // cause our options file to expand out of control. And
+  // storing large amounts of UTXO makes it slower to add
   // incoming UTXI and outgoing UTXO.
   //
   // these variables specify how many UTXO we keep in our
@@ -15412,7 +15418,7 @@ function Wallet(app) {
   /////////////////
   //
   // this tracks the UTXI that we have already spent this
-  // block so that we do not attempt to use the same UTXI 
+  // block so that we do not attempt to use the same UTXI
   // slip twice. It is reset after every block.
   //
   this.spent_slips               = [];
@@ -15445,7 +15451,7 @@ Wallet.prototype.initialize = function initialize() {
       // reset if out-of-date //
       //////////////////////////
       //
-      // we keep our public and private keys, but reset the 
+      // we keep our public and private keys, but reset the
       // UTXI and UTXO data and force a clean reset of the
       // blockchain tracking information
       //
@@ -15588,9 +15594,9 @@ Wallet.prototype.addUTXI = function addUTXI(x) {
   //////////////
   // add slip //
   //////////////
-  //  
+  //
   // we keep our UTXI array sorted according to block_id
-  // so that we can (1) spend the earliest slips first, 
+  // so that we can (1) spend the earliest slips first,
   // and (2) simplify deleting expired slips
   //
   let pos = this.wallet.utxi.length;
@@ -15604,14 +15610,14 @@ Wallet.prototype.addUTXI = function addUTXI(x) {
   this.utxi_hashmap[hmi] = 1;
   this.utxi_hashmap_counter++;
 
-  
+
   ////////////////////////
   // regenerate hashmap //
   ////////////////////////
   //
   // we want to periodically re-generate our hashmaps
   // that help us check if UTXI and UTXO are already
-  // in our wallet for memory-management reasons and 
+  // in our wallet for memory-management reasons and
   // to maintain reasonable accuracy.
   //
   if (this.utxi_hashmap_counter > this.utxi_hashmap_counter_limit) {
@@ -15639,7 +15645,7 @@ Wallet.prototype.addUTXI = function addUTXI(x) {
 // @param {saito.slip} UTXO slip
 //
 Wallet.prototype.addUTXO = function addUTXO(x) {
- 
+
   if (this.store_utxo == 0) { return; }
 
   //////////////
@@ -15725,8 +15731,8 @@ Wallet.prototype.addRecipientToTransaction = function addRecipientToTransaction(
 Wallet.prototype.containsUtxi = function containsUtxi(s) {
 
   let hmi = this.returnHashmapIndex(s);
-  if (this.utxi_hashmap[hmi] == 1) { 
-    return 1; 
+  if (this.utxi_hashmap[hmi] == 1) {
+    return 1;
   }
 
   return 0;
@@ -15756,9 +15762,9 @@ Wallet.prototype.containsUtxo = function containsUtxo(s) {
 // createSignedTransactionWithForeignKey //
 ///////////////////////////////////////////
 //
-// create and sign a transaction using the information 
+// create and sign a transaction using the information
 // submitted as arguments to this function. this is needed
-// by modules that need to rebroadcast transactions that 
+// by modules that need to rebroadcast transactions that
 // are not technically stored in the Saito wallet.
 //
 // @param {string} recipient publickey
@@ -15815,16 +15821,16 @@ Wallet.prototype.createSignedTransactionWithForeignKey = function createSignedTr
 ///////////////////////////////
 //
 // create a transaction with the appropriate slips given
-// the desired fee and payment to associate with the 
+// the desired fee and payment to associate with the
 // transaction, and a change address to receive any
 // surplus tokens.
-// 
+//
 // @param {string} recipient publickey
 // @param {decimal} payment amount
 // @param {decimal} fee to send with tx
 //
 // @returns {saito.transaction} if successful
-// @returns {null} if inadequate inputs 
+// @returns {null} if inadequate inputs
 //
 Wallet.prototype.createUnsignedTransaction = function createUnsignedTransaction(to_pubkey, amt = 0.0, fee = 0.0) {
 
@@ -15871,15 +15877,15 @@ Wallet.prototype.createUnsignedTransaction = function createUnsignedTransaction(
 /////////////////////////////////////////////
 //
 // create a transaction with the appropriate slips given
-// the desired fee and payment to associate with the 
+// the desired fee and payment to associate with the
 // transaction, and a change address to receive any
 // surplus tokens. Use the default wallet fee.
-// 
+//
 // @param {string} recipient publickey
 // @param {decimal} fee to send with tx
 //
 // @returns {saito.transaction} if successful
-// @returns {null} if inadequate inputs 
+// @returns {null} if inadequate inputs
 //
 Wallet.prototype.createUnsignedTransactionWithDefaultFee = function createUnsignedTransactionWithDefaultFee(to_pubkey, amt = 0.0) {
   return this.createUnsignedTransaction(to_pubkey, amt, this.returnDefaultFee());
@@ -15890,7 +15896,7 @@ Wallet.prototype.createUnsignedTransactionWithDefaultFee = function createUnsign
 // createFeeTransaction //
 //////////////////////////
 //
-// create a special "fee transaction / fee ticket" that 
+// create a special "fee transaction / fee ticket" that
 // can be included in a block by the node that created it
 // in order to collect the necessary fees. The node must
 // collect the funds at its own address for this tx to be
@@ -15902,7 +15908,7 @@ Wallet.prototype.createUnsignedTransactionWithDefaultFee = function createUnsign
 //
 Wallet.prototype.createFeeTransaction = function createFeeTransaction(my_fee) {
 
-  var fslip = new saito.slip(this.returnPublicKey(), 0.0, 0); 
+  var fslip = new saito.slip(this.returnPublicKey(), 0.0, 0);
   fslip.ft = 1;
 
   var tx = new saito.transaction();
@@ -15929,8 +15935,8 @@ Wallet.prototype.createFeeTransaction = function createFeeTransaction(my_fee) {
 /////////////////////////////
 //
 // create a special "golden ticket transaction" that claims
-// the reward offered by a golden ticket. this function is 
-// used by miners. the two UTXO slips are the winners of the 
+// the reward offered by a golden ticket. this function is
+// used by miners. the two UTXO slips are the winners of the
 // golden ticket.
 //
 // @param {array} winnning nodes
@@ -15973,7 +15979,7 @@ Wallet.prototype.generateKeys = function generateKeys() {
 // onChainReorganization //
 ///////////////////////////
 //
-// this function is triggered whenever the blockchain 
+// this function is triggered whenever the blockchain
 // undergoes a reorganization. we go through our set of
 // utxi and update our list of which ones are spendable.
 //
@@ -15983,14 +15989,14 @@ Wallet.prototype.generateKeys = function generateKeys() {
 //
 Wallet.prototype.onChainReorganization = function onChainReorganization(block_id, block_hash, lc) {
   for (let m = this.wallet.utxi.length-1; m >= 0; m--) {
-    if (this.wallet.utxi[m].bhash == block_hash) { 
+    if (this.wallet.utxi[m].bhash == block_hash) {
 console.log("setting wallet lc to " + lc + " in chain reorg");
-      this.wallet.utxi[m].lc = lc; 
+      this.wallet.utxi[m].lc = lc;
     }
   }
   for (let m = this.wallet.utxo.length-1; m >= 0; m--) {
-    if (this.wallet.utxo[m].bhash == block_hash) { 
-      this.wallet.utxo[m].lc = lc; 
+    if (this.wallet.utxo[m].bhash == block_hash) {
+      this.wallet.utxo[m].lc = lc;
     }
   }
 }
@@ -16002,8 +16008,8 @@ console.log("setting wallet lc to " + lc + " in chain reorg");
 //
 // this is triggered (by the blockchain object) whenever we
 // receive a block that has a transaction to or from us. we
-// check to make sure we have not already processed it, as 
-// sometimes that can happen if we are resyncing the chain, 
+// check to make sure we have not already processed it, as
+// sometimes that can happen if we are resyncing the chain,
 // and if we have not we add it to our UTXI or UTXO stores.
 //
 // note that this function needs to keep track of whether this
@@ -16047,7 +16053,7 @@ Wallet.prototype.paymentConfirmation = function paymentConfirmation(blk, tx, lch
 	  s.rn    = slips[m].rn;
 
 
-      if (s.amt > 0) { 
+      if (s.amt > 0) {
 
         //
 	// if we are testing speed inserts, just
@@ -16156,7 +16162,7 @@ Wallet.prototype.resetWallet = function resetWallet() {
 //////////////////////
 //
 // this function is triggered by our blockchain object every
-// time we receive a new block. It empties the spent_slips 
+// time we receive a new block. It empties the spent_slips
 // array that keeps track of which UTXI we have already spent
 // (but that have not been confirmed).
 //
@@ -16165,9 +16171,9 @@ Wallet.prototype.resetWallet = function resetWallet() {
 //
 Wallet.prototype.resetSpentInputs = function resetSpentInputs() {
 
-  for (let i = 0; i < this.wallet.utxi.length; i++) { 
+  for (let i = 0; i < this.wallet.utxi.length; i++) {
     if (this.spent_slips[i] == 1) {
-      this.spent_slips[i] = 0; 
+      this.spent_slips[i] = 0;
     } else {
       i = this.wallet.utxi.length+2;
     }
@@ -16184,8 +16190,8 @@ Wallet.prototype.resetSpentInputs = function resetSpentInputs() {
 //
 // @returns {string} publickey
 //
-Wallet.prototype.returnAddress = function returnAddress() { 
-  return this.wallet.publicKey; 
+Wallet.prototype.returnAddress = function returnAddress() {
+  return this.wallet.publicKey;
 }
 
 
@@ -16298,7 +16304,7 @@ Wallet.prototype.returnDefaultFee = function returnDefaultFee() {
 // cannot handle multiple identifiers, and so just reports
 // the most recently registered DNS address.
 //
-// @returns {string} 
+// @returns {string}
 //
 Wallet.prototype.returnIdentifier = function returnIdentifier() {
   return this.wallet.identifier;
@@ -16309,12 +16315,12 @@ Wallet.prototype.returnIdentifier = function returnIdentifier() {
 // returnHashmapIndex //
 ////////////////////////
 //
-// returns a string that will be unique for all of the slips 
-// in our wallet. This is used in our utxi_hashmap and 
-// utxo_hashmap objects to index the slips in our wallet for 
+// returns a string that will be unique for all of the slips
+// in our wallet. This is used in our utxi_hashmap and
+// utxo_hashmap objects to index the slips in our wallet for
 // quick lookup.
 //
-// @returns {string} 
+// @returns {string}
 //
 Wallet.prototype.returnHashmapIndex = function returnHashmapIndex(slip) {
   return slip.bhash + slip.bid + slip.tid + slip.sid + slip.amt;
@@ -16379,7 +16385,7 @@ console.log("SETTING FEE TO: " + dfee);
 //
 // this signs a string using the key provided. it is used together with the
 // function createSignedTransactionWithForeignKey. the signature that is
-// returned will be put in the msig field of the transcation according to 
+// returned will be put in the msig field of the transcation according to
 // the Saito transaction protocol.
 //
 // @params {string} transaction message (likely JSON)
@@ -16568,14 +16574,14 @@ DesktopSettings.prototype.attachEvents = function attachEvents(module_self) {
 
       $('#import_wallet').off();
       $('#import_wallet').on('click', function() {
-        document.getElementById('file-input').addEventListener('change', function(e) { 
+        document.getElementById('file-input').addEventListener('change', function(e) {
   	  var file = e.target.files[0];
   	  if (!file) { return; }
 	  var reader = new FileReader();
 	  reader.onload = function(e) {
 	    var contents = e.target.result;
 	    tmpoptions = JSON.parse(contents);
-	    if (tmpoptions.wallet.publicKey != null) { 
+	    if (tmpoptions.wallet.publicKey != null) {
 	      module_self.app.options = JSON.parse(contents);
 	      module_self.app.storage.saveOptions();
               $.fancybox.close();
@@ -16602,7 +16608,7 @@ DesktopSettings.prototype.attachEvents = function attachEvents(module_self) {
 
       $('#import_messages').off();
       $('#import_messages').on('click', function() {
-        document.getElementById('file-input').addEventListener('change', function(e) { 
+        document.getElementById('file-input').addEventListener('change', function(e) {
   	  var file = e.target.files[0];
   	  if (!file) { return; }
 	  var reader = new FileReader();
@@ -16610,7 +16616,7 @@ DesktopSettings.prototype.attachEvents = function attachEvents(module_self) {
 	    var contents = e.target.result;
 	    module_self.app.archives.resetArchives();
             tmpmessages = JSON.parse(contents);
-	    if (tmpmessages.messages.length != null) { 
+	    if (tmpmessages.messages.length != null) {
   	      for (xx = 0; xx < tmpmessages.length; xx++) {
 	        module_self.app.archives.saveMessage(tmpmessages[xx]);
 	      }
@@ -16691,7 +16697,7 @@ DesktopSettings.prototype.attachEvents = function attachEvents(module_self) {
 
 	      var privkey = $('#restore_privatekey_input').val();
               privkey.trim();
-		
+
 	      var pubkey = module_self.app.crypt.returnPublicKey(privkey);
 
 	      if (pubkey != "") {
@@ -16792,14 +16798,14 @@ MobileSettings.prototype.attachEvents = function attachEvents(module_self) {
 
       $('#import_wallet').off();
       $('#import_wallet').on('click', function() {
-        document.getElementById('file-input').addEventListener('change', function(e) { 
+        document.getElementById('file-input').addEventListener('change', function(e) {
   	  var file = e.target.files[0];
   	  if (!file) { return; }
 	  var reader = new FileReader();
 	  reader.onload = function(e) {
 	    var contents = e.target.result;
 	    tmpoptions = JSON.parse(contents);
-	    if (tmpoptions.wallet.publicKey != null) { 
+	    if (tmpoptions.wallet.publicKey != null) {
 	      module_self.app.options = JSON.parse(contents);
 	      module_self.app.storage.saveOptions();
               $.fancybox.close();
@@ -16850,7 +16856,7 @@ module.exports = WebTemplate
 
 
 ////////////////////////////
-// Extend these Functions // 
+// Extend these Functions //
 ////////////////////////////
 
 //
@@ -30301,16 +30307,16 @@ Dict.prototype.get = function (key, defaultValue) {
 Dict.prototype.set = function (key, value) {
     this.assertString(key);
     var isProtoKey = (key === "__proto__");
-    
+
     if (isProtoKey ? this._hasProto : key in this.store) { // update
         if (this.dispatchesMapChanges) {
             this.dispatchBeforeMapChange(key, isProtoKey ? this._protoValue : this.store[key]);
         }
-        
+
         isProtoKey
             ? this._protoValue = value
             : this.store[key] = value;
-        
+
         if (this.dispatchesMapChanges) {
             this.dispatchMapChange(key, value);
         }
@@ -30409,7 +30415,7 @@ Dict.prototype.reduceRight = function (callback, basis, thisp) {
     basis = Object.keys(this.store).reduceRight(function (basis, key) {
         return callback.call(thisp, basis, store[key], key, self);
     }, basis);
-    
+
     if(this._hasProto) {
         return callback.call(thisp, basis, this._protoValue, "__proto__", self);
     }
@@ -50440,17 +50446,17 @@ module.exports = MD5
      * fromArray()
      *
      * Generates a Merkle Tree from an array with the arguments passed in. The
-     * array cannot be empty. It can contain either values to be hashed, or an 
+     * array cannot be empty. It can contain either values to be hashed, or an
      * actual list of hashes.
      *
-     * @param {object} args An object containing the arguments to construct 
+     * @param {object} args An object containing the arguments to construct
      *                      the Tree. See the README for more info.
-     * @param {callback} cb An object containing the Merkle Tree. See 
+     * @param {callback} cb An object containing the Merkle Tree. See
      *                      the README for more info.
      *
      */
     function fromArray(args, cb) {
-        
+
         var array;
         var hashalgo;
         var hashlist;
@@ -50460,7 +50466,7 @@ module.exports = MD5
 
         } else {
             array = args.array;
-            
+
             if (!args.hashalgo) {
                 hashalgo = 'sha256';    // Set the default hash as SHA-256
             } else {
@@ -50480,7 +50486,7 @@ module.exports = MD5
             var arrayHasher = new HashArray(hashalgo, hashlist);
 
             arrayHasher.hashElements(array, function (fastMap) {
-                
+
                 // Generate a Merkle Tree from the leaves
                 genMerkle(fastMap, hashalgo, function (tree) {
                     cb(null, tree);
@@ -50492,12 +50498,12 @@ module.exports = MD5
     /**
      * fromFile()
      *
-     * Generates a Merkle Tree from the arguments passed into args. The absolute path 
+     * Generates a Merkle Tree from the arguments passed into args. The absolute path
      * to the file must be specified.
      *
-     * @param {object} args An object containing the arguments to construct 
+     * @param {object} args An object containing the arguments to construct
      *                      the Tree. See the README for more info.
-     * @param {callback} cb An object containing the Merkle Tree. See 
+     * @param {callback} cb An object containing the Merkle Tree. See
      *                      the README for more info.
      *
      */
@@ -50512,7 +50518,7 @@ module.exports = MD5
 
         } else {
             file = args.file;
-            
+
             if (!args.hashalgo) {
                 hashalgo = 'sha256';    // Set the default hash as SHA-256
             } else {
@@ -50628,7 +50634,7 @@ module.exports = MD5
     'use strict';
 
     // This module chunks a file and returns a FastMap of the hashes
-    
+
     var fs = require('fs');
     var hasha = require('hasha');
     var FastMap = require('collections/fast-map');
@@ -50645,11 +50651,11 @@ module.exports = MD5
     var buf;
 
     /**
-     * Constructor for the reader. This initializes the settings for hashing a file, 
+     * Constructor for the reader. This initializes the settings for hashing a file,
      * so the hashBlocks() function can be reused on different files.
      *
      * @param {String} hA The hash function to be used
-     * @param {Integer} bS The block size in bytes; the default value is 1 MiB. Each of 
+     * @param {Integer} bS The block size in bytes; the default value is 1 MiB. Each of
      *      the blocks becomes a leaf in the Merkle Tree
      */
     function HashFile(hA = 'sha256', bS = 1048576) {
@@ -50671,7 +50677,7 @@ module.exports = MD5
      *
      */
     HashFile.prototype.hashBlocks = function hashBlocks(file, cb) {
-        
+
         // Determine how many blocks/chunks will be generated
         fileStat = fs.statSync(file);
         numBlocks = Math.floor(fileStat.size/blockSize) + 1;
@@ -50724,7 +50730,7 @@ module.exports = MD5
      *
      * This generates a Merkle Tree from a FastMap of leaves.
      *
-     * @param {object} fastMap The FastMap of leaves, passed in from 
+     * @param {object} fastMap The FastMap of leaves, passed in from
      *                          the array hash or the file hash functions.
      * @param {string} hashalgo The hash algorithm to use
      * @param {callback} cb The Merkle Tree object
@@ -50744,7 +50750,7 @@ module.exports = MD5
         var len2;
         var chash;      // the concatenated hashes
         var nextval;
-        
+
         var currentlevel = 0;
         var nl = fastMap.length;
 
@@ -50796,7 +50802,7 @@ module.exports = MD5
             deque2.push(chash);
 
 
-            // If there are an odd number of leaves (only one hash left), 
+            // If there are an odd number of leaves (only one hash left),
             // pop the last value, concatenate it with itself, and hash that
             if (deque1.length === 1) {
                 right = deque1.pop();
@@ -50834,7 +50840,7 @@ module.exports = MD5
 
         // Set the number of levels, the root node value, and the root node type & parent
         tree.levels = currentlevel;
-        tree.root = deque1.pop(); 
+        tree.root = deque1.pop();
         tree[tree.root].type = "root";
         tree[tree.root].parent = "root";
 
@@ -57755,12 +57761,12 @@ var JsonFormatter = {
 		var jsonObj = {
 			ct: cipherParams.ciphertext.toString(CryptoJS.enc.Base64)
 		};
-		
+
 		// optionally add iv and salt
 		if (cipherParams.iv) {
 			jsonObj.iv = cipherParams.iv.toString();
 		}
-		
+
 		if (cipherParams.salt) {
 			jsonObj.s = cipherParams.salt.toString();
 		}
@@ -57772,21 +57778,21 @@ var JsonFormatter = {
 	parse: function (jsonStr) {
 		// parse json string
 		var jsonObj = JSON.parse(jsonStr);
-		
+
 		// extract ciphertext from json object, and create cipher params object
 		var cipherParams = CryptoJS.lib.CipherParams.create({
 			ciphertext: CryptoJS.enc.Base64.parse(jsonObj.ct)
 		});
-		
+
 		// optionally extract iv and salt
 		if (jsonObj.iv) {
 			cipherParams.iv = CryptoJS.enc.Hex.parse(jsonObj.iv);
 		}
-            
+
 		if (jsonObj.s) {
 			cipherParams.salt = CryptoJS.enc.Hex.parse(jsonObj.s);
 		}
-		
+
 		return cipherParams;
 	}
 };
@@ -65382,7 +65388,7 @@ module.exports = function privateDecrypt(private_key, enc, reverse) {
   } else {
     padding = 4;
   }
-  
+
   var key = parseKeys(private_key);
   var k = key.modulus.byteLength();
   if (enc.length > k || new bn(enc).cmp(key.modulus) >= 0) {
@@ -71099,7 +71105,7 @@ function coerce(version) {
   if (match == null)
     return null;
 
-  return parse((match[1] || '0') + '.' + (match[2] || '0') + '.' + (match[3] || '0')); 
+  return parse((match[1] || '0') + '.' + (match[2] || '0') + '.' + (match[3] || '0'));
 }
 
 }).call(this,require('_process'))
@@ -76140,13 +76146,13 @@ Script.prototype.runInContext = function (context) {
     if (!(context instanceof Context)) {
         throw new TypeError("needs a 'context' argument.");
     }
-    
+
     var iframe = document.createElement('iframe');
     if (!iframe.style) iframe.style = {};
     iframe.style.display = 'none';
-    
+
     document.body.appendChild(iframe);
-    
+
     var win = iframe.contentWindow;
     var wEval = win.eval, wExecScript = win.execScript;
 
@@ -76155,7 +76161,7 @@ Script.prototype.runInContext = function (context) {
         wExecScript.call(win, 'null');
         wEval = win.eval;
     }
-    
+
     forEach(Object_keys(context), function (key) {
         win[key] = context[key];
     });
@@ -76164,11 +76170,11 @@ Script.prototype.runInContext = function (context) {
             win[key] = context[key];
         }
     });
-    
+
     var winKeys = Object_keys(win);
 
     var res = wEval.call(win, this.code);
-    
+
     forEach(Object_keys(win), function (key) {
         // Avoid copying circular objects like `top` and `window` by only
         // updating existing context properties or new properties in the `win`
@@ -76183,9 +76189,9 @@ Script.prototype.runInContext = function (context) {
             defineProp(context, key, win[key]);
         }
     });
-    
+
     document.body.removeChild(iframe);
-    
+
     return res;
 };
 
