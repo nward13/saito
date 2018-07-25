@@ -261,7 +261,7 @@ textarea {
 .content {
  float:left;
  /* min-width:500px; */
- max-width: 600px;
+ max-width: 500px;
  margin-left: 15px;
  margin-bottom: 20px;
 }
@@ -419,7 +419,8 @@ textarea {
 .d_text {
  clear:both;
  font-size:1em;
- padding-top:25px;
+ padding-top:10px;
+ text-align: justify;
 }
 
 
@@ -449,7 +450,9 @@ textarea {
  padding-left: 5px;
  padding-right: 5px;
  display: table-cell;
- width:100%;
+ /* width:100%; */
+ max-width: 650px;
+ text-align: justify;
 }
 .comment_text {
 }
@@ -601,11 +604,28 @@ textarea {
  float: left;
  margin-left: 10px;
  padding-left: 10px;
- padding-rignt: 10px;
+ padding-right: 10px;
  padding-top: 5px;
  margin-right: 10px;
 }
 
+
+@media only screen and (min-width: 650px) {
+    .d_text{
+        padding-left: 25px;
+        padding-right: 25px;
+        max-width: 650px;
+    }
+}
+
+
+@media only screen and (max-width: 970px) {
+    .d_content_title{
+        max-width: 300px;
+        max-height: 60px;
+        overflow: hidden;
+    }
+}
 
 @media only screen and (max-width: 800px) {
     .main {
