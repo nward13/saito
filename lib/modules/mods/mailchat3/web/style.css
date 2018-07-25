@@ -829,3 +829,9 @@ td .from {
   }
 
 }
+
+blockquote {
+    border-left: 8px solid #d14836;
+    margin-left: 5px;
+    padding-left: 10px;
+}
