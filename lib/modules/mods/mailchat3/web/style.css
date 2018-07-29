@@ -835,3 +835,21 @@ blockquote {
     margin-left: 5px;
     padding-left: 10px;
 }
+
+.module-loading {
+    margin:25px;
+    float: left;
+}
+.loader-grid {
+  display: grid;
+  grid-column-gap: 5px;
+}
+.loader-head {
+  grid-area: 1 / span 2;
+}
+.loader-throbber {
+
+}
+.loader-message {
+  font-size: 0.6em;
+}
