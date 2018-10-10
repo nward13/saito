@@ -4,143 +4,142 @@ var saito = require('./saito');
 
 var app            = {};
     app.BROWSER    = 1;
-    app.SPVMODE    = 1;
-    app.CHROME     = 0;  // chrome extension
+    app.SPVMODE    = 0;
 
 
 
-//
-// Chrome local storage is asychronous, so we have to
-// load the file first and only THEN initialize our
-// javascript.
-//
-// Non-Chrome extensions will jump right to initializing
-// the application.
-//
-try {
-  if (window.chrome && chrome.runtime && chrome.runtime.id) { app.CHROME = 1; }
-} catch (err) {}
 
 
-if (app.CHROME == 1) {
-  chrome.storage.local.get(["options"], function(items){
-    if (items != null) { app.options = JSON.parse(items.options); }
-    initSaito();
-  });
-} else {
-  initSaito();
-}
+initSaito();
 
 
 
 
 
 
+async function initSaito() {
 
-function initSaito() {
+  ////////////////////
+  // Load Variables //
+  ////////////////////
+  try {
+    app.crypto     = new saito.crypto();
+    app.logger     = new saito.logger(app);
+    app.storage    = new saito.storage(app);
+    app.mempool    = new saito.mempool(app);
+    app.voter      = new saito.voter(app);
+    app.wallet     = new saito.wallet(app);
+    app.miner      = new saito.miner(app);
+    app.monitor    = new saito.monitor(app);
+    app.browser    = new saito.browser(app);
+    app.archives   = new saito.archives(app);
+    app.dns        = new saito.dns(app);
+    app.keys       = new saito.keychain(app);
+    app.network    = new saito.network(app);
+    app.burnfee    = new saito.burnfee(app);
+    app.blockchain = new saito.blockchain(app);
+    app.server     = new saito.server(app);
+    app.modules    = require('./modules/mods')(app);
 
-////////////////////
-// Load Variables //
-////////////////////
-app.crypt      = new saito.crypt();
-app.logger     = new saito.logger(app);
-app.storage    = new saito.storage(app);
-app.mempool    = new saito.mempool(app);
-app.voter      = new saito.voter(app);
-app.wallet     = new saito.wallet(app);
-app.miner      = new saito.miner(app);
-app.monitor    = new saito.monitor(app);
-app.browser    = new saito.browser(app);
-app.archives   = new saito.archives(app);
-app.dns        = new saito.dns(app);
-app.keys       = new saito.keys(app);
-app.network    = new saito.network(app);
-app.blockchain = new saito.blockchain(app);
-app.server     = new saito.server(app);
-app.modules    = require('./modules/mods')(app);
-
-
-
-
-////////////////
-// Initialize //
-////////////////
-app.logger.initialize();
-app.storage.initialize();
-app.wallet.initialize();
-app.mempool.initialize();
-app.blockchain.initialize();
-app.keys.initialize();
-app.network.initialize();
-//
-// archives before modules
-//
-app.archives.initialize();
-//
-// dns before browser so modules can
-// initialize with dns support
-//
-app.dns.initialize();
-//
-// modules pre-initialized before
-// browser, so that the browser
-// can check which application we
-// are viewing.
-//
-app.modules.pre_initialize();
-app.browser.initialize();
-app.modules.initialize();
-//
-// server initialized after modules
-// so that the modules can use the
-// server to feed their own subpages
-// as necessary
-//
-app.server.initialize();
+    ////////////////
+    // Initialize //
+    ////////////////
+    app.logger.initialize();
+    await app.storage.initialize();
+    app.voter.initialize();
+    app.wallet.initialize();
+    app.mempool.initialize();
+    await app.blockchain.initialize();
+    app.keys.initialize();
+    app.network.initialize();
+    //
+    // archives before modules
+    //
+    app.archives.initialize();
+    //
+    // dns before browser so modules can
+    // initialize with dns support
+    //
+    app.dns.initialize();
+    //
+    // modules pre-initialized before
+    // browser, so that the browser
+    // can check which application we
+    // are viewing.
+    //
+    app.modules.pre_initialize();
+    app.browser.initialize();
+    app.modules.initialize();
+    //
+    // server initialized after modules
+    // so that the modules can use the
+    // server to feed their own subpages
+    // as necessary
+    //
+    app.server.initialize();
 
 
-console.log('\
-\n\
-\n\
-Welcome to Saito \n\
-\n\
-address: ' + app.wallet.returnPublicKey() + '\n\
-balance: ' + app.wallet.returnBalance() + '\n\
-\n\
-Above is the address and balance of this computer on the Saito network. Once Saito \n\
-is running it will generate tokens automatically over time. You can increase your \n\
-likelihood of this by processing more transactions and creating services that attract\n\
-clients. The more transactions you process the greater the chance that you will be \n\
-rewarded for the work. \n\
-\n\
-Questions or comments? Please contact us anytime at: david@saito \n\
-\n\n');
+    console.log(`
+
+    Welcome to Saito
+
+    address: ${app.wallet.returnPublicKey()}
+    balance: ${app.wallet.returnBalance()}
+
+    Above is the address and balance of this computer on the Saito network. Once Saito
+    is running it will generate tokens automatically over time. You can increase your
+    likelihood of this by processing more transactions and creating services that attract
+    clients. The more transactions you process the greater the chance that you will be
+    rewarded for the work.
+
+    Questions or comments? Please contact us anytime at: david@saito
+
+    `);
+  } catch (err) {
+
+  }
 
 } // init saito
 
+
+
+
+
+function shutdownSaito() {
+  console.log("Shutting down Saito");
+  app.server.close();
+  app.network.close();
+}
 
 /////////////////////
 // Cntl-C to Close //
 /////////////////////
 process.on('SIGTERM', function () {
-  app.server.close();
-  app.network.close();
+  shutdownSaito();
   console.log("Network Shutdown");
-  process.exit(1)
+  process.exit(0)
 });
 process.on('SIGINT', function () {
-  app.server.close();
-  app.network.close();
+  shutdownSaito();
   console.log("Network Shutdown");
-  process.exit(1)
+  process.exit(0)
 });
+
 
 
 
 
 }).call(this,require('_process'))
-},{"./modules/mods":2,"./saito":12,"_process":328}],2:[function(require,module,exports){
+},{"./modules/mods":2,"./saito":8,"_process":326}],2:[function(require,module,exports){
 
+
+//
+// IF THIS FILE CHANGES, BE SURE TO UPDATE THE
+// COPY OF THE FILE IN THE APPSTORE MODULE DIR
+//
+// it uses a copy of this file to generate the
+// browser.js file needed by the chrome exts
+//
 function Mods(app) {
 
   if (!(this instanceof Mods)) {
@@ -149,6 +148,8 @@ function Mods(app) {
 
   this.app     = app;
   this.mods    = [];
+
+  this.lowest_sync_bid = -1;
 
   return this;
 
@@ -165,21 +166,17 @@ Mods.prototype.pre_initialize = function pre_initialize() {
   ////////////////////
   // Insert Modules //
   ////////////////////
-this.mods.push(require('./mods/advert/advert')(this.app));
-this.mods.push(require('./mods/aquifer/aquifer')(this.app));
-this.mods.push(require('./mods/auth/auth')(this.app));
-this.mods.push(require('./mods/debug/debug')(this.app));
+this.mods.push(require('./mods/davemod/davemod')(this.app));
 this.mods.push(require('./mods/email/email')(this.app));
 this.mods.push(require('./mods/facebook/facebook')(this.app));
-this.mods.push(require('./mods/raw/raw')(this.app));
 this.mods.push(require('./mods/settings/settings')(this.app));
 
-  if (this.app.options.modules == null) { 
-    this.app.options.modules = []; 
+  if (this.app.options.modules == null) {
+    this.app.options.modules = [];
     for (let i = 0; i < this.mods.length; i++) {
       mi = 0;
       for (let j = 0; j < this.app.options.modules.length; j++) { if (this.mods[i].name == this.app.options.modules[j]) { mi = 1; }}
-      if (mi == 0) { 
+      if (mi == 0) {
         this.mods[i].installModule(this.app);
         this.app.options.modules.push(this.mods[i].name);
       };
@@ -188,8 +185,6 @@ this.mods.push(require('./mods/settings/settings')(this.app));
   }
 
 }
-
-
 
 Mods.prototype.affixCallbacks = function affixCallbacks(txindex, message, callbackArray, callbackIndexArray) {
   for (i = 0; i < this.mods.length; i++) {
@@ -211,6 +206,11 @@ Mods.prototype.displayEmailForm = function displayEmailForm(modname) {
     if (modname == this.mods[i].name) {
       if (this.mods[i].handlesEmail == 1) {
         this.mods[i].displayEmailForm(this.app);
+        for (ii = 0; ii < this.mods.length; ii++) {
+          if (this.mods[ii].name == "Email") {
+            this.mods[ii].active_module = modname;
+          }
+        }
       }
     }
   }
@@ -290,6 +290,21 @@ Mods.prototype.updateBalance = function updateBalance() {
   }
   return null;
 }
+Mods.prototype.updateBlockchainSync = function updateBlockchainSync(current, target) {
+  if (this.lowest_sync_bid == -1) { this.lowest_sync_bid = current; }
+  target = target-(this.lowest_sync_bid-1);
+  current = current-(this.lowest_sync_bid-1);
+  if (target < 1) { target = 1; }
+  if (current < 1) { current = 1; }
+  let percent_downloaded = 100;
+  if (target > current) {
+    percent_downloaded = Math.floor(100*(current/target));
+  }
+  for (i = 0; i < this.mods.length; i++) {
+    this.mods[i].updateBlockchainSync(this.app, percent_downloaded);
+  }
+  return null;
+}
 Mods.prototype.webServer = function webServer(expressapp) {
   for (i = 0; i < this.mods.length; i++) {
     this.mods[i].webServer(this.app, expressapp);
@@ -310,779 +325,7 @@ Mods.prototype.onChainReorganization = function onChainReorganization(block_id, 
 }
 
 
-
-
-
-
-
-
-},{"./mods/advert/advert":3,"./mods/aquifer/aquifer":4,"./mods/auth/auth":5,"./mods/debug/debug":6,"./mods/email/email":7,"./mods/facebook/facebook":8,"./mods/raw/raw":9,"./mods/settings/settings":10}],3:[function(require,module,exports){
-(function (__dirname){
-//
-// This module monitors the blockchain and our
-// unspent transaction inputs. It creates fake
-// transactions to speed up block production 
-// for testing purposes.`
-//
-var saito = require('../../../saito');
-var ModTemplate = require('../../template');
-var util = require('util');
-var crypto = require('crypto');
-
-
-
-//////////////////
-// CONSTRUCTOR  //
-//////////////////
-function Advert(app) {
-
-  if (!(this instanceof Advert)) { return new Advert(app); }
-
-  Advert.super_.call(this);
-
-  this.app             = app;
-  this.name            = "Advert";
-  this.browser_active  = 1;		// enables initializeHTML function
-  this.handlesEmail    = 1;
-  this.emailAppName    = "Advertising";
-  this.advert_img_dir  = __dirname + "/web/cache/";
-  return this;
-
-}
-module.exports = Advert;
-util.inherits(Advert, ModTemplate);
-
-
-
-
-
-
-
-////////////////////
-// Install Module //
-////////////////////
-//
-// install our default advertisements
-//
-Advert.prototype.installModule = function installModule() {
-
-  var advert_self = this;
-
-  var sql = 'CREATE TABLE IF NOT EXISTS mod_advert_users (\
-                id INTEGER, \
-                publickey TEXT, \
-                views INTEGER, \
-                UNIQUE (publickey), \
-                PRIMARY KEY(id ASC) \
-  )';
-  this.app.storage.execDatabase(sql, {}, function() {
-
-    let sql3 = "INSERT INTO mod_advert_users (publickey, views) VALUES ($publickey, 0)";
-    let params3 = { 
-      $publickey : advert_self.app.wallet.returnPublicKey()
-    };
-    advert_self.app.storage.execDatabase(sql3, params3, function() {});
-
-  });
-
-  var sql2 = 'CREATE TABLE IF NOT EXISTS mod_advert_adverts (\
-                id INTEGER, \
-                publickey TEXT, \
-                adfile TEXT, \
-                views INTEGER, \
-                link TEXT, \
-                width INTEGER, \
-                height INTEGER, \
-                PRIMARY KEY(id ASC) \
-  )';
-  this.app.storage.execDatabase(sql2, {}, function() {
-
-    let sql4    = "";
-    let params4 = {};
-
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "1.png",
-      $link      : "/remix"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "2.png",
-      $link      : "/remix"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "3.png",
-      $link      : "http://org.saito.tech"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "4.png",
-      $link      : "/r"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "5.png",
-      $link      : "/faucet"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "6.png",
-      $link      : "/facebook"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "7.png",
-      $link      : "http://saito.tech"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "8.png",
-      $link      : "/email"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "9.png",
-      $link      : "/email"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "10.png",
-      $link      : "/email"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "11.png",
-      $link      : "/email"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "12.png",
-      $link      : "http://saito.tech"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "13.png",
-      $link      : "/email"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "14.png",
-      $link      : "/facebook"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "15.png",
-      $link      : "/facebook"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "16.png",
-      $link      : "/facebook"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "17.png",
-      $link      : "/facebook"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "18.png",
-      $link      : "/faucet"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "19.png",
-      $link      : "http://saito.tech/saito-whitepaper.pdf"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "20.png",
-      $link      : "/advert"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "21.png",
-      $link      : "/email"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "22.png",
-      $link      : "http://saito.tech/saito-whitepaper.pdf"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "23.png",
-      $link      : "/r"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "24.png",
-      $link      : "http://saito.tech"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "25.png",
-      $link      : "http://saito.tech/saito-whitepaper.pdf"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "26.png",
-      $link      : "/advert"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "27.png",
-      $link      : "http://org.saito.tech"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-    sql4     = "INSERT INTO mod_advert_adverts (publickey, adfile, views, link, width, height) VALUES ($publickey, $adfile, 0, $link, 300, 250)";
-    params4  = { 
-      $publickey : advert_self.app.wallet.returnPublicKey(),
-      $adfile    : "28.png",
-      $link      : "http://org.saito.tech"
-    };
-    advert_self.app.storage.execDatabase(sql4, params4, function() {});
-    
-  });
-
-}
-
-
-
-
-
-
-////////////////
-// Initialize //
-////////////////
-Advert.prototype.initialize = function initialize() {
-
-  //
-  // check to see if we are enabled
-  //
-  if (this.app.options.display_adverts == null) {
-    this.app.options.display_adverts = 1;
-  }
-
-
-  if (this.browser_active == 0) { return; }
-
-  if (this.app.BROWSER == 1) {
-
-    var reddit_self = this;
-
-    var rdloadtimer = setTimeout(function() {
-      message                 = {};
-      message.request         = "advert load adverts";
-      message.data            = {};
-      message.data.request    = "advert load adverts";
-      message.data.publickey  = reddit_self.app.wallet.returnPublicKey();
-      reddit_self.app.network.sendRequest(message.request, message.data);
-    }, 500);
-  }
-
-}
-
-
-
-
-
-
-/////////////////////
-// Initialize HTML //
-/////////////////////
-Advert.prototype.initializeHTML = function initializeHTML() {
-
-  if (this.app.options.display_adverts == 0) { return; }
-
-  // leaderboard
-  if ($('#advert-728-90').length > 0) {
-    this.fetchAdvert(720,90);
-  }
-
-  // wide medium rectangle
-  if ($('#advert-300-250').length > 0) {
-    this.fetchAdvert(300,250);
-  }
-
-  // wide sky-scraper
-  if ($('#advert-160-600').length > 0) {
-    this.fetchAdvert(160,600);
-  }
-
-  // medium rectangle
-  if ($('#advert-250-250').length > 0) {
-    this.fetchAdvert(250,250);
-  }
-
-  // square popup
-  if ($('#advert-240-400').length > 0) {
-    this.fetchAdvert(248,400);
-  }
-
-  // large rectangle
-  if ($('#advert-336-280').length > 0) {
-    this.fetchAdvert(336,200);
-  }
-
-  // rectangle
-  if ($('#advert-180-150').length > 0) {
-    this.fetchAdvert(150,150);
-  }
-
-  // full banner
-  if ($('#advert-468-60').length > 0) {
-    this.fetchAdvert(4680,60);
-  }
-
-  // half banner
-  if ($('#advert-234-80').length > 0) {
-    this.fetchAdvert(234,80);
-  }
-
-  // micro bar
-  if ($('#advert-88-31').length > 0) {
-    this.fetchAdvert(88,31);
-  }
-
-  // button 1
-  if ($('#advert-120-90').length > 0) {
-    this.fetchAdvert(120,90);
-  }
-
-  // button 2
-  if ($('#advert-120-60').length > 0) {
-    this.fetchAdvert(120,60);
-  }
-
-  // square buttons
-  if ($('#advert-125-125').length > 0) {
-    this.fetchAdvert(125,125);
-  }
-
-  // vertical banner
-  if ($('#advert-120-240').length > 0) {
-    this.fetchAdvert(120,240);
-  }
-
-  // sky scraper 2
-  if ($('#advert-120-600').length > 0) {
-    this.fetchAdvert(120,600);
-  }
-
-  // half-page ad
-  if ($('#advert-300-600').length > 0) {
-    this.fetchAdvert(300,600);
-  }
-
-
-  if ($('#advert-300-250').length > 0) {
-    this.fetchAdvert(300,250);
-  }
-
-
-  // in case we are the upload page
-  var a = '/advert/upload/'+this.app.wallet.returnPublicKey()+'/300/250';
-  $('#uploadForm').attr('action', a);
-
-}
-
-
-Advert.prototype.fetchAdvert = function fetchAdvert(width, height) {
-
-  $.getJSON('/advert/'+this.app.wallet.returnPublicKey()+'/'+width+'/'+height, function (data) {
-    if (data.id != null) {
-      htmlToInsert = '<a href="'+data.link+'" target="_blank"><img style="border:1px solid #39579a;width:'+width+'px;height:'+height+'px" src="/advert/cache/'+data.adfile+'" /></a>';
-    } else {
-      htmlToInsert = '<a href="/advert/"><img style="width:'+width+'px;height:'+height+'px" src="/advert/web/001.png" /></a>';
-    }
-    let divname = "#advert-"+width+"-"+height;
-    $(divname).html(htmlToInsert);
-  });
-
-}
-
-
-
-
-
-
-
-
-
-
-
-/////////////////////////
-// Handle Web Requests //
-/////////////////////////
-Advert.prototype.webServer = function webServer(app, expressapp) {
-
-  var advert_self = this;
-
-  expressapp.get('/advert', function (req, res) {
-    res.sendFile(__dirname + '/web/index.html');
-    return;
-  });
-  expressapp.get('/advert/style.css', function (req, res) {
-    res.sendFile(__dirname + '/web/style.css');
-    return;
-  });
-  expressapp.get('/advert/cache/:imagefile', function (req, res) {
-    var imgf = '/web/cache/'+req.params.imagefile;
-console.log("\n\n\nHERE: " + imgf);
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  expressapp.post('/advert/upload/:publickey/:width/:height', function (req, res) {
-
-    if (!req.files) { return res.status(400).send('No files were uploaded.'); }
-
-    var uploadUrl  = req.body.uploadUrl;
-    var sampleFile = req.files.sampleFile;
-    var pkey       = req.params.publickey;
-    var width      = req.params.width;
-    var height     = req.params.height;
-    var auth       = req.body.auth;
-    var user       = req.body.pkey;
-
-console.log(auth + " -- " + user);
-
-
-    if (uploadUrl == "" || sampleFile == undefined || pkey == "" || width == "" || height == "" || auth == "" || user == "") {
-      res.send('You did not provide the necessary data.');
-      res.end();
-      return;
-    }
-
-    if (advert_self.app.crypt.hash(auth) != "7827cdd51947b678b4ac382820a96b8035ade259fd4a5a29212c6c29da7af691") {
-      res.send('Authentication Password Incorrect');
-      res.end();
-      return;
-    }
-
-    // insert into database
-    var sql = "INSERT OR IGNORE INTO mod_advert_adverts (publickey, link, views, height, width) VALUES ($pkey, $link, 0, $width, $height)";
-    var params = { $pkey : user , $link : uploadUrl , $width : width , $height : height };
-    advert_self.app.storage.db.run(sql, params, function(err, row) {
-
-      var newFileName = advert_self.advert_img_dir + this.lastID + ".png";
-      if (sampleFile != undefined) {
-        sampleFile.mv(newFileName, function(err) {
-          if (err) { return res.status(500).send(err); }
-          res.send('File uploaded: <a href="/advert">Click here</a> and wait a moment for your new advertisement to load');
-	  res.end();
-  	  return;
-        });
-      }
-    });
-  });
-  expressapp.get('/advert/:publickey/:width/:height', function (req, res) {
-
-    if (req.params.publickey == null) { return; }
-
-    var publickey = req.params.publickey;
-    var width = req.params.width;
-    var height = req.params.height;
-
-    var psql = "SELECT count(*) AS count FROM mod_advert_users WHERE publickey = $publickey";
-    var pparams = { $publickey : req.params.publickey };
-    advert_self.app.storage.queryDatabase(psql, pparams, function(perr, prow) {
-
-      if (perr != null) {
-        console.log(JSON.stringify(perr));
-	return;
-      }
-
-      if (prow == null) {
-        var psql2 = "SELECT * FROM mod_advert_adverts WHERE width = $width AND height = $height ORDER BY RANDOM() LIMIT 1";
-        var pparams2 = { $width : width , $height : height };
-        advert_self.app.storage.queryDatabase(psql2, pparams2, function(perr2, prow2) {
-	  advert_self.sendAdvert(prow2, res);
-	});
-      }
-
-      if (prow.count == 0) {
-
-        var sql = "INSERT OR IGNORE INTO mod_advert_users (publickey, views) VALUES ($publickey, $views)";
-        var params = { $publickey : req.params.publickey , $views : 0 };
-        advert_self.app.storage.db.run(sql, params, function(err) {
-
-          if (err != null) { return; }
-          if (this.lastID > 0) {
-
-	    //////////////////
-            // send payment //
-	    //////////////////
-            newtx = advert_self.app.wallet.createUnsignedTransactionWithDefaultFee(publickey, 3.0);
-            if (newtx == null) { return; }
-            newtx.transaction.msg.module = "Email";
-            newtx.transaction.msg.title  = "Saito Advertising - Transaction Receipt";
-            newtx.transaction.msg.data   = 'You have received 3 tokens from the Saito Advertising Network for viewing your first advertisement. In the future, you will receive a payment at random roughly once for every 1000 advertisements you view. If you would like to post an advertisement on our network, please send a message to david@saito';
-            newtx = advert_self.app.wallet.signTransaction(newtx);
-            advert_self.app.mempool.addTransaction(newtx);
-            advert_self.app.network.propagateTransaction(newtx);
-
-          }
-        });
-      } else {
-
-	if (advert_self.app.wallet.returnBalance() > 200) {
-	  if (Math.random() < 0.001) {
-
-	    //////////////////////////////////////////////
-            // send payment every 1000 times on average //
-	    //////////////////////////////////////////////
-            newtx = advert_self.app.wallet.createUnsignedTransactionWithDefaultFee(publickey, 100.0);
-            if (newtx == null) { return; }
-            newtx.transaction.msg.module = "Email";
-            newtx.transaction.msg.title  = "Saito Advertising - Bonus Payment";
-            newtx.transaction.msg.data   = 'You have received 100 tokens from the Saito Advertising Network.';
-            newtx = advert_self.app.wallet.signTransaction(newtx);
-            advert_self.app.mempool.addTransaction(newtx);
-            advert_self.app.network.propagateTransaction(newtx);
-
-          }
-        }
-
-      }
-
-      var sql2 = "UPDATE mod_advert_users SET views = views+1 WHERE publickey = $publickey";
-      var params2 = { $publickey : req.params.publickey };
-      advert_self.app.storage.execDatabase(sql2, params2, function(err) {
-
-        var psql2 = "SELECT * FROM mod_advert_adverts ORDER BY RANDOM() LIMIT 1";
-        advert_self.app.storage.queryDatabase(psql2, {}, function(perr2, prow2) {
-	  advert_self.sendAdvert(prow2, res);
-	});
-
-      });
-    });
-  });
-}
-Advert.prototype.sendAdvert = function sendAdvert(prow, res) {
-
-  res.setHeader('Content-type', 'text/html');
-  res.charset = 'UTF-8';
-  if (prow != null) { res.write(JSON.stringify(prow)); }
-  res.end();
-  return;
-
-}
-
-
-
-
-
-
-//////////////////////////
-// Handle Peer Requests //
-//////////////////////////
-Advert.prototype.handlePeerRequest = function handlePeerRequest(app, message, peer, mycallback) {
-
-    ///////////////////////
-    // server -- adverts //
-    ///////////////////////
-    if (message.request === "advert load adverts") {
-
-      var pkey   = message.data.publickey;
-      var sql    = "SELECT * FROM mod_advert_adverts WHERE publickey = $pkey";
-      var params = { $pkey : pkey };
-
-      app.storage.queryDatabaseArray(sql, params, function(err, rows) {
-        if (rows != null) {
-          for (var fat = rows.length-1; fat >= 0; fat--) {
-            var message                 = {};
-            message.request         = "advert load response";
-            message.data            = {};
-            message.data.id         = rows[fat].adfile;
-            message.data.link       = rows[fat].link;
-            message.data.height     = rows[fat].height;
-            message.data.width      = rows[fat].width;
-            peer.sendRequest(message.request, message.data);
-          }
-        }
-      });
-      return;
-    }
-
-
-
-
-    ///////////////////////
-    // client -- adverts //
-    ///////////////////////
-    if (message.request === "advert load response") {
-
-      var advert_id   = message.data.id;
-      var advert_link = message.data.link;
-
-      var toInsert = '<div><img src="/advert/cache/'+adfile+'" style="height:300px;width:250px;" /><a style="margin-left:10px" href="'+advert_link+'">'+advert_link+'</a></div>';
-
-      $('#adverts').append(toInsert);
-      $('#adverts').css('display','block');
-
-      return;
-    }
-
-}
-
-
-
-////////////////////////////////
-// Email Client Interactivity //
-////////////////////////////////
-Advert.prototype.displayEmailForm = function displayEmailForm(app) {
-
-  element_to_edit = $('#module_editable_space');
-
-  element_to_edit_html = ' \
-\
-<div id="module_instructions" class="module_instructions"> \
-    <b>Advertising Settings:</b> \
-\
-    <p></p> \
-\
-    Your browser has the Saito advertising module installed. This will send you tokens periodically if you use other Saito modules that provide places for you to view advertising. To enable or disable advertising, toggle this switch: \
-\
-    <p></p> \
-\
-';
-
-  if (app.options.display_adverts == 0) {
-    element_to_edit_html += ' \
-      <input type="button" value="Enable Module" name="enable_advertising" id="enable_advertising" class="enable_advertising" /> \
-    ';
-  } else {
-    element_to_edit_html += ' \
-      <input type="button" value="Disable Module" name="disable_advertising" id="disable_advertising" class="disable_advertising" /> \
-    ';
-  }
-
-  element_to_edit_html += ' \
-    <p></p> \
-  </div> \
-  ';
-
-
-  element_to_edit.html(element_to_edit_html);
-  
-  // auto-input correct address and payment amount
-  $('#lightbox_compose_to_address').val(app.wallet.returnPublicKey());
-  $('#lightbox_compose_payment').val(0.0);
-  $('#lightbox_compose_fee').val(app.wallet.returnDefaultFee());
-  $('.lightbox_compose_address_area').hide();
-  $('.lightbox_compose_module').hide();
-  $('#module_textinput').focus();
-  $('#module_instructions').css('padding-top','4px');
-
-  this.attachAdvertEvents(app);
-
-}
-
-Advert.prototype.attachAdvertEvents = function attachAdvertEvents(app) {
-
-  $(".enable_advertising").off();
-  $(".enable_advertising").on('click', function() {
-    app.options.display_adverts = 1;
-    app.storage.saveOptions();
-    $.fancybox.close();
-  });
-
-  $(".disable_advertising").off();
-  $(".disable_advertising").on('click', function() {
-    app.options.display_adverts = 0;    
-    app.storage.saveOptions();
-    $.fancybox.close();
-  });
-
-
-}
-
-
-}).call(this,"/modules/mods/advert")
-},{"../../../saito":12,"../../template":11,"crypto":158,"util":395}],4:[function(require,module,exports){
+},{"./mods/davemod/davemod":3,"./mods/email/email":4,"./mods/facebook/facebook":5,"./mods/settings/settings":6}],3:[function(require,module,exports){
 var saito = require('../../../saito');
 var ModTemplate = require('../../template');
 var util = require('util');
@@ -1095,22 +338,22 @@ var util = require('util');
 //
 // You do not need to change this.
 //
-function Aquifer(app) {
+function DaveMod(app) {
 
-  if (!(this instanceof Aquifer)) { return new Aquifer(app); }
+  if (!(this instanceof DaveMod)) { return new DaveMod(app); }
 
-  Aquifer.super_.call(this);
+  DaveMod.super_.call(this);
 
   this.app             = app;
-  this.name            = "Aquifer";
+  this.name            = "DaveMod";
 
   this.handlesEmail = 1;
-  this.emailAppName = "Aquifer";
+  this.emailAppName = "DaveMod App";
   return this;
 
 }
-module.exports = Aquifer;
-util.inherits(Aquifer, ModTemplate);
+module.exports = DaveMod;
+util.inherits(DaveMod, ModTemplate);
 
 
 
@@ -1119,12 +362,12 @@ util.inherits(Aquifer, ModTemplate);
 //////////////////
 //
 // This callback is run by every computer running your module every time 
-// a "Aquifer" transaction receives a confirmation. This is why we check 
+// a "DaveMod" transaction receives a confirmation. This is why we check 
 // to see if we are the recipient...
 //
-Aquifer.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
+DaveMod.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
 
-  var remix_self = app.modules.returnModule("Aquifer");
+  var remix_self = app.modules.returnModule("DaveMod");
 
   // on the first confirmation
   if (conf == 0) {
@@ -1132,6 +375,7 @@ Aquifer.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
     // if message is for us...
     if (tx.transaction.to[0].add == app.wallet.returnPublicKey()) {
 
+      var txmsg = tx.returnMessage();
 
       // do something ...
 
@@ -1141,7 +385,7 @@ Aquifer.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
       msg.id       = tx.transaction.id;
       msg.from     = tx.transaction.from[0].add;
       msg.time     = tx.transaction.ts;
-      msg.module   = tx.transaction.msg.module;
+      msg.module   = txmsg.module;
       msg.title    = "You have received a " + msg.module + " message";
       msg.data     = "The email client treats msg.data field as email content";
       msg.markdown = 1;  // 0 = display as HTML
@@ -1163,19 +407,19 @@ Aquifer.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
 // This callback controls how your Application shows up in the email client. 
 // Use HTML to display information or create a form.
 //
-Aquifer.prototype.displayEmailForm = function displayEmailForm(app) {
+DaveMod.prototype.displayEmailForm = function displayEmailForm(app) {
 
-  $('#module_editable_space').html('<div id="module_instructions" class="module_instructions">text</div>');
+  $('#module_editable_space').html('<div id="module_instructions" class="module_instructions">Edit the controls in standard HTML? </div>');
 
 }
 //
 // This callback is run when the user clicks "send". Grab the data from your form
 // (or javascript code) and stick it into your transaction.
 //
-Aquifer.prototype.formatEmailTransaction = function formatEmailTransaction(tx, app) {
+DaveMod.prototype.formatEmailTransaction = function formatEmailTransaction(tx, app) {
 
   tx.transaction.msg.module = this.name;
-  tx.transaction.msg.remix_data = "this data";
+  tx.transaction.msg.remix_data = "Add whatever data you want to your transaction.";
   return tx;
 
 }
@@ -1183,338 +427,7 @@ Aquifer.prototype.formatEmailTransaction = function formatEmailTransaction(tx, a
 
 
 
-},{"../../../saito":12,"../../template":11,"util":395}],5:[function(require,module,exports){
-(function (__dirname){
-var saito = require('../../../saito');
-var ModTemplate = require('../../template');
-var util = require('util');
-
-
-//////////////////
-// CONSTRUCTOR  //
-//////////////////
-function Auth(app) {
-
-  if (!(this instanceof Auth)) { return new Auth(app); }
-
-  Auth.super_.call(this);
-
-  this.app             = app;
-
-  this.name            = "Auth";
-  this.browser_active  = 0;
-  this.handlesEmail    = 1;
-  this.emailAppName    = "Authorization";
-
-  this.email_view_txid = 0;
-
-  return this;
-
-}
-module.exports = Auth;
-util.inherits(Auth, ModTemplate);
-
-
-
-////////////////////
-// Install Module //
-////////////////////
-Auth.prototype.installModule = function installModule() {
-
-  if (this.app.BROWSER == 1) { return; }
-
-  sql = "\
-        CREATE TABLE IF NOT EXISTS mod_auth (\
-                id INTEGER, \
-                sender TEXT, \
-                receiver TEXT, \
-                keyword TEXT, \
-                key TEXT, \
-                value TEXT, \
-                unixtime INTEGER, \
-		UNIQUE (receiver, sender, keyword, key, value), \
-                PRIMARY KEY(id ASC) \
-        )";
-  this.app.storage.execDatabase(sql, {}, function() {});
-
-}
-
-
-
-
-/////////////////////
-// Email Functions //
-/////////////////////
-Auth.prototype.displayEmailForm = function displayEmailForm(app) {
-
-  element_to_edit = $('#module_editable_space');
-  element_to_edit.html('<div class="module_instructions">This is a generic authorization module. It does not do much in our demo except serve as an example of how Saito can be used to send programmatic authorization requests, and how modules can build atop them. If your application requires one, you can provide an extra keyword and/or key/value pair.<p></p><table><tr><td style="width:100px"><b>keyword:</b></td><td><input type="text" name="msgtype" id="msgtype" value="" style="width:100px;font-size:1.2em;padding:2px;" /></td></tr></table><p></p><div style="margin-top:20px;font-weight:normal;cursor:pointer;margin-bottom:25px;" onclick="$(\'.advanced_keyvalue_entry\').toggle();">Click here for advanced options...</div><div class="advanced_keyvalue_entry" style="display:none"><table><tr><td style="width:100px"><b>key:</b></td><td><input type="text" name="msgkey" id="msgkey" value="" style="width:100px;font-size:1.2em;padding:2px;" /></td></tr><tr><td style="width:100px"><b>value:</b></td><td><input type="text" name="msgvalue" id="msgvalue" value="" style="width:100px;font-size:1.2em;padding:2px;" /></td></tr></table></div></div>');
-
-}
-Auth.prototype.formatEmailTransaction = function formatEmailTransaction(tx, app) {
-
-  link_id    = "authorize_link_"+this.email_view_txid;
-
-  // always set the message.module to the name of the app
-  tx.transaction.msg.module  = this.name;
-  tx.transaction.msg.request = "request";
-  tx.transaction.msg.to      = tx.transaction.to[0].add;
-  tx.transaction.msg.from    = tx.transaction.from[0].add;
-  tx.transaction.msg.type    = $('#msgtype').val();
-  tx.transaction.msg.key     = $('#msgkey').val();
-  tx.transaction.msg.value   = $('#msgvalue').val();
-  tx.transaction.msg.title   = "Authorization Requested";
-
-  if (tx.transaction.msg.type != "") {
-    tx.transaction.msg.title   = "Authorization Requested (keyword: "+tx.transaction.msg.type+")";
-    email_html = 'You have received an authentication request (keyword: '+tx.transaction.msg.type+') from: <p></p>'+tx.transaction.from[0].add+'<p></p>To approve this request, <div class="authorize_link" id="'+link_id+'" style="display:inline;text-decoration:underline;cursor:pointer">click here</div>.';
-  } else {
-    email_html = 'You have received an authentication request from: <p></p>'+tx.transaction.from[0].add+'<p></p>To approve this request, <div class="authorize_link" id="'+link_id+'" style="display:inline;text-decoration:underline;cursor:pointer">click here</div>.';
-  }
-  if (tx.transaction.msg.key != "" || tx.transaction.msg.value != "") {
-    email_html += '<p></p>This request included the key/value information: '+tx.transaction.msg.key+'/'+tx.transaction.msg.value;
-  }
-  tx.transaction.msg.data    = email_html;
-
-  return tx;
-
-}
-Auth.prototype.displayEmailMessage = function displayEmailMessage(message_id, app) {
-
-  if (app.BROWSER == 1) {
-    this.email_view_txid = message_id.substring(8);
-    message_text_selector = "#" + message_id + " > .data";
-    authbody = $(message_text_selector).html();
-
-    $('#lightbox_message_text').html(authbody);
-
-    // update authorize link ID
-    message_text_selector = ".lightbox_message_text > .authorize_link";
-    new_auth_link = "authorize_link_"+this.email_view_txid;
-    $(message_text_selector).attr('id', new_auth_link);
-  }
-
-}
-
-
-
-
-
-
-
-
-
-/////////////////////////
-// Handle Web Requests //
-/////////////////////////
-Auth.prototype.webServer = function webServer(app, expressapp) {
-
-  expressapp.get('/auth/', function (req, res) {
-    res.sendFile(__dirname + '/web/index.html');
-    return;
-  });
-  expressapp.get('/auth/style.css', function (req, res) {
-    res.sendFile(__dirname + '/web/style.css');
-    return;
-  });
-
-}
-
-
-
-
-
-
-
-
-
-
-//////////////////
-// Confirmation //
-//////////////////
-Auth.prototype.onConfirmation = function onConfirmation(blk, tx, conf, app) {
-
-  if (conf == 0) {
-
-    var sender           = tx.transaction.from[0].add;
-    var receiver         = tx.transaction.to[0].add;
-    var msgtype          = tx.transaction.msg.type;
-    var msgkey           = tx.transaction.msg.key;
-    var msgvalue         = tx.transaction.msg.value;
-    var msgrequest       = tx.transaction.msg.request;  // "request"
-		
-    /////////////////////////
-    // requests made to us //
-    /////////////////////////
-    if (receiver == app.wallet.returnPublicKey()) {
-
-      // if the request is an authoriztation
-      if (tx.transaction.msg.request == "authorize") {
-
-        msg        = {};
-        msg.id     = tx.transaction.id;
-        msg.from   = sender;
-        msg.time   = tx.transaction.ts;
-        msg.type   = tx.transaction.msg.type;
-        msg.key    = tx.transaction.msg.key;
-        msg.value  = tx.transaction.msg.value;
-        msg.module = "Auth";
-        msg.title  = tx.transaction.msg.title;
-        msg.data   = tx.transaction.msg.data;;
-
-        app.modules.returnModule("Email").attachMessage(msg, app);
-        app.archives.saveTransaction(tx);
-
-      } else {
-
-
-        msg        = {};
-        msg.id     = tx.transaction.id;
-        msg.from   = sender;
-        msg.time   = tx.transaction.ts;
-        msg.type   = tx.transaction.msg.type;
-        msg.key    = tx.transaction.msg.key;
-        msg.value  = tx.transaction.msg.value;
-        msg.module = "Auth";
-        msg.title  = tx.transaction.msg.title;
-        msg.data   = tx.transaction.msg.data;;
-
-        app.modules.returnModule("Email").attachMessage(msg, app);
-        app.archives.saveTransaction(tx);
-
-      }
-
-
-    /////////////////////////////////
-    // listening to other requests //
-    /////////////////////////////////
-    } else {
-
-      sql = "SELECT count(*) AS count FROM mod_auth WHERE sender = $sender";
-      app.storage.queryDatabase(sql, {$sender:sender}, function(err, row) {
-        if (row.count == 1) {
-          sql = "INSERT OR IGNORE INTO mod_auth (sender, receiver, keyword, key, value) VALUES ($sender, $receiver, $msgtype, $msgkey, $msgvalue)";
-          app.storage.execDatabase(
-            sql, {
-              $sender   : sender,
-              $receiver : receiver,
-              $msgtype  : msgtype,
-              $msgkey   : msgkey,
-              $msgvalue : msgvalue,
-            },
-            function() {}
-          );
-        }
-      });
-    }
-
-  }
-}
-
-
-
-
-
-
-Auth.prototype.attachEmailEvents = function attachEmailEvents(app) {
-
-  if (app.BROWSER == 1) {
-
-    // fancybox does not want us to attach events by #id so we
-    // have to handle it by class. This is a bug in their software
-    $('.authorize_link').off();
-    $('.authorize_link').on('click', function() {
-
-      txid = $(this).attr('id');
-      txid = txid.substring(15);
-
-      thistx = app.archives.returnTransactionById(txid);
-      if (thistx == null) { return; }
-
-      remote_address = thistx.transaction.from[0].add;
-
-      email_html = 'You have authorized a request from: <p></p>'+app.modules.returnModule("Email").formatAuthor(remote_address, app);
-
-      utx = app.wallet.createUnsignedTransactionWithDefaultFee(remote_address, 0.0);
-      utx.transaction.msg.module   = "Auth";
-      utx.transaction.msg.request  = "authorize";
-      utx.transaction.msg.tx_id    = txid;		// reference id for parent tx
-      utx.transaction.msg.type     = thistx.transaction.msg.type;
-      utx.transaction.msg.key      = thistx.transaction.msg.key;
-      utx.transaction.msg.value    = thistx.transaction.msg.value;
-      utx.transaction.msg.title    = "Authorization Granted";
-      utx.transaction.msg.data     = email_html;
-      utx.transaction.msg.markdown = 0;
-
-
-      utx = app.wallet.signTransaction(utx);
-      app.mempool.addTransaction(utx);
-      app.network.propagateTransaction(utx);
-
-      $.fancybox.close();
-
-      app.modules.returnModule("Email").showBrowserAlert("your authorization has been broadcast to the network");
-
-    });
-  }
-}
-
-
-
-
-
-
-
-}).call(this,"/modules/mods/auth")
-},{"../../../saito":12,"../../template":11,"util":395}],6:[function(require,module,exports){
-var saito = require('../../../saito');
-var ModTemplate = require('../../template');
-var util = require('util');
-
-
-//////////////////
-// CONSTRUCTOR  //
-//////////////////
-function Debug(app) {
-
-  if (!(this instanceof Debug)) { return new Debug(app); }
-
-  Debug.super_.call(this);
-
-  this.app             = app;
-
-  this.name            = "Debug";
-  this.handlesEmail    = 1;
-  this.emailAppName    = "Debug";
-
-  return this;
-
-}
-module.exports = Debug;
-util.inherits(Debug, ModTemplate);
-
-
-
-
-/////////////////////
-// Email Functions //
-/////////////////////
-Debug.prototype.displayEmailForm = function displayEmailForm(app) {
-
-  $('.lightbox_compose_address_area').hide();
-  $('.lightbox_compose_module').hide();
-
-  element_to_edit = $('#module_editable_space');
-  element_to_edit.html('<div style="min-height:100px;padding-top:120px;padding:40px;font-size:1.15em;line-height:1.2em;"><pre><code></code>'+JSON.stringify(app.options, null, 4)+'</pre></div>');
-  //element_to_edit.html('<div style="min-height:100px;padding-top:120px;padding:40px;font-size:1.15em;line-height:1.2em;"><pre><code></code>'+JSON.stringify(app.options, null, 4)+'</pre></div><p></p>'+JSON.stringify(app.blockchain.index, null, 4)+'</pre></div>');
-
-}
-
-
-
-
-
-},{"../../../saito":12,"../../template":11,"util":395}],7:[function(require,module,exports){
+},{"../../../saito":8,"../../template":7,"util":394}],4:[function(require,module,exports){
 (function (__dirname){
 var saito = require('../../../saito');
 var ModTemplate = require('../../template');
@@ -2667,7 +1580,7 @@ Email.prototype.closeMessage = function closeMessage() {
 
 
 }).call(this,"/modules/mods/email")
-},{"../../../saito":12,"../../template":11,"markdown":279,"util":395}],8:[function(require,module,exports){
+},{"../../../saito":8,"../../template":7,"markdown":277,"util":394}],5:[function(require,module,exports){
 (function (__dirname){
 var saito = require('../../../saito');
 var ModTemplate = require('../../template');
@@ -3995,115 +2908,7 @@ Facebook.prototype.generateTransactionByPostId = function generateTransactionByP
 }
 
 }).call(this,"/modules/mods/facebook")
-},{"../../../saito":12,"../../template":11,"markdown":279,"util":395}],9:[function(require,module,exports){
-const saito = require('../../../saito');
-const ModTemplate = require('../../template');
-const util = require('util');
-
-
-//////////////////
-// CONSTRUCTOR  //
-//////////////////
-function Raw(app) {
-
-  if (!(this instanceof Raw)) { return new Raw(app); }
-
-  Raw.super_.call(this);
-
-  this.app             = app;
-
-  this.name            = "Raw";
-  this.handlesEmail    = 1;
-  this.emailAppName    = "Send Raw Tx";
-
-  return this;
-
-}
-module.exports = Raw;
-util.inherits(Raw, ModTemplate);
-
-
-
-
-
-
-////////////////////////////////
-// Email Client Interactivity //
-////////////////////////////////
-Raw.prototype.displayEmailForm = function displayEmailForm(app) {
-
-  var raw_self = this;
-
-  // create transaction
-  var newtx = app.wallet.createUnsignedTransactionWithDefaultFee(app.wallet.returnPublicKey(), 0.0);
-
-  if (newtx == null) {
-    alert("You do not have enough tokens to send a Raw Transaction.");
-    return;
-  }
-
-  element_to_edit = $('#module_editable_space');
-
-  element_to_edit_html = '<div id="module_instructions" class="module_instructions" style="padding:10px;margin-top:0px;width:90%"><textarea class="rawtx" style="width:95%;height:80%">'+JSON.stringify(newtx.transaction, null, 4)+'</textarea><p></p><div id="module_textinput_button" class="module_textinput_button" style="margin-left:0px;margin-right:0px;">broadcast tx</div></div>';
-  element_to_edit.html(element_to_edit_html);
-
-  $('#module_textinput_button').off();
-  $('#module_textinput_button').on('click', function() {
-
-    var txjson = $('.rawtx').val();
-console.log("1: "+txjson);
-    var newtx = new saito.transaction(txjson);
-  
-    if (newtx == null) {
-      alert("ERROR: malformed transaction #1");
-    }
-//    if (newtx.is_valid == 0) {
-//      alert("ERROR: malformed transaction #2");
-//    }
-
-    console.log("2: "+JSON.stringify(newtx)); 
-
-    newtx = app.wallet.signTransaction(newtx);
-
-    console.log("3: "+JSON.stringify(newtx));
-
-    app.network.propagateTransactionWithCallback(newtx, function() {
-      alert("Broadcast Tx");
-      $.fancybox.close();
-    });
-
-
-  });
-
-
-  // auto-input correct address and payment amount
-  //$('#lightbox_compose_to_address').val(this.publickey);
-  //$('#lightbox_compose_payment').val(3);
-  //$('#lightbox_compose_fee').val(raw_self.app.wallet.returnDefaultFee());
-  $('.lightbox_compose_address_area').hide();
-  $('.lightbox_compose_module').hide();
-
-}
-
-////////////////////////
-// Format Transaction //
-////////////////////////
-Raw.prototype.formatEmailTransaction = function formatEmailTransaction(tx, app) {
-  tx.transaction.msg.module = this.name;
-  tx.transaction.msg.requested_identifier  = $('#module_textinput').val().toLowerCase();
-  return tx;
-}
-
-
-
-
-
-
-
-
-
-
-},{"../../../saito":12,"../../template":11,"util":395}],10:[function(require,module,exports){
+},{"../../../saito":8,"../../template":7,"markdown":277,"util":394}],6:[function(require,module,exports){
 var saito = require('../../../saito');
 var ModTemplate = require('../../template');
 var util = require('util');
@@ -4405,7 +3210,7 @@ Settings.prototype.attachSettingsEvents = function attachSettingsEvents(app) {
 
 
 
-},{"../../../saito":12,"../../template":11,"util":395}],11:[function(require,module,exports){
+},{"../../../saito":8,"../../template":7,"util":394}],7:[function(require,module,exports){
 
 
 
@@ -4560,6 +3365,16 @@ ModTemplate.prototype.webServer = function webServer(app, expressapp) {};
 ModTemplate.prototype.updateBalance  = function updateBalance(app) {}
 
 
+//
+// UPDATE BLOCKCHAIN SYNC
+//
+// this callback is run to notify applications of the state of 
+// blockchain syncing. It will be triggered on startup and with
+// every additional block added.
+//
+ModTemplate.prototype.updateBlockchainSync  = function updateBlockchainSync(app, current, target) {}
+
+
 
 
 
@@ -4676,7 +3491,7 @@ ModTemplate.prototype.handlePeerRequest = function handlePeerRequest(app, messag
 
 
 
-},{}],12:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var saito            = exports;
 
 
@@ -4684,12 +3499,13 @@ var saito            = exports;
 saito.archives       = require('./saito/archives');
 saito.block          = require('./saito/block');
 saito.blockchain     = require('./saito/blockchain');
+saito.burnfee        = require('./saito/burnfee');
 saito.browser        = require('./saito/browser');
-saito.crypt          = require('./saito/crypt');
+saito.crypto         = require('./saito/crypto');
 saito.dns            = require('./saito/dns');
 saito.goldenticket   = require('./saito/goldenticket');
 saito.key            = require('./saito/key');
-saito.keys           = require('./saito/keys');
+saito.keychain       = require('./saito/keychain');
 saito.logger         = require('./saito/logger');
 saito.miner          = require('./saito/miner');
 saito.monitor        = require('./saito/monitor');
@@ -4704,26 +3520,22 @@ saito.transaction    = require('./saito/transaction');
 saito.voter          = require('./saito/voter');
 saito.wallet         = require('./saito/wallet');
 
-// Templates
-saito.templates      = {};
-saito.templates.desktopSettings = require('./saito/web/templates/desktop-settings');
-saito.templates.mobileSettings = require('./saito/web/templates/mobile-settings');
 
 
+},{"./saito/archives":9,"./saito/block":10,"./saito/blockchain":11,"./saito/browser":12,"./saito/burnfee":13,"./saito/crypto":14,"./saito/dns":15,"./saito/goldenticket":16,"./saito/key":17,"./saito/keychain":18,"./saito/logger":19,"./saito/mempool":20,"./saito/miner":21,"./saito/monitor":22,"./saito/network":23,"./saito/path":24,"./saito/peer":25,"./saito/server":26,"./saito/slip":27,"./saito/storage":28,"./saito/transaction":29,"./saito/voter":30,"./saito/wallet":31}],9:[function(require,module,exports){
+const saito    = require('../saito');
 
 
-},{"./saito/archives":13,"./saito/block":14,"./saito/blockchain":15,"./saito/browser":16,"./saito/crypt":17,"./saito/dns":18,"./saito/goldenticket":19,"./saito/key":20,"./saito/keys":21,"./saito/logger":22,"./saito/mempool":23,"./saito/miner":24,"./saito/monitor":25,"./saito/network":26,"./saito/path":27,"./saito/peer":28,"./saito/server":29,"./saito/slip":30,"./saito/storage":31,"./saito/transaction":32,"./saito/voter":33,"./saito/wallet":34,"./saito/web/templates/desktop-settings":35,"./saito/web/templates/mobile-settings":36}],13:[function(require,module,exports){
-const saito = require('../saito');
-
-
+/**
+ * Construtor 
+ **/
 function Archives(app) {
 
   if (!(this instanceof Archives)) {
-    return new Archives(app, archivesjson);
+    return new Archives();
   }
 
   this.app                 = app || {};
-  this.archives            = []; // {"host":"localhost","port":12101,"publickey":"", "active":"inactive"}
   this.messages            = [];
   this.local_storage_limit = 40;
 
@@ -4733,35 +3545,11 @@ function Archives(app) {
 module.exports = Archives;
 
 
-//
-// TODO
-//
-// we are identifying transactions by ID where we should
-// be using the sig or some other unique identifier that
-// will not change depending on the chain we are on.
-//
 
-
-////////////////
-// initialize //
-////////////////
-//
-// connects to any archives that are contained in our
-// options file.
-//
+/**
+ * fetch our messages from browser storage
+ **/
 Archives.prototype.initialize = function initialize() {
-
-  if (this.app.options.archives != null) {
-    for (let i = 0; i < this.app.options.archives.length; i++) {
-      this.archives[i] = this.app.options.archives[i];
-    }
-  }
-
-  // add any archives to our peer list and connect as needed
-  for (let vcm = 0; vcm < this.archives.length; vcm++) {
-    // do not send blocks, transactions or tickets to any archive servers by default
-    this.app.network.addPeer(this.archives[vcm].host, this.archives[vcm].port, 0, 0, 0);
-  }
 
   //
   // load messages locally
@@ -4774,170 +3562,63 @@ Archives.prototype.initialize = function initialize() {
     }
   }
 
-
-  //
-  // load data remotely
-  //
-  for (let s = 0; s < this.archives.length; s++) {
-    for (let t = 0; t < this.app.network.peers.length; t++) {
-      if (this.archives[s].host == this.app.network.peers[t].peer.host && this.archives[s].active == "active") {
-
-        // send request for archived messages
-        let userMessage = {};
-            userMessage.request          = "archive load";
-            userMessage.data             = {};
-            userMessage.data.number      = 50;
-            userMessage.data.starting_at = 0;
-            userMessage.data.publickey   = this.app.wallet.returnPublicKey();
-
-        this.app.network.peers[t].sendRequest(userMessage.request, userMessage.data);
-
-      }
-    }
-  }
-
-
 }
 
 
-/////////////////////////
-// containsTransaction //
-/////////////////////////
-//
-// finds out if we have a message in our archives
-//
-// @params {integer} transaction_id of message
-//
-Archives.prototype.containsTransaction = function containsTransaction(tx_id) {
-  for (let amt = this.messages.length-1; amt >= 0; amt--) {
-    if (this.messages[amt].transaction.id == tx_id) { return 1; }
+/**
+ * Does our archive contain a specific transaction
+ **/
+Archives.prototype.containsTransaction = function containsTransaction(tid) {
+  for (let i = this.messages.length-1; i >= 0; i--) {
+    if (this.messages[i].transaction.id == tid) { return 1; }
   }
   return 0;
 }
 
 
-/////////////////////////
-// processTransactions //
-/////////////////////////
-//
-// This is how we interact with modules, they ask us to give them a
-// certain number of messages, and we comply, submitting the messages
-// to them as part of a callback function.
-//
-// @params {integer} number of messages to load
-// @params {callback}
-//
-Archives.prototype.processTransactions = function processTransactions(number, callback) {
-  var tmpmsg = [];
-  var err    = {};
-  let starting_point = this.messages.length - number;
-  if (starting_point < 0) { starting_point = 0; }
-  for (let n = starting_point; n < this.messages.length; n++) {
-
-    //
-    // we create the object so we have access to the
-    // functions like returnMessage() and then copy
-    // over any information we feel may be needed by
-    // the object itself, such as dmsg
-    //
-    var txe = new saito.transaction();
-        txe.transaction = this.messages[n].transaction;
-        txe.dmsg = this.messages[n].dmsg;
-    tmpmsg[n] = txe;
+/**
+ * Return transaction by ID
+ **/
+Archives.prototype.returnTransactionById = function returnTransactionById(tid) {
+  for (let i = this.messages.length-1; i >= 0; i--) {
+    if (this.messages[i].transaction.id == tid) { return this.messages[i]; }
   }
-  callback(err, tmpmsg);
+  return null;
 }
 
-
-////////////////////////////
-// returnTransactionById //
-///////////////////////////
-//
-// given a transaction Id, returns the transaction if
-// it exists in our archive.
-//
-// @params {integer} transaction id
-//
-Archives.prototype.returnTransactionById = function returnTransactionById(txid) {
-  for (let mv = this.messages.length-1; mv >= 0; mv--) {
-    if (this.messages[mv].transaction.id == txid) { return this.messages[mv]; }
+/**
+ * Return transaction by tx signature
+ **/
+Archives.prototype.returnTransactionBySig = function returnTransactionBySig(sig) {
+  for (let i = this.messages.length-1; i >= 0; i--) {
+    if (this.messages[i].transaction.sig == sig) { return this.messages[i]; }
   }
   return null;
 }
 
 
-////////////////////////////
-// returnTransactionBySig //
-////////////////////////////
-//
-// given a transaction sig, returns the transaction if
-// it exists in our archive.
-//
-// @params {integer} transaction id
-//
-Archives.prototype.returnTransactionBySig = function returnTransactionBySig(txsig) {
-  for (let mv = this.messages.length-1; mv >= 0; mv--) {
-    if (this.messages[mv].transaction.sig == txsig) { return this.messages[mv]; }
-  }
-  return null;
-}
 
+/**
+ * Remove a message from our archives
+ **/
+Archives.prototype.removeMessage = function removeMessage(sig) {
 
-///////////////////
-// removeMessage //
-///////////////////
-Archives.prototype.removeMessage = function removeMessage(txsig) {
-
-  let mytxts = 0;
-
-  /////////////
-  // locally //
-  /////////////
   for (let n = this.messages.length-1; n >= 0; n--) {
-    if (this.messages[n].transaction.sig == txsig) {
-      mytxts = this.messages[n].transaction.ts;
+    if (this.messages[n].transaction.sig == sig) {
       this.messages.splice(n,1);
-      n = this.messages.length;
       this.saveArchives();
+      return;
     }
   }
 
-  //////////////
-  // remotely //
-  //////////////
-  for (let aas = 0; aas < this.archives.length; aas++) {
-    if (this.archives[aas].active == "active") {
-
-      var message                = {};
-          message.request        = "archive delete";
-          message.data           = {};
-          message.data.publickey = this.app.wallet.returnPublicKey();
-          message.data.txsig     = mytxsig;
-          message.data.auth      = this.app.crypt.signMessage("delete_"+txsig, this.app.wallet.returnPrivateKey());
-          message.data.unixtime  = mytxts;
-
-      var publickey = message.data.publickey;
-      var sig_to_del = message.data.sig_to_delete;
-      var sig = message.data.sig;
-      var msg_to_sign = message.data.publickey + message.data.sig_to_delete + message.data.unixtime;
-      let does_validate = this.app.crypt.verifyMessage(msg_to_sign, sig, publickey);
-
-      for (let y = 0; y < this.app.network.peers.length; y++) {
-        if (this.app.network.peers[y].peer.publickey = this.archives[aas].publickey) {
-	        this.app.network.peers[y].sendRequest(message.request, message.data);
-        }
-      }
-    }
-  }
 }
 
 
-///////////////////
-// resetArchives //
-///////////////////
-//
-// delete all content locally and remotely
-//
+
+
+/**
+ * Reset our archives to have no messages in them
+ **/
 Archives.prototype.resetArchives = function resetArchives() {
 
   this.messages = [];
@@ -4948,69 +3629,83 @@ Archives.prototype.resetArchives = function resetArchives() {
     }
   }
 
-  var message                = {};
-      message.request        = "archive reset";
-      message.data           = {};
-      message.data.publickey = this.app.wallet.returnPublicKey();
-      message.data.unixtime  = new Date().getTime();
-      message.data.sig       = this.app.crypt.signMessage((message.data.publickey + message.data.unixtime), this.app.wallet.returnPrivateKey());
-
-  for (let aas = 0; aas < this.archives.length; aas++) {
-    if (this.archives[aas].active == "active") {
-      for (let y = 0; y < this.app.network.peers.length; y++) {
-        if (this.app.network.peers[y].peer.publickey = this.archives[aas].publickey) {
-          this.app.network.peers[y].sendRequest(message.request, message.data);
-        }
-      }
-    }
-  }
 }
 
 
-//////////////////
-// saveArchives //
-//////////////////
+
+/**
+ * saves our messages to the browser storage
+ **/
 Archives.prototype.saveArchives = function saveArchives() {
   if (this.app.BROWSER == 1) {
     if (typeof(Storage) !== "undefined") {
       localStorage.setItem("messages", JSON.stringify(this.messages));
     }
   }
-  this.app.options.archives = JSON.stringify(this.archives);;
   this.app.storage.saveOptions();
 }
 
 
-/////////////////////
-// saveTransaction //
-/////////////////////
-//
-// save a transaction
-//
-// @params {saito.transaction} tx to save
-//
+
+
+
+/**
+ * Modules run this function to load messages. They ask us to give them
+ * a certain number of messages, and we comply and submit those messages
+ * to them as part of a callback.
+ *
+ * @params {integer} number of messages to load
+ * @params {callback} callback
+ *
+ **/
+Archives.prototype.processTransactions = function processTransactions(number, callback) {
+
+  var txs = [];
+  var err = {};
+
+console.log("HOW MANY MSGS are in archives: " + this.messages.length);
+
+  let starting_point = this.messages.length - number;
+  if (starting_point < 0) { starting_point = 0; };
+
+  for (let n = starting_point, m = 0; n < this.messages.length; n++) {
+    var t = new saito.transaction();
+    try {
+      if (this.messages[n].transaction != undefined) {
+        t.transaction = this.messages[n].transaction;
+        t.dmsg = this.messages[n].dmsg;
+        txs[m] = t;
+        m++;
+      } else {}
+    } catch (err) {}
+  }
+  callback(err, txs);
+}
+
+
+
+
+/**
+ * save a transaction
+ *
+ * @params {saito.transaction} tx to save
+ **/
 Archives.prototype.saveTransaction = function saveTransaction(tx) {
 
-  ///////////
-  // local //
-  ///////////
   if (this.app.BROWSER == 1) {
     if (typeof(Storage) !== "undefined") {
 
-      // reload before saving
       let data = localStorage.getItem("messages");
-
       this.messages = JSON.parse(data);
-      if (this.messages == null) {
-        console.log("resetting Message array in Archives saveTransaction");
 
+      if (this.messages == null) {
         this.app.logger.logInfo("resetting Message array in Archives saveTransaction");
         this.messages = [];
       }
 
-      // do not add duplicates
-      for (let mb = 0; mb < this.messages.length; mb++) {
-        if (this.messages[mb].transaction.msig === tx.transaction.msig) {
+      // no duplicates
+      for (let i = 0; i < this.messages.length; i++) {
+        if (this.messages[i].transaction.msig === tx.transaction.msig) {
           return;
         }
       }
@@ -5018,10 +3713,10 @@ Archives.prototype.saveTransaction = function saveTransaction(tx) {
       // if we are at our local storage limit remove the
       // last email and add our new one to the top
       if (this.messages.length == this.local_storage_limit) {
-        for (let mb = 0; mb < this.messages.length-1; mb++) {
-	        this.messages[mb] = this.messages[mb+1];
+        for (let i = 0; i < this.messages.length-1; i++) {
+          this.messages[i] = this.messages[i+1];
         }
-	      this.messages[this.messages.length-1] = tx;
+        this.messages[this.messages.length-1] = tx;
       } else {
         this.messages.push(tx);
       }
@@ -5029,46 +3724,29 @@ Archives.prototype.saveTransaction = function saveTransaction(tx) {
     }
   }
 
-
-  ////////////
-  // remote //
-  ////////////
-  for (let aas = 0; aas < this.archives.length; aas++) {
-    if (this.archives[aas].active == "active") {
-
-      var message                      = {};
-          message.request              = "archive save";
-          message.data                 = {};
-          message.data.publickey       = this.app.wallet.returnPublicKey();
-          message.data.tx              = JSON.stringify(tx.transaction);
-          message.data.unixtime        = tx.transaction.ts;
-          message.data.permission      = 1;
-          message.data.authorized_keys = "";
-	        message.data.sig             = this.app.crypt.signMessage((message.data.publickey + tx.transaction.sig + message.data.permission + message.data.authorized_keys), this.app.wallet.returnPrivateKey());
-
-      for (let y = 0; y < this.app.network.peers.length; y++) {
-        if (this.app.network.peers[y].peer.publickey = this.archives[aas].publickey) {
-	        this.app.network.peers[y].sendRequest(message.request, message.data);
-        }
-      }
-    }
-  }
 }
 
 
 
-},{"../saito":12}],14:[function(require,module,exports){
-(function (process){
+
+
+},{"../saito":8}],10:[function(require,module,exports){
 'use strict';
 
-const saito = require('../saito');
+const saito    = require('../saito');
 const Big = require('big.js');
+const Promise = require('bluebird');
 
-
-function Block(app, blkjson="", conf=-1) {
+/**
+ * Block Constructor
+ * @param {*} app
+ * @param {string} blkjson
+ * @param {int} conf
+ */
+function Block(app, blkjson="", confirmations=-1) {
 
   if (!(this instanceof Block)) {
-    return new Block(app, blkjson, conf=-1);
+    return new Block(app, blkjson, confirmations=-1);
   }
 
   this.app = app || {};
@@ -5077,99 +3755,50 @@ function Block(app, blkjson="", conf=-1) {
   // consensus variables //
   /////////////////////////
   this.block                  = {};
-  this.block.unixtime         = new Date().getTime();
+  this.block.ts               = new Date().getTime();
   this.block.prevhash         = "";
   this.block.merkle           = "";
-  this.block.miner            = "";
+  this.block.creator          = "";
   this.block.id               = 1;
-  this.block.transactions     = [];
-  this.block.burn_fee         = 2.0;
-  this.block.fee_step         = 0.000165;
-  this.block.difficulty       = 0.0;
+  this.block.txsjson          = [];
+  this.block.bf               = {};    // burn fee object
+  this.block.difficulty       = 0.51;
   this.block.paysplit         = 0.5;
-  this.block.treasury         = Big("100000.0");
+  this.block.treasury         = Big("10000000000.0");
   this.block.coinbase         = Big("0.0");
   this.block.reclaimed        = Big("0.0");
-  this.block.paysplit_vote    = 0;     // -1 reduce miner payout
+  this.block.vote             = 0;     // paysplit vote
+                                       // -1 reduce miner payout
                                        //  0 no change
                                        //  1 increase miner payout
-  this.block.segadd	      = [];
-
-
-  //////////
-  // size // (bytes)
-  //////////
-  this.size                   = 0;
-
-
-  /////////////////////////////////
-  // automated tx rebroadcasting //
-  /////////////////////////////////
-  this.atr                    = 1;
-  this.atr_lower_limit        = 50;
-  this.atr_fee_curve          = 2;  // (exponential)
-
-  ////////////////////
-  // min and max tx //
-  ////////////////////
-  this.mintid                 = 0;
   this.maxtid                 = 0;
+  this.mintid                 = 0;
 
-  ////////////////////////
-  // non-consensus vars //
-  ////////////////////////
-  this.is_valid               = 1;
-  this.filename               = "";    // permanent filename on disk
-  this.hash                   = "";
-  this.transactions           = [];    // objects
-  this.confirmations          = conf;  // confirmations
-  this.prevalidated           = 0;     // set to 1 to forceAdd to blockchain
-				       // without running callbacks
+  this.confirmations          = confirmations;
+  this.is_valid 	            = true;  // set to zero if there is an
+                                             // error importing the blkjson
+  this.size                   = 0;           // size of block in bytes
+  this.hash                   = "";          // block hash (bhash)
+  this.prehash                = "";          // hash of signature source that combines
+                                             // with this.prevhash to create this.hash
 
+  this.peer_publickey         = "";	     // publickey of peer that gave me this block
+  this.save_bid               = -1;
+  this.save_db_id             = -1;
+  this.filename               = "";    // name of file on disk if set
+  this.prevalidated           = 0;
 
-  ///////////////
-  // callbacks //
-  ///////////////
-  this.callbacks              = [];
-  this.callbacksTx            = [];
+  this.contains_golden_ticket = -1;
 
-
-  ///////////////////////
-  // who sent me this? //
-  ///////////////////////
-  this.originating_peer       = ""; // me
-
-
-  ///////////////
-  // reference //
-  ///////////////
-  this.average_fee            = null;
-
-
-  /////////////////////////
-  // segmented addresses //
-  /////////////////////////
-  this.segadd_max	      = 0;
-  this.segadd_map	      = [];
-  this.segadd_enabled	      = 1;
-  this.segadd_compression     = 0;
-
-
-  /////////////////////
-  // reindexing vars //
-  /////////////////////
-  this.saveBlockId            = -1;
-  this.saveDatabaseId         = -1;
+  this.transactions           = [];
 
 
   if (blkjson != "") {
     try {
       this.block = JSON.parse(blkjson.toString("utf8"));
-
-      for (var i = 0; i < this.block.transactions.length; i++) {
-        this.transactions[i] = new saito.transaction(this.block.transactions[i]);
-
-        if (this.transactions[i].is_valid == 0) {
+      for (var i = 0; i < this.block.txsjson.length; i++) {
+        this.transactions[i] = new saito.transaction(this.block.txsjson[i]);
+        if (!this.transactions[i].is_valid) {
           this.is_valid = 0;
           return;
         }
@@ -5181,611 +3810,117 @@ function Block(app, blkjson="", conf=-1) {
     }
   }
 
+
+  /////////////////
+  // min/max ids //
+  /////////////////
+  if (this.transactions.length > 0) {
+    this.mintid = this.transactions[0].transaction.id;
+    this.maxtid = this.transactions[this.transactions.length-1].transaction.id;
+  }
+
+
   return this;
 
 }
 module.exports = Block;
 
 
-Block.prototype.addTransaction = function addTransaction(tx) {
-  this.block.transactions.push(JSON.stringify(tx));
-  this.transactions.push(tx);
-}
-// when we add teh callbacks, we have to decide whether there
-// is a decrypted msg field we use instead of the default encrypted
-// or basic one
-Block.prototype.affixCallbacks = function affixCallbacks() {
-  for (var z = 0; z < this.transactions.length; z++) {
-    var txmsg = this.transactions[z].returnMessage();
-    this.app.modules.affixCallbacks(z, txmsg, this.callbacks, this.callbacksTx, this.app);
-  }
-}
-
-Block.prototype.bundleBlock = function bundleBlock(prevblock=null) {
-
-  //////////////////
-  // sanity check //
-  //////////////////
-  if (this.app.blockchain.currently_indexing == 1 && this.app.blockchain.currently_reclaiming == 1 && this.app.mempool.currently_clearing == 1) {
-    var { currently_indexing, currently_reclaiming } = this.app.blockchain
-    console.log(`block.js -- busy and refusing to create block: ${currently_indexing} / ${currently_reclaiming} / ${this.app.mempool.currently_clearing}`);
-
-    this.app.logger.logInfo(`block.js -- busy and refusing to create block: ${currently_indexing} / ${currently_reclaiming} / ${this.app.mempool.currently_clearing}`)
-    return 0;
-  }
-
-  /////////////////
-  // alphabetize //
-  /////////////////
-  this.transactions.sort();
-
-  ///////////////////////////
-  // seequential block IDs //
-  ////////////////////////////
-  if (prevblock == null) {
-    this.block.id = 1;
-  } else {
-    this.block.id = prevblock.block.id+1;
-  }
-
-  ////////////////////////////////
-  // sequential transaction IDs //
-  ////////////////////////////////
-  var mtid = 0;
-  if (prevblock != null) { mtid = prevblock.returnMaxTxId(); }
-  for (i = 0; i < this.transactions.length; i++) {
-    mtid++;
-    this.transactions[i].transaction.id = mtid;
-  }
-
-  /////////////////////////////
-  // insert transaction json //
-  /////////////////////////////
-  for (var i = 0; i < this.transactions.length; i++) {
-    this.block.transactions[i] = this.transactions[i].returnTransactionJson();
-  }
-
-
-  ////////////////////////
-  // set default values //
-  ////////////////////////
-  this.originating_peer   = "";
-
-
-  if (this.transactions.length == 0) {
-    this.block.merkle     = "";
-  } else {
-    this.block.merkle     = this.app.crypt.returnMerkleTree(this.block.transactions).root;
-  }
-  this.block.miner        = this.app.wallet.returnPublicKey();
-
-
-  if (prevblock != null) {
-
-    var txfees_needed = parseFloat(0.0 + prevblock.returnTransactionFeesNeeded(prevblock.block.prevhash)).toFixed(8);
-    var total_revenue = parseFloat(txfees_needed) + parseFloat(prevblock.block.coinbase);
-    var miner_share   = parseFloat(total_revenue * prevblock.block.paysplit).toFixed(8);
-    var node_share    = (total_revenue - miner_share).toFixed(8);
-    if (node_share    < 0)             { node_share = 0; }
-
-    this.block.treasury = Big(prevblock.block.treasury).plus(prevblock.block.reclaimed).minus(Big(miner_share)).minus(Big(node_share)).toFixed(8);
-
-    // TODO
-    //
-    // WE LEAK SAITO WITH ALL DIVISIONS
-    //
-    // if the amount leaked is enough to cause the rounding error to remove a Saito token, re-add a Saito token to the coinbase
-    //
-    this.block.coinbase = Big(this.block.treasury).div(this.app.blockchain.genesis_period).toFixed(8);
-
-    this.block.prevhash   = prevblock.returnHash();
-    this.block.difficulty = prevblock.returnDifficulty();
-    this.block.paysplit   = prevblock.returnPaysplit();
-    this.block.burn_fee   = prevblock.returnBurnFee();
-    this.block.fee_step   = prevblock.returnFeeStep();
-  }
-
-  // consensus variables if genesis block
-  if (this.block.id == 1) {
-    this.block.prevhash   = "";
-    this.block.paysplit   = 0.5;
-    this.block.difficulty = 0.1875;
-    this.block.coinbase = Big(this.block.treasury).div(this.app.blockchain.genesis_period).toFixed(8);
-  }
-
-  ///////////////////
-  // paysplit vote //
-  ///////////////////
-  //
-  // now set in mempool as we select the txs for inclusion there
-  //
-
-  //////////////
-  // burn fee //
-  //////////////
-  var nbf = this.calculateBurnFee(this.block.burn_fee, this.block.fee_step);
-  this.block.burn_fee = nbf[0];
-  this.block.fee_step = nbf[1];
-
-  /////////////////////
-  // monetary policy //
-  /////////////////////
-  var block_self = this;
-
-  this.calculateReclaimedFunds(0, function(reclaimed, validates=0) {
-
-console.log("does validate? " + validates);
-
-    //////////////////////////////////////
-    // repeat ourselves as new tx added //
-    //////////////////////////////////////
-
-    //
-    // TODO - test to see if we can remove this earlier
-    //
-    block_self.transactions.sort();
-    var mtid = 0;
-    if (prevblock != null) { mtid = prevblock.returnMaxTxId(); }
-    for (i = 0; i < block_self.transactions.length; i++) {
-      mtid++;
-      block_self.transactions[i].transaction.id = mtid;
-    }
-    for (var i = 0; i < block_self.transactions.length; i++) {
-      block_self.block.transactions[i] = block_self.transactions[i].returnTransactionJson();
-    }
-    if (block_self.transactions.length == 0) {
-      block_self.block.merkle     = "";
-    } else {
-      block_self.block.merkle     = block_self.app.crypt.returnMerkleTree(block_self.block.transactions).root;
-    }
-
-
-
-
-
-    ///////////////////////////////////////////
-    // lite nodes will not properly set this //
-    ///////////////////////////////////////////
-    //
-    // Big.js number
-    //
-    block_self.block.reclaimed = reclaimed;
-
-    /////////////////////////////////////
-    // add to blockchain and propagate //
-    /////////////////////////////////////
-    if (validates == 1) {
-      block_self.app.blockchain.validateBlockAndQueueInMempool(block_self, 1);    // 1 = propagate
-    }
-    block_self.app.mempool.currently_creating = 0;
-
-  });
-}
-
-//
-// @validate = 1 (validate that the tx is in teh new block)
-//             0 (add transactions to the new block to keep onchain)
-Block.prototype.calculateReclaimedFunds = function calculateReclaimedFunds(validate=0, mycallback) {
-
-  // lite nodes exit quickly
-  if (this.app.SPVMODE == 1) { mycallback(Big(0.0), 1); return; }
-
-  var eliminated_block = this.returnId() - this.app.blockchain.returnGenesisPeriod() - 1;
-  var total_amount_to_add_to_treasury = 0.0;
-  var does_block_validate = 1;
-  var total_rebroadcast = 0;
-  var current_rebroadcast = 0;
-
-  if (eliminated_block < 1) {
-    mycallback(Big(0.0), 1);
-    return;
-  } else {
-
-    var block_self = this;
-
-
-    var sql = "SELECT * FROM blocks WHERE longest_chain = $longest_chain AND block_id = $block_id";
-    console.log("SELECT * FROM blocks WHERE longest_chain = 1 AND block_id = " + eliminated_block);
-    var params = { $longest_chain : 1, $block_id : eliminated_block }
-    block_self.app.storage.queryDatabase(sql, params, function(err, row) {
-
-      if (row == null) {
-        console.log("Error handling monetary policy....");
-        this.app.logger.logError("Error handling monetary policy....", {message:"",err:""});
-        process.exit(0);
-      }
-
-      var db_id = row.id;
-      var bid   = row.block_id;
-
-      var filename = db_id + "-" + bid + ".blk";
-
-      block_self.app.storage.openBlockByFilename(filename, function(storage_self, blk) {
-
-        if (row == null) {
-          block_self.log("Error opening block that is supposed to be on disk: " + filename);
-          this.app.logger.logError(`Error opening block that is supposed to be on disk: ${filename}`,
-            {message:"",err:""});
-          process.exit(0);
-        }
-
-	var unspent_amt = Big(0.0);
-
-	for (var i = 0; i < blk.transactions.length; i++) {
-
-          //
-          // the TO slips are the ones that may or may
-          // not have been spent, so we check to see if
-          // they are spent using our hashmap.
-          //
-	  for (var ii = 0; ii < blk.transactions[i].transaction.to.length; ii++) {
-
-	    var slip = blk.transactions[i].transaction.to[ii];
-	    slip.bid = blk.returnId();
-	    slip.tid = blk.transactions[i].transaction.id;
-	    slip.sid = ii;
-	    slip.bhash = blk.returnHash();
-
-            if (slip.amt > 0) {
-
-	      if (slip.bhash == "") { slip.bhash = blk.returnHash(); }
-              if (slip.gt != null || slip.ft != null) {
-
-                if (storage_self.isSlipSpent(slip, block_self.returnId()) == 0) {
-
-		  console.log("THIS SLIP IS NOT SPENT: " + JSON.stringify(slip));
-
-		  //////////////////////////////////////////
-		  // automatic transaction rebroadcasting //
-		  //////////////////////////////////////////	// deadblk, newblk
-		  if (blk.transactions[i].isAutomaticallyRebroadcast(blk, block_self) == 1) {
-		  console.log("ATR!");
-		    current_rebroadcast++;
-		    // let us know which slip is getting rebroadcast
-		    var newtx = blk.transactions[i].generateRebroadcastTransaction(ii, block_self.block.paysplit_vote);
-		    if (newtx == null) {
-		      console.log("ERROR GENERATING REBROADCAST TX: null tx returned");
-		      mycallback(Big(0.0), 0);
-		      return;
-		      //process.exit(0);
-		    }
-
-		    // inform system that BID for tx is this block
-		    newtx.transaction.from[0].bid = block_self.block.id;
-
-		    if (validate == 1) {
-		      console.log(" ... just validating");
-		      does_block_validate = 0;
-		      for (let v = 0; v < block_self.transactions.length; v++) {
-		        if (block_self.transactions[v].transaction.sig == blk.transactions[i].transaction.sig) {
-		          does_block_validate = 1;
-		          v = block_self.transactions.length+1;
-		        }
-                      }
-console.log("\n\n\nVALIDATING: " + does_block_validate);
-		    } else {
-console.log("\n\n\nADDING TX TO BLOCK SELF: ");
-		      block_self.addTransaction(newtx);
-		    }
-		  } else {
-		    unspent_amt = unspent_amt.plus(Big(slip.amt));
-		  }
-	        }
-	      }
-            }
-          }
-        }
-
-        // more rebroadcast txs than we want
-	//
-	// TODO
-	//
-	// clear new txs so that they do not claim to be rebroadcast 
-        //
-        // check that only the txs we have rebroadcast are the rebroadcasting ones
-        //
-        for (let v = 0; v < block_self.transactions.length; v++) {
-          if (block_self.transactions[v].transaction.rb != 0) {
-	    total_rebroadcast++;
-          }
-        }
-
-	if (total_rebroadcast < current_rebroadcast) {
-	  console.log("Validation Error: too many rebroadcast transactions: " + total_rebroadcast + " - " + current_rebroadcast);
-	  does_block_validate = 0;
-        }
-
-        var sql2 = "SELECT * FROM blocks WHERE longest_chain = $longest_chain AND block_id = $block_id";
-        var params2 = { $longest_chain : 1, $block_id : eliminated_block+1 }
-        block_self.app.storage.queryDatabase(sql2, params2, function(err2, row2) {
-
-          if (row2 == null) {
-            console.log("Error handling monetary policy....");
-            block_self.app.logger.logError("Error handling monetary policy....", {message:"",err:""});
-            process.exit(0);
-          }
-
-          var db_id2 = row2.id;
-          var bid2   = row2.block_id;
-          var bgt    = row2.golden_ticket;
-
-          if (bgt == 0) {
-
-            var sql3 = "SELECT * FROM blocks WHERE longest_chain = $longest_chain AND block_id = $block_id";
-            var params3 = { $longest_chain : 1, $block_id : eliminated_block }
-            block_self.app.storage.queryDatabase(sql3, params3, function(err3, row3) {
-
-              if (row3 == null) {
-                console.log("Error handling monetary policy....");
-                block_self.app.logger.logError("Error handling monetary policy....", {message:"",err:""});
-                process.exit(0);
-              }
-
-              var db_id3 = row3.id;
-              var bid3   = row3.block_id;
-
-              var filename3 = db_id3 + "-" + bid3 + ".blk";
-
-              block_self.app.storage.openBlockByFilename(filename3, function(storage_self3, blk3) {
-
-                if (blk3 == null) {
-                  console.log("Error handling monetary policy: block missing from disk: " + filename3);
-                  block_self.app.logger.logError(`Error handling monetary policy: block missing from disk: ${filename3}`,
-                    {message:"",err:""});
-                  process.exit(0);
-                }
-
-                unspent_amt = unspent_amt.plus(Big(blk3.block.coinbase));
-                mycallback(unspent_amt, does_block_validate);
-
-                return;
-              });
-            });
-          } else {
-            mycallback(unspent_amt, does_block_validate);
-            return;
-          }
-        });
-      });
-    });
-  }
-}
-Block.prototype.calculateBurnFee = function calculateBurnFee(starting_burn_fee, starting_fee_step) {
-
-  var bf    = [];
-  bf[0] = parseFloat(starting_burn_fee);
-  bf[1] = parseFloat(starting_fee_step);
-
-  var current_unixtime = this.block.unixtime;
-  var prevblk_unixtime = this.app.blockchain.returnUnixtime(this.block.prevhash);
-
-  if (prevblk_unixtime == -1) { return bf; }
-
-  var block_time  = current_unixtime - prevblk_unixtime;
-  var target_time = this.app.blockchain.heartbeat * 1000;
-
-  // faster than target
-  if (target_time > block_time) {
-
-    bf[0] += 0.0001;
-    bf[0]  = parseFloat(bf[0]).toFixed(8);
-    bf[1]  = bf[0] / (this.app.blockchain.max_heartbeat * 1000);
-    bf[1]  = bf[1].toFixed(8);
-
-  } else { if (target_time < block_time) {
-
-    bf[0] -= 0.0001;
-    if (bf[0] < 2) { bf[0] = 2.0; }
-    bf[0]  = parseFloat(bf[0]).toFixed(8);
-    bf[1]  = bf[0] / (this.app.blockchain.max_heartbeat * 1000);
-    bf[1]  = bf[1].toFixed(8);
-
-  } }
-
-  return bf;
-
-}
-Block.prototype.containsTransactionFor = function containsTransactionFor(publickey) {
-  for (var i = 0; i < this.transactions.length; i++) {
-    if (this.transactions[i].involvesPublicKey(publickey) == 1) { return 1; }
-  }
-  return 0;
-}
+/**
+ * decrypt transactions
+ **/
 Block.prototype.decryptTransactions = function decryptTransactions() {
-  for (var vsd = 0; vsd < this.transactions.length; vsd++) {
-    if (this.transactions[vsd].involvesPublicKey(this.app.wallet.returnPublicKey()) == 1) {
-      this.transactions[vsd].decryptMessage(this.app);
-    }
-  }
-}
-Block.prototype.compressSegAdd = function compressSegAdd() {
-
-  if (this.segadd_enabled == 0) { return; }
-  if (this.transactions.length == 0) { return; }
-
-  // process transactions
-  for (var i = 0; i < this.transactions.length; i++) {
-
-    // from
-    for (var ii = 0; ii < this.transactions[i].transaction.from.length; ii++) {
-      if (this.segadd_map[this.transactions[i].transaction.from[ii].add] != null) {
-	      this.transactions[i].transaction.from[ii].add = "_" + this.segadd_map[this.transactions[i].transaction.from[ii].add];
-      } else {
-        this.segadd_max++;
-        this.segadd_map[this.transactions[i].transaction.from[ii].add] = this.segadd_max-1;
-        this.block.segadd[this.segadd_max-1] = this.transactions[i].transaction.from[ii].add;
-        this.transactions[i].transaction.from[ii].add = "_" + (this.segadd_max-1);
-      }
-    }
-
-    // to
-    for (var ii = 0; ii < this.transactions[i].transaction.to.length; ii++) {
-      if (this.segadd_map[this.transactions[i].transaction.to[ii].add] != null) {
-	      this.transactions[i].transaction.to[ii].add = "_" + this.segadd_map[this.transactions[i].transaction.to[ii].add];
-      } else {
-        this.segadd_max++;
-        this.segadd_map[this.transactions[i].transaction.to[ii].add] = this.segadd_max-1;
-        this.block.segadd[this.segadd_max-1] = this.transactions[i].transaction.to[ii].add;
-        this.transactions[i].transaction.to[ii].add = "_" + (this.segadd_max-1);
-      }
-    }
-
-    // path
-    for (var ii = 0; ii < this.transactions[i].transaction.path.length; ii++) {
-
-      if (this.segadd_map[this.transactions[i].transaction.path[ii].to] != null) {
-	      this.transactions[i].transaction.path[ii].to = "_" + this.segadd_map[this.transactions[i].transaction.path[ii].to];
-      } else {
-        this.segadd_max++;
-        this.segadd_map[this.transactions[i].transaction.path[ii].to] = this.segadd_max-1;
-        this.block.segadd[this.segadd_max-1] = this.transactions[i].transaction.path[ii].to;
-        this.transactions[i].transaction.path[ii].to = "_" + (this.segadd_max-1);
-      }
-
-      if (this.segadd_map[this.transactions[i].transaction.path[ii].from] != null) {
-	      this.transactions[i].transaction.path[ii].from = "_" + this.segadd_map[this.transactions[i].transaction.path[ii].from];
-      } else {
-        this.segadd_max++;
-        this.segadd_map[this.transactions[i].transaction.path[ii].from] = this.segadd_max-1;
-        this.block.segadd[this.segadd_max-1] = this.transactions[i].transaction.path[ii].from;
-        this.transactions[i].transaction.path[ii].from = "_" + (this.segadd_max-1);
-      }
-
-    }
-  }
-
-  this.block.transactions = JSON.stringify(this.transactions, compressSegAddReplacer);
-  this.segadd_compression = 1;
-
-}
-function compressSegAddReplacer(key,value) {
-  if (key == "decrypted_msg") { return undefined; }
-  return value;
-}
-Block.prototype.containsGoldenTicket = function containsGoldenTicket() {
-
   for (let i = 0; i < this.transactions.length; i++) {
-    if (this.transactions[i].isGoldenTicket() == 1) { return 1; }
-  }
-
-  return 0;
-
-}
-Block.prototype.decompressSegAdd = function decompressSegAdd() {
-
-  if (this.segadd_enabled == 0) { return; }
-
-  // process transactions
-  for (var i = 0; i < this.transactions.length; i++) {
-
-    // from
-    for (var ii = 0; ii < this.transactions[i].transaction.from.length; ii++) {
-      if (this.transactions[i].transaction.from[ii].add.length > 0) {
-        if (this.transactions[i].transaction.from[ii].add[0] == "_") {
-	        var x = this.transactions[i].transaction.from[ii].add.substring(1);
-          this.transactions[i].transaction.from[ii].add = this.block.segadd[x];
-        }
-      }
-    }
-
-    // to
-    for (var ii = 0; ii < this.transactions[i].transaction.to.length; ii++) {
-      if (this.transactions[i].transaction.to[ii].add.length > 0) {
-        if (this.transactions[i].transaction.to[ii].add[0] == "_") {
-          var x = this.transactions[i].transaction.to[ii].add.substring(1);
-          this.transactions[i].transaction.to[ii].add = this.block.segadd[x];
-        }
-      }
-    }
-
-    // path
-    for (var ii = 0; ii < this.transactions[i].transaction.path.length; ii++) {
-      if (this.transactions[i].path[ii].transaction.to.length > 0) {
-        if (this.transactions[i].transaction.to[ii].add[0] == "_") {
-          var x = this.transactions[i].transaction.to[ii].add.substring(1);
-          this.transactions[i].transaction.to[ii].add = this.block.segadd[x];
-        }
-      }
-      if (this.transactions[i].transaction.path[ii].from.length > 0) {
-        if (this.transactions[i].transaction.from[ii].add[0] == "_") {
-          var x = this.transactions[i].transaction.from[ii].add.substring(1);
-          this.transactions[i].transaction.from[ii].add = this.block.segadd[x];
-        }
-      }
-    }
-
-  }
-
-  this.segadd_compression = 0;
-
-}
-Block.prototype.importTransaction = function importTransaction(txjson) {
-  var tx = new saito.transaction(txjson);
-  this.addTransaction(tx);
-}
-Block.prototype.involvesPublicKey = function involvesPublicKey(publickey) {
-  for (var v = 0; v < this.transactions.length; v++) {
-    if (this.transactions[v].involvesPublicKey(publickey) == 1) {
-      return 1;
+    if (this.transactions[i].involvesPublicKey(this.app.wallet.returnPublicKey()) == 1) {
+      this.transactions[i].decryptMessage(this.app);
     }
   }
-  return 0;
 }
 
-Block.prototype.returnBlock = function returnBlock() {
-  return this.block;
-}
-Block.prototype.returnBurnFee = function returnBurnFee() {
-  return this.block.burn_fee;
-}
-Block.prototype.returnCoinbase = function returnCoinbase() {
 
-  //
-  // we cannot convert to a float and then
-  // back to a string as that can cause errors
-  // in value which cascade due to floating
-  // point issues.
-  //
-  // so make sure that the treasury is set
-  // properly and stick with it afterwards
-  //
-  return this.block.coinbase;
-}
+/**
+ * Returns the hash
+ */
 Block.prototype.returnDifficulty = function returnDifficulty() {
   return this.block.difficulty;
 }
-Block.prototype.returnFeeStep = function returnFeeStep() {
-  return this.block.fee_step;
-}
-Block.prototype.returnGoldenTicketContenders = function returnGoldenTicketContenders() {
 
-  var children = [];
-
-  for (var v = 0; v < this.transactions.length; v++) {
-    if (this.transactions[v].transaction.gt != null && this.transactions[v].transaction.ft != null) {
-      if (this.transactions[v].transaction.path.length == 0) {
-        // if there is no path length, add the sender
-        children.push(this.transactions[v].transaction.from[0].add);
-      } else {
-        // otherwise, we pick the destination node in each hop through
-        // the transmission path. this eliminates the sender and keeps
-        // the focus on nodes that actively transmitted the message
-        for (var x = 0; x < this.transactions[v].transaction.path.length; x++) {
-          children.push(this.transactions[v].transaction.path[x].to);
-        }
-      }
-    }
-  }
-  return children;
+Block.prototype.returnTreasury = function returnTreasury() {
+  return this.block.treasury;
 }
+
+Block.prototype.returnReclaimed = function returnReclaimed() {
+  return this.block.reclaimed;
+}
+
+Block.prototype.returnCoinbase = function returnCoinbase() {
+  return this.block.coinbase;
+}
+
+Block.prototype.returnPaysplit = function returnPaysplit() {
+  return this.block.paysplit;
+}
+
+/**
+ * Returns the hash
+ */
 Block.prototype.returnHash = function returnHash() {
   if (this.hash != "") { return this.hash; }
-  this.hash = this.app.crypt.hash( this.returnSignatureSource() );
+
+  //
+  // having a pre-hash allows us to send lite-clients a shorter
+  // proof-of-chain on connection. no need to send the full
+  // block headers.
+  //
+  this.prehash = this.app.crypto.hash( this.returnSignatureSource() );
+  this.hash = this.app.crypto.hash( this.prehash + this.block.prevhash );
   return this.hash;
 }
+
+/**
+ * Returns the start burn fee value
+ *
+ * TODO: this should return the value that was actually PAID
+ * for the block, instead of the STARTING burn fee, because
+ * with things this way, we may screw up the logic of using
+ * the burn fee to measure money paid in various rewrite attack
+ * scenarios.
+ */
+Block.prototype.returnBurnFeeValue = function returnBurnFeeValue() {
+  return this.block.bf.start;
+}
+
+/**
+ * Returns a signature created from the sum of the blocks data
+ */
+Block.prototype.returnSignatureSource = function returnSignatureSource() {
+
+  return this.block.ts
+        + this.block.creator
+        + this.block.merkle
+        + this.block.id
+        + JSON.stringify(this.block.bf)
+        + this.block.difficulty
+        + this.block.paysplit
+        + this.block.treasury
+        + this.block.coinbase
+        + this.block.vote
+        + this.block.reclaimed;
+
+};
+
+/**
+ * Return block id
+ *
+ * @returns {integer} block_id
+ */
 Block.prototype.returnId = function returnId() {
   return this.block.id;
 }
+
+/**
+ * Returns the max transaction ID
+ */
 Block.prototype.returnMaxTxId = function returnMaxTxId() {
   if (this.maxtid != 0) { return this.maxtid; }
 
@@ -5799,6 +3934,10 @@ Block.prototype.returnMaxTxId = function returnMaxTxId() {
   this.maxtid = mti;
   return this.maxtid;
 }
+
+/**
+ * Returns the min transaction ID
+ */
 Block.prototype.returnMinTxId = function returnMinTxId() {
   if (this.mintid != 0) { return this.mintid; }
   if (this.transactions.length == 0) {
@@ -5814,495 +3953,490 @@ Block.prototype.returnMinTxId = function returnMinTxId() {
   this.mintid = mti;
   return this.mintid;
 }
-Block.prototype.returnPaysplit = function returnPaysplit() {
-  return this.block.paysplit;
-}
-Block.prototype.returnPaysplitVote = function returnPaysplitVote() {
-  return this.block.paysplit_vote;
-}
-Block.prototype.returnReclaimed = function returnReclaimed() {
-  return this.block.reclaimed;
-}
-Block.prototype.returnSignatureSource = function returnSignatureSource() {
 
-  return this.block.unixtime
-	 + this.block.prevhash
-	 + this.block.roothash
-	 + this.block.miner
-	 + this.block.id
-	 + this.block.burn_fee
-	 + this.block.fee_step
-	 + this.block.difficulty
-	 + this.block.paysplit
-	 + this.block.treasury
-	 + this.block.coinbase;
+/**
+ * Returns if the block contains a golden ticket
+ */
+Block.prototype.containsGoldenTicket = function containsGoldenTicket() {
+  if (this.contains_golden_ticket != -1) { return this.contains_golden_ticket; }
 
-}
-Block.prototype.returnSurplusFees = function returnSurplusFees() {
-
-  var unixtime_start = this.app.blockchain.returnUnixtime(this.block.prevhash);
-  var unixtime_current = this.block.unixtime;
-  var ts_bf = this.returnBurnFee();
-  var ts_fs = this.returnFeeStep();
-
-  var transaction_fees_needed = this.returnTransactionFeesNeeded(unixtime_start, unixtime_current, ts_bf, ts_fs);
-  var transaction_fees   = this.returnTransactionFeesUsable();
-
-  return (transaction_fees - transaction_fees_needed);
-
-}
-Block.prototype.returnTransactionFeesUsable = function returnTransactionFeesUsable() {
-  var total_fees = 0;
-  for (var i = 0; i < this.transactions.length; i++) {
-    var tmpfee = this.transactions[i].returnFeeUsable();
-    if (this.transactions[i].transaction.ft != 1) {
-      if (tmpfee > 0) { total_fees = parseFloat(total_fees) + parseFloat(tmpfee); }
+  for (let i = 0; i < this.transactions.length; i++) {
+    if (this.transactions[i].isGoldenTicket() == 1) {
+      this.contains_golden_ticket = 1;
+      return 1;
     }
   }
-  return total_fees;
+
+  this.contains_golden_ticket = 0;
+  return 0;
+
 }
-Block.prototype.returnTransactionFeesTotal = function returnTransactionFeesTotal() {
-  var total_fees = 0;
-  for (var i = 0; i < this.transactions.length; i++) {
-    var tmpfee = this.transactions[i].returnFeeTotal();
-    if (tmpfee > 0) { total_fees = parseFloat(total_fees) + parseFloat(tmpfee); }
+
+
+/**
+ * Bundles a block by calculating the burn fee and reclaiming funds
+ * @param {saito.block} prevblk
+ */
+Block.prototype.bundle = async function bundle(prevblk=null) {
+  //
+  // set default values
+  //
+  if (prevblk != null) {
+
+    this.block.id         = prevblk.block.id + 1;
+    this.block.treasury   = Big(prevblk.block.treasury).plus(Big(prevblk.block.reclaimed));
+    this.block.coinbase   = Big(this.block.treasury).div(this.app.blockchain.genesis_period).toFixed(8);
+    this.block.treasury   = this.block.treasury.minus(Big(this.block.coinbase)).toFixed(8);
+    this.block.prevhash   = prevblk.returnHash();
+    this.block.difficulty = prevblk.block.difficulty;
+    this.block.paysplit   = prevblk.block.paysplit;
+
   }
-  return total_fees;
-}
-Block.prototype.returnTransactionFeesNeeded = function returnTransactionFeesNeeded(ts_start, ts_issue, ts_burn_fee, ts_fee_step) {
-
-  var unixtime_original        = ts_start;
-  var unixtime_current         = ts_issue;
-  var milliseconds_since_block = unixtime_current - unixtime_original;
-  var feesneeded = ( ts_burn_fee - (ts_fee_step * milliseconds_since_block) );
-
-  if (feesneeded < 0) { feesneeded = 0; }
-
-  return feesneeded.toFixed(8);
-
-}
-Block.prototype.returnTreasury = function returnTreasury() {
 
   //
-  // we cannot convert to a float and then
-  // back to a string as that can cause errors
-  // in value which cascade due to floating
-  // point issues.
+  // update burn fee
   //
-  // so make sure that the coinbase is set
-  // properly and stick with it afterwards
+  //console.log("4: - " + JSON.stringify(this.block, 4));
+  this.block.bf = this.app.burnfee.adjustBurnFee(prevblk, this);
+
   //
-  return this.block.treasury;
+  // this calculates the amount of tokens that
+  // are unspent and cannot be rebroadcast in
+  // the block that will fall off the chain when
+  // we add this to the head of the chain.
+  //
+  // reclaimed = how many tokens to add to our
+  // treasury (next block) because they will disappear
+  // (when we add this block).
+  //
+  this.block.reclaimed = await this.calculateReclaimedFunds();
+
+  //
+  // sequential ids and stringify
+  //
+  let starting_id = 1;
+  if (prevblk != null) { starting_id = prevblk.returnMaxTxId()+1; }
+  for (let i = 0; i < this.transactions.length; i++) {
+    this.transactions[i].transaction.id = (starting_id + i);
+    this.block.txsjson.push(JSON.stringify(this.transactions[i]));
+  }
+
+
+
+  //
+  // add tx merkle root
+  //
+  if (this.block.txsjson.length > 0) {
+    this.block.txsjson.sort();
+    this.block.merkle = this.app.crypto.returnMerkleTree(this.block.txsjson).root;
+  }
+
+
+  // and let us know
+  return true;
 }
-Block.prototype.runCallbacks = function runCallbacks(confnum) {
-  for (var cc = this.confirmations+1; cc <= confnum; cc++) {
-    for (var ztc = 0; ztc < this.callbacks.length; ztc++) {
-      this.callbacks[ztc](this, this.transactions[this.callbacksTx[ztc]], cc, this.app);
+
+/**
+ * Returns reclaimed funds and a validation boolean
+ * @returns {Promise} reclaimed
+ */
+Block.prototype.calculateReclaimedFunds = async function calculateReclaimedFunds() {
+  return new Promise(async (resolve, reject) => {
+
+
+  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { resolve({reclaimed: "0.0", validates: true}); }
+
+  var eliminated_block_id = this.returnId() - this.app.blockchain.returnGenesisPeriod() - 1;
+
+
+    //
+    // if no blocks to eliminate, return 0.0 and confirm valid
+    //
+    if (eliminated_block_id < 1) {
+
+      resolve("0.0");
+      return;
+
     }
-  }
-  this.confirmations = confnum;
+
+    //
+    // otherwise, lets load the relevant blocks
+    //
+    var eblk = await this.app.storage.loadSingleBlockFromDiskById(eliminated_block_id);
+    var goldenticket_block_id = this.returnId() - this.app.blockchain.returnGenesisPeriod();
+    var gblk = await this.app.storage.loadSingleBlockFromDiskById(goldenticket_block_id);
+
+    var unspent_amt = Big(0.0);
+
+    //
+    // loop through the transactions in this block, and check
+    // which ones of them need to be checked to see if they have
+    // been unspent. If these transactions are UNSPENT and do not
+    // need to be rebroadcast, add their value to our unspent_amt
+    //
+    for (var i = 0; i < eblk.transactions.length; i++) {
+      for (var j = 0; j < eblk.transactions[i].transaction.to.length; j++) {
+
+        var slip       = eblk.transactions[i].transaction.to[j];
+            slip.bid   = eblk.returnId();
+            slip.tid   = eblk.transactions[i].transaction.id;
+            slip.sid   = j;
+            slip.bhash = eblk.returnHash();
+
+        if (Big(slip.amt).gt(0)) {
+
+          //
+          // if the tx has NOT been spent
+          //
+          if (this.app.storage.validateTransactionInput(slip, this.block.id)) {
+
+            /////////////////////
+            // slip is unspent //
+            /////////////////////
+            unspent_amt = unspent_amt.plus(Big(slip.amt));
+
+          }
+        }
+      }
+    }
+
+
+    //
+    // we have added up the unspent TX slips, now we
+    // need to figure out if we need to reclain the
+    // golden ticket coinbase
+    //
+    if (gblk.containsGoldenTicket() == 0) {
+      unspent_amt = unspent_amt.plus(Big(eblk.block.coinbase));
+    }
+
+    resolve(unspent_amt.toFixed(8));
+  });
 }
 
 
+/**
+ * Validates block by checking transactions, merkle, and golden ticket
+ */
+Block.prototype.validate = async function validate() {
 
-////////////////
-// Validation //
-////////////////
-Block.prototype.validate = function validate() {
+  //
+  // fetch prev block
+  //
+  if (this.block.prevhash == "") { return 1; }
+  var prevblk = await this.app.blockchain.returnBlockByHash(this.block.prevhash);
+  if (prevblk == null) { return 1; }
 
-  var block_self = this;
+  //
+  // check transactions
+  //
+  if (this.block.txsjson.length != this.transactions.length) {
+    console.log("Block transaction and txsjson arrays do not match. Discarding.");
+    this.app.logger.logError("Block transactions do not match. Discarding.", {message:"",err:""});
+    return 0;
 
-  ////////////////////////
-  // check transactions //
-  ////////////////////////
-  if (block_self.block.transactions.length != block_self.transactions.length) {
-   console.log("Block transactions do not match. Discarding.");
-   this.app.logger.logError("Block transactions do not match. Discarding.", {message:"",err:""});
-   return 0;
   }
-
-  /////////////////////////
-  // validate merkleTree //
-  /////////////////////////
-  if (block_self.block.transactions.length > 0) {
-    var t = block_self.app.crypt.returnMerkleTree(block_self.block.transactions).root;
-    if (t != block_self.block.merkle) {
-      console.log("Block transaction roothash is not as expected");
-      this.app.logger.logError("Block transaction roothash is not as expected", {message:"",err:""});
+  //
+  // validate transactions
+  //
+  for (let i = 0; i < this.transactions.length; i++) {
+    if (!this.transactions[i].validate(this.app, this)) {
+      console.log(`Block invalid: contains invalid transaction: ${i}`);
+      this.app.logger.logError("Block invalid: contains invalid transaction: " + i, {message:"",err:""});
       return 0;
     }
   }
 
-  ///////////////////
-  // validate fees //
-  ///////////////////
-  if (block_self.block.transactions.length > 0) {
-    if (block_self.validateTransactionFeesAdequate() == 0) {
-      console.log("Block invalid: transaction fees inadequate");
+
+  //
+  // ensure no duplicate input slips
+  //
+  let transaction_input_hmap = [];
+  for (let i = 0; i < this.transactions.length; i++) {
+    for (let j = 0; j < this.transactions[i].transaction.from.length; j++) {
+      if (transaction_input_hmap[this.transactions[i].transaction.from[j].returnIndex()] != undefined) {
+        console.log("Block invalid: doublespend input");
+        this.app.logger.logError("Block merkle root hash is not as expected", {message:"",err:""});
+        return 0;
+      }
+      transaction_input_hmap[this.transactions[i].transaction.from[j].returnIndex()] = 1;
+    }
+  }
+
+  //
+  // validate relcaimed funds
+  //
+  let block_reclaimed = await this.calculateReclaimedFunds();
+  if (block_reclaimed !== this.block.reclaimed) {
+    console.log("Block invalid: reclaimed funds do not match - " + block_reclaimed + " vs " + this.block.reclaimed)
+    return 0;
+  }
+
+
+  //
+  // validate merkle root
+  //
+  if (this.block.txsjson.length > 0) {
+    this.block.txsjson.sort();
+    let t = this.app.crypto.returnMerkleTree(this.block.txsjson).root;
+    if (t != this.block.merkle) {
+      console.log("Block merkle root hash is not as expected");
+      this.app.logger.logError("Block merkle root hash is not as expected", {message:"",err:""});
+      return 0;
+    }
+  }
+
+  //
+  // validate burn fee and fee transaction
+  //
+  if (this.block.txsjson.length > 0) {
+
+    let burn_fee_needed   = Big(this.app.burnfee.returnMovingBurnFee(prevblk, (this.block.ts-prevblk.block.ts)));
+    let credits_available = Big(this.returnAvailableFees(this.block.creator));
+    let surplus_available = credits_available.minus(burn_fee_needed);
+
+    if (credits_available.lt(burn_fee_needed)) {
+      console.log(`Block invalid: transaction fees inadequate: ${credits_available.toFixed(8)} -- ${burn_fee_needed.toFixed(8)}`);
       this.app.logger.logError("Block invalid: transaction fees inadequate", {message:"",err:""});
       return 0;
     }
+
+    //////////////////////////////
+    // validate fee transaction //
+    //////////////////////////////
+    if (surplus_available.gt(0)) {
+
+      let feetx = null;
+      let feetx_count = 0;
+
+      for (let i = 0; i < this.transactions.length; i++) {
+        if (this.transactions[i].transaction.type == 2) {
+          feetx = this.transactions[i];
+          feetx_count++;
+        }
+      }
+
+      if (feetx == null) {
+        console.log("Block invalid: surplus exists but no fee ticket");
+        this.app.logger.logError("Block invalid: surplus exists but no fee ticket", {message:"",err:""});
+        return 0;
+      }
+
+      if (feetx_count > 1) {
+        console.log("Block invalid: multiple fee transactions found in block");
+        this.app.logger.logError("Block invalid: multiple fee transactions found in block", {message:"",err:""});
+        return 0;
+      }
+
+      let v = Big(0);
+      for (let i = 0; i < feetx.transaction.to.length; i++) { v = v.plus(feetx.transaction.to[i].amt); }
+
+      if (! Big(v.toFixed(8)).eq(Big(surplus_available.toFixed(8)))) {
+        console.log(`Block invalid: surplus exists but does not match fee ticket: ${v.toFixed(8)} -- ${surplus_available.toFixed(8)}`);
+        this.app.logger.logError("Block invalid: surplus exists but does not match fee ticket", {message:"",err:""});
+        return 0;
+      }
+    }
   }
+
 
   ////////////////////////////
   // validate golden ticket //
   ////////////////////////////
-  //
-  // this is unncessary as we take care of it in the blockchain class
-  //
-  //if (block_self.validateGoldenTicket() == 0 && block_self.app.SPVMODE == 0) {
-  //  console.log("Block invalid: contains invalid golden ticket");
-  //  block_self.app.mempool.removeGoldenTicket();
-  //  mycallback(0, null);
-  //  return;
-  //}
-
-  ///////////////////////////
-  // validate transactions //
-  ///////////////////////////
-  var ft_found = 0;
-  var gt_found = 0;
-  for (var zz = 0; zz < block_self.transactions.length; zz++) {
-    if (block_self.transactions[zz].validate(block_self.app, block_self.block.paysplit_vote, block_self.block.id, block_self.returnAverageFee()) != 1) {
-      console.log("Block invalid: contains invalid transaction");
-      console.log(`hash: ${block_self.app.crypt.hash(JSON.stringify(block_self.transactions[zz]))}`);
-      console.log(`sig: ${block_self.transactions[zz].transaction.sig}`);
-      console.log(`msig: ${block_self.transactions[zz].transaction.msig}`);
-
-      block_self.app.logger.logError("Block invalid: contains invalid transaction", {message:"",err:""});
-      block_self.app.logger.logError(`hash: ${block_self.app.crypt.hash(JSON.stringify(block_self.transactions[zz]))}`);
-      block_self.app.logger.logError(`sig: ${block_self.transactions[zz].transaction.sig}`);
-      block_self.app.logger.logError(`msig: ${block_self.transactions[zz].transaction.msig}`);
-      return 0;
-    }
-    if (block_self.transactions[zz].isGoldenTicket() == 1) { gt_found++; }
-    if (block_self.transactions[zz].isFeeTransaction() == 1) { ft_found++; }
-    if (ft_found > 1) {
-      console.log("Block invalid: contains multiple fee capture transactions");
-      block_self.app.logger.logError("Block invalid: contains invalid transaction", {message:"",err:""});
-      return 0;
-    }
-    if (gt_found > 1) {
-      console.log("Block invalid: contains multiple golden ticket transactions");
-      block_self.app.logger.logError("Block invalid: contains invalid transaction", {message:"",err:""});
-      return 0;
-    }
-  }
-
-  return 1;
-
-}
-
-Block.prototype.validateTransactionFeesAdequate = function validateTransactionFeesAdequate() {
-
-  // validate first block
-  if (this.block.prevhash == "") { return 1; }
-  var tb = this.app.blockchain.returnBlockByHash(this.block.prevhash);
-  if (tb == null) { return 1; }
-
-  // otherwise calculate
-  var unixtime_start = this.app.blockchain.returnUnixtime(this.block.prevhash);
-  var unixtime_current = this.block.unixtime;
-  var transaction_fees_needed = this.returnTransactionFeesNeeded(unixtime_start, unixtime_current, tb.returnBurnFee(), tb.returnFeeStep());
-
-  var usable_transaction_fees   = 0;
-  for (var i = 0; i < this.block.transactions.length; i++) {
-    if (this.transactions[i].transaction.ft != 1) {
-      usable_transaction_fees += this.transactions[i].returnFeeUsable();
-    }
-  }
-  if (transaction_fees_needed > usable_transaction_fees) { return 0; }
-
-  return 1;
-
-}
-Block.prototype.validateGoldenTicket = function validateGoldenTicket(prevblk=null) {
-
-  if (this.app.SPVMODE == 1) { return 1; }
-
-  // first block we receive
-  if (prevblk == null && this.app.blockchain.blocks.length <= 1) {
-    console.log("Previous Block is NULL -- cannot validate Golden Ticket");
-    this.app.logger.logError("Previous Block is NULL -- cannot validate Golden Ticket",
-      {message:"",err:""});
-    return 1;
-  }
-
-  if (prevblk == null) {
-    console.log("Cannot validate Golden Ticket without previous block");
-    this.app.logger.logError("Cannot validate Golden Ticket without previous block",
-      {message:"",err:""});
-    return 0;
-  }
-
-  var gtix    = null;
+  let gttx = null;
+  let gttx_count = 0;
 
   // check for golden ticket
-  var goldenticketcount = 0;
-  for (var bli = 0; bli < this.transactions.length; bli++) {
-    if (this.transactions[bli].transaction.gt != null) {
-      goldenticketcount++;
-      gtix = new saito.goldenticket(this.app, JSON.stringify(this.transactions[bli].transaction.gt));
-      if (gtix.validate(prevblk, this) == 0) {
-        console.log("Block invalid: golden ticket does not validate");
-        this.app.logger.logError("Block invalid: golden ticket does not validate",
-         {message:"",err:""});
-        return 0;
-      }
+  for (let i = 0; i < this.transactions.length; i++) {
+    if (this.transactions[i].transaction.type == 2) {
+      gttx_count++;
+      gttx = this.transactions[i];
     }
   }
 
-  if (goldenticketcount > 1) {
+  if (gttx_count > 1) {
     console.log("Block invalid: has more than one golden ticket");
-    this.app.logger.logError("Block invalid: has more than one golden ticket",
-      {message:"",err:""});
+    this.app.logger.logError("Block invalid: has more than one golden ticket", {message:"",err:""});
     return 0;
   }
 
   // no golden ticket
-  if (gtix == null && prevblk != null) {
+  if (gttx == null) {
+
     // difficulty, paysplit should be unchanged
     if (this.returnPaysplit() != prevblk.returnPaysplit()) {
       console.log("Block invalid: no golden ticket yet paysplit differs");
-      this.app.logger.logError("Block invalid: no golden ticket yet paysplit differs",
-        {message:"",err:""});
+      this.app.logger.logError("Block invalid: no golden ticket yet paysplit differs", {message:"",err:""});
       return 0;
     }
     if (this.returnDifficulty() != prevblk.returnDifficulty()) {
       console.log("Block invalid: no golden ticket yet difficulty differs");
-      this.app.logger.logError("Block invalid: no golden ticket yet difficulty differs",
-        {message:"",err:""});
+      this.app.logger.logError("Block invalid: no golden ticket yet difficulty differs", {message:"",err:""});
       return 0;
     }
 
-    return 1;
-  }
+  } else {
 
+    // ensure golden ticket consistent
+    let golden = new saito.goldenticket(this.app, JSON.stringify(gttx.transaction.msg));
+    if (! golden.validateSolution(this, gttx.transaction.from[0].add) ) {
+      console.log("Block invalid: contains invalid golden ticket (solution invalid)");
+      this.app.logger.logError("Block contains invalid golden ticket (solution invalid)", {message:"",err:""});
+      return 0;
+    }
 
-  // validate paysplit and difficulty changes, and monetary policy
-  if (prevblk != null) {
+    //
+    // ensure golden ticket miner and node payouts are exactly right
+    //
 
     // validate paysplit and difficulty
-    if (this.returnDifficulty() != gtix.calculateDifficulty(prevblk)) {
+    if (this.returnDifficulty() != golden.calculateDifficulty(gttx.transaction.msg, prevblk)) {
       console.log("Block invalid: difficulty adjustment is incorrect");
-      this.app.logger.logError("Block invalid: difficulty adjustment is incorrect",
-        {message:"",err:""});
+      this.app.logger.logError("Block invalid: difficulty adjustment is incorrect", {message:"",err:""});
       return 0;
     }
-    if (this.returnPaysplit() != gtix.calculatePaysplit(prevblk)) {
+    if (this.returnPaysplit() != golden.calculatePaysplit(gttx.transaction.msg, prevblk)) {
       console.log("Block invalid: paysplit adjustment is incorrect");
-      this.app.logger.logError("Block invalid: paysplit adjustment is incorrect",
-        {message:"",err:""});
+      this.app.logger.logError("Block invalid: paysplit adjustment is incorrect", {message:"",err:""});
       return 0;
     }
 
+
     // validate monetary policy
-    if (gtix != null) {
-      if (gtix.validateMonetaryPolicy(this.returnTreasury(), this.returnCoinbase(), prevblk) != 1) {
+    if (golden !== null) {
+      if (golden.validateMonetaryPolicy(this.returnTreasury(), this.returnCoinbase(), prevblk) != 1) {
         console.log("Block invalid: monetary policy does not validate");
-        this.app.logger.logError("Block invalid: monetary policy does not validate",
-          {message:"",err:""});
+        this.app.logger.logError("Block invalid: monetary policy does not validate", {message:"",err:""});
         return 0;
       }
     }
   }
-
   return 1;
 }
-Block.prototype.validateReclaimedFunds = function validateReclaimedFunds(mycallback) {
 
-  // lite clients exit without validating
-  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) {
-    mycallback(1);
-    return;
-  }
 
-  var block_self = this;
 
-  // full nodes have to check
-  this.calculateReclaimedFunds(1, function(reclaimed, validates) {
+/**
+ * Returns the "usable value" of the transaction fees in the mempool
+ * that can be used to produce a block with a given paysplit vote
+ *
+ * Note the submission of our own wallet publickey into the transaction
+ * class' returnFeesUsable function. This is unnecessary since the default
+ * behavior of the function is to examine the transaction from our own
+ * perspective. When the same function is called to verify the fees for
+ * a block the creator publickey should be called.
+ *
+ * @param {vote} paysplit vote
+ * @returns {string} credits available
+ */
+Block.prototype.returnAvailableFees = function returnAvailableFees(publickey="") {
 
-    if (validates == 0) {
-      console.log("validation error: failure to rebroadcast required transaction");
-      mycallback(0);
-      return;
-    }
+  if (publickey == "") { publickey = this.app.wallet.returnPublicKey(); }
 
-    if (Big(block_self.block.reclaimed).eq(reclaimed)) {
-      mycallback(1);
-      return;
-    } else {
-      mycallback(0);
-      return;
-    }
-  });
-
-}
-Block.prototype.updateConfirmationNumberWithoutCallbacks = function updateConfirmationNumberWithoutCallbacks(confnum) {
-  if (confnum > this.confirmations) {this.confirmations = confnum; }
-}
-//
-// avg fee paid by non-rebroadcast txs
-//
-Block.prototype.returnAverageFee = function returnAverageFee() {
-
-  if (this.average_fee > 0) { return this.average_fee; }
-
-  var total_fees = 0.0;
-  var total_txs  = 0;
-
+  let v = Big(0);
   for (let i = 0; i < this.transactions.length; i++) {
-    if (this.transactions[i].transaction.rb == 0) { 
-      total_txs++; 
-      total_fees = this.transactions[i].returnFeeTotal();
-    }
+    v = v.plus(Big(this.transactions[i].returnFeesUsable(this.app, publickey)));
   }
-  this.average_fee = total_fees / total_txs;
+  return v.toFixed(8);
+
+}
+Block.prototype.returnFeesTotal = function returnFeesTotal() {
+
+  let v = Big(0);
+  for (let i = 0; i < this.transactions.length; i++) {
+    v = v.plus(Big(this.transactions[i].returnFeesTotal(this.app, this.block.creator)));
+  }
+  return v.toFixed(8);
 
 }
 
 
+/**
+ * update Google Dense Hashmap to spend inputs in block
+ */
+Block.prototype.spendInputs = function spendInputs() {
 
-}).call(this,require('_process'))
-},{"../saito":12,"_process":328,"big.js":78}],15:[function(require,module,exports){
+  for (let b = 0; b < this.transactions.length; b++) {
+    for (let bb = 0; bb < this.transactions[b].transaction.from.length; bb++) {
+      if (this.transactions[b].transaction.from[bb].amt > 0) {
+        let slip_map_index = this.transactions[b].transaction.from[bb].returnIndex();
+        this.app.storage.updateShashmap(slip_map_index, this.block.id);
+      }
+    }
+  }
+  return 1;
+
+}
+
+
+/**
+ * update Google Dense Hashmap to unspend inputs in block
+ */
+Block.prototype.unspendInputs = function unspendInputs() {
+
+  for (let b = 0; b < this.transactions.length; b++) {
+    for (let bb = 0; bb < this.transactions[b].transaction.from.length; bb++) {
+      if (this.transactions[b].transaction.from[bb].amt > 0) {
+        let slip_map_index = this.transactions[b].transaction.from[bb].returnIndex();
+        this.app.storage.updateShashmap(slip_map_index, -1);
+      }
+    }
+  }
+  return 1;
+
+}
+
+},{"../saito":8,"big.js":75,"bluebird":110}],11:[function(require,module,exports){
 (function (process){
 //
-// we do not 'use strict' in this class because
-// we need the ability to delete items from a
-// map when processing our transient blockchain
+// we cannot 'use strict' as we need to delete items from hashmaps
 //
-// see:
-//
-//    purgeArchivedBlocks
-//
-
-const saito   = require('../saito');
+const saito    = require('../saito');
+const Big      = require('big.js');
 
 
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Blockchain Contructor
+ * @param {*} app
+ */
 function Blockchain(app) {
 
   if (!(this instanceof Blockchain)) { return new Blockchain(app); }
 
-  this.app     = app || {};
+  this.app                 = app || {};
 
-
-  /////////////////////////
-  // Consensus Variables //
-  /////////////////////////
-  //
-  // variables governing the monetary policy for the
-  // network are in the block class (treasury, token
-  // limit, etc.)
-  //
-  this.heartbeat               = 30;        // expect new block every 30 seconds
-  this.max_heartbeat           = 120;       // burn fee hits zero every 120 seconds
-  this.genesis_period          = 5;     // number of blocks before money disappears
-					    // 90,000 is roughly a 30 day transient blockchain.
-  this.genesis_ts              = 0;         // unixtime of earliest block
-  this.genesis_block_id        = 0;         // earliest block_id we care about
-  this.fork_guard              = 2;       // discard forks that fall N blocks behind, this can
-  //this.fork_guard              = 120;       // discard forks that fall N blocks behind, this can
-					    // result in a chain fork, so this needs to be long
-					    // enough that we reasonably decide that nodes that
-					    // cannot keep up-to-date with the network must resync
-					    //
-					    // the fork guard is used primarily when identifying
-					    // what blocks we can delete, since we must have the
-					    // full genesis period, plus whatever fork guard limit
-					    // suggests that someone can re-write the genesis chain
-					    //
-  this.fork_id                 = "";        // a string we use to identify our longest-chain
-					    // generated deterministically from the block hashes
-					    // and thus unique for every fork
-					    //
-  this.fork_id_mod             = 10;	    // update fork id every 10 blocks
-  this.old_lc                  = -1;	    // old longest-chain when processing new block
-					    // this will be set to the position of the current
-					    // head of the longest chain in our indexes before
-					    // we try to validate the newest block, so that we
-					    // can gracefully reset to the known-good block if
-					    // there are problems
-
-
-  /////////////
-  // Indexes //
-  /////////////
-  //
-  // These hold the most important data needed to interact
-  // with the blockchain objects, and must be kept for the
-  // entire period the block is part of the transient
-  // blockchain.
-  //
-  // If we add or delete these items, we must make changes
-  // to the following functions
-  //
-  //    addBlockToBlockchain (add)
-  //    addBlockToBlockchainPartTwo (lc_hashmap only)
-  //    purgeArchivedData (delete)
-  //
   this.index = {
     hash:        [],                 // hashes
     prevhash:    [],                 // hash of previous block
-    block_id:    [],                 // block id
+    bid:         [],                 // block id
     mintid:      [],                 // min tid
     maxtid:      [],                 // max tid
     ts:          [],                 // timestamps
     lc:          [],                 // is longest chain (0 = no, 1 = yes)
-    burnfee:     []                  // burnfee per block
+    bf:          []                  // burnfee per block
   };
-  this.blocks         = [];
-  this.block_hashmap  = [];
-  this.lc_hashmap     = []; 	     // hashmap index is the  block hash and contains
-				     // 1 or 0 depending on if they are the longest
-				     // chain or not.
-  this.longestChain   = -1;          // position of longest chain in indices
+  this.blocks               = [];
+  this.block_hash_hmap      = [];
+
+  this.last_hash    	    = "";
+  this.last_bid     	    = 0;
+  this.last_ts      	    = 0;
+
+  this.lowest_acceptable_ts = 0;
+
+  this.genesis_bid  	    = 0;
+  this.genesis_ts   	    = 0;
+  this.genesis_period       = 4;
+  this.fork_guard           = 4;
+  this.fork_id              = "";
+  this.fork_id_mod	    = 10; 
+
+  this.callback_limit       = 100;  // run callbacks on 100 blocks
+
+  this.lc                   = 0;
 
 
-  ///////////////////
-  // monitor state //
-  ///////////////////
-  this.currently_reclaiming = 0;
-  this.currently_indexing = 0;
-  this.block_saving_timer = null;
-  this.block_saving_timer_speed = 10;
-
-
-  //
-  // this are set to the earliest block that we process
-  // to ensure that we don't load missing blocks endlessly
-  // into the past.
-  //
-  // the blk_limit is checked in the storage class when
-  // validating slips as part of its sanity check so that
-  // it does not cry foul if it lacks a full genesis period
-  // worth of blocks but cannot validate slips.
-  //
-  this.ts_limit = -1;
-  this.blk_limit = -1;
-
-
-  ///////////////
-  // Callbacks //
-  ///////////////
-  this.callback_limit   = 100;        // only run callbacks on the last X blocks
-					     // this should be at least 10 to be safe, as
-					     // we delete data from blks past this limit
-					     // and that can complicate syncing to lite-clients
-					     // if we send full blocks right away
-  this.run_callbacks 	  = 1;	     // 0 for central nodes focused on scaling
-
-
-  //
-  // these are used to tell the blockchain class from
-  // what block it should start syncing. we load these
-  // from our options file on initialize.
-  //
-  this.previous_block_id = -1;
-  this.previous_ts_limit = -1;
-  this.previous_block_hash = "";
+  this.indexing_active      = false;
 
   return this;
 
@@ -6310,757 +4444,461 @@ function Blockchain(app) {
 module.exports = Blockchain;
 
 
+/**
+ * loads blocks from disk if they exist, and handles
+ * lite-client initialization functions.
+ **/
+Blockchain.prototype.initialize = async function initialize() {
+  try {
+    await this.app.storage.loadBlocksFromDisk(this.genesis_period);
 
-////////////////
-// initialize //
-////////////////
-//
-// checks to see if we have any blocks on disk and starts
-// adding them to our blockchain. updates local variables
-// to let us know our latest block, block hash, etc. for
-// lite-clients.
-//
-// Once blocks are reindexed, the software will continue
-// to sync missing data from the blockchain using the
-// information read in from the options file.
-//
-Blockchain.prototype.initialize = function initialize() {
-  this.app.storage.loadBlocksFromDisk(this.genesis_period+this.fork_guard);
-  if (this.app.options.blockchain != undefined) {
-    if (this.app.options.blockchain.latest_block_id != null) {
-      this.previous_block_id = this.app.options.blockchain.latest_block_id;
-    }
-    if (this.app.options.blockchain.latest_block_ts != null) {
-      this.previous_ts_limit = this.app.options.blockchain.latest_block_ts;
-    }
-    if (this.app.options.blockchain.latest_block_hash != null) {
-      this.previous_block_hash = this.app.options.blockchain.latest_block_hash;
-    }
+    this.app.options.blockchain = Object.assign({}, this.app.options.blockchain);
+
+    let { last_hash, last_bid, last_ts, genesis_bid, genesis_ts } = this.app.options.blockchain;
+
+    if (last_hash != undefined)   { this.last_hash = last_hash;}
+    if (last_bid != undefined)    { this.last_bid = last_bid;}
+    if (last_ts != undefined)     { this.last_ts = last_ts;}
+    if (genesis_bid != undefined) { this.genesis_bid = genesis_bid;}
+    if (genesis_ts != undefined)  { this.genesis_ts = genesis_ts;}
+  } catch (err) {
+    console.log(err);
   }
 }
 
+/**
+ * Saves the blockchain meta-data for the options file
+ **/
+Blockchain.prototype.saveBlockchain = function saveBlockchain() {
 
-////////////////////////////////////
-// validateBlockAndQueueInMempool //
-////////////////////////////////////
-//
-// this function makes sure that everything about the block
-// is valid except for the input slips, which we check only
-// when we make this part of the longest chain.
-//
-// it is called only when we receive a block over the network
-// as we already trust our own blocks to validate. if the
-// block is considered superficially valid, we add it to the
-// FIFO mempool queue and (optionally) propagate it to our
-// peers.
-//
-// @params {saito.block} block
-// @params {boolean} propagate to peers
-//
-Blockchain.prototype.validateBlockAndQueueInMempool = function validateBlockAndQueueInMempool(blk, relay_on_validate=1) {
+  this.app.options.blockchain = Object.assign({}, this.app.options.blockchain);
 
-  var blockchain_self = this;
+  let blk = this.returnLatestBlock();
 
-  //////////////////////
-  // check if indexed //
-  //////////////////////
-  if ( this.isHashIndexed( blk.returnHash() ) == 1 ) {
-    console.log("Hash is already indexed: " + blk.returnHash() );
-    blockchain_self.app.logger.logError(`Hash is already indexed: ${blk.returnHash()}`,
-      {message:"",err:""});
-    return 0;
-  }
+  if (blk == null) { return; }
 
+  this.app.options.blockchain.last_hash    = blk.returnHash();
+  this.app.options.blockchain.last_bid     = blk.block.id;
+  this.app.options.blockchain.last_ts      = blk.block.ts;
+  this.app.options.blockchain.genesis_bid  = this.genesis_bid;
+  this.app.options.blockchain.genesis_ts   = this.genesis_ts;
 
-  ////////////////////
-  // validate block //
-  ////////////////////
-  if (! blk.validate() ) {
-    console.log("Block does not validate!!!");
-    blockchain_self.app.mempool.removeBlock(blk);
-
-    console.log("INVALID BLOCK HASH: " + blk.returnHash());
-    blockchain_self.app.logger.logError(`INVALID BLOCK HASH: ${blk.returnHash()}`,
-      {message:"",err:""});
-    blk.block.transactions = [];
-    blk.transactions = [];
-
-    console.log(JSON.stringify(blk.block, null, 4));
-    blockchain_self.app.logger.logError(JSON.stringify(blk.block, null, 4),
-      {message:"",err:""});
-    return 0;
-  }
-
-
-  //////////////////////////////
-  // validate reclaimed funds //
-  //////////////////////////////
-  blockchain_self.currently_reclaiming = 1;
-  blk.validateReclaimedFunds(function(validated_or_not) {
-
-    if (validated_or_not == 0) {
-      console.log("Reclaimed Funds found invalid");
-      blockchain_self.app.logger.logError("Reclaimed Funds found invalid",
-        {message:"",err:""});
-
-      blockchain_self.app.mempool.removeBlock(blk);
-      blockchain_self.currently_reclaiming = 0;
-      return 0;
-    }
-
-    ///////////////////////////////
-    // add to FIFI mempool queue //
-    ///////////////////////////////
-    if ( ! blockchain_self.app.mempool.addBlock(blk) ) {
-      blockchain_self.currently_reclaiming = 0;
-      return 0;
-    }
-
-    ///////////////
-    // propagate //
-    ///////////////
-    if (relay_on_validate == 1) {
-
-      //
-      // our attempts to control flooding attacks use the 
-      // reliability metrics in the peer class to determine
-      // whether or not it can be trusted. untrusted peers
-      // have their blocks processed, but not forwarded by
-      // default.
-      //
-      // TODO
-      //
-      // make this more sophisticated -- it is easy to have
-      // "connected" blocks.
-      //
-      if (blockchain_self.app.network.isPeerReliable(blk.originating_peer) == 1) {
-        blockchain_self.app.network.propagateBlock(blk);
-      }
-    }
-
-    /////////////
-    // process //
-    /////////////
-    blockchain_self.currently_reclaiming = 0;
-    blockchain_self.app.mempool.processBlocks();
-
-  });
+  this.app.storage.saveOptions();
 
 }
 
 
-//////////////////////////
-// addBlockToBlockchain //
-//////////////////////////
-//
-// this is the heart of the blockchain class. the blocks that are
-// submitted here are pulled out of the mempool FIFO queue, which
-// means that EITHER we created them OR they have already been
-// superficially validated (i.e. everything but the transaction
-// slips).
-//
-// we only process one block at a time, add it to our in-memory
-// array of blocks and then check to see if it is part of the
-// longest chain. if it is NOT we can continue with:
-//
-//   addBlockToBlockchainPartTwo
-//
-// if the block IS part of the longest chain or we are facing a chain
-// reorganization we need to submit it to the Storage class so that
-// we can validate the slips.
-//
-//   validateLongestChain
-//
-// The function ends at this point because the Storage class may
-// need to fetch older blocks from disk in order to properly
-// validate them, and so we have no control over executing once
-// we his this point.
-//
-// Once the slips are validated, control passes to one of these
-// two functions depending on whether this block successfully
-// validated all of its slips. These either continue or reset
-// the blockchain for the next block/
-//
-//   addBlockToBlockchainPartTwo
-//   addBlockToBlockchainFailure
-//
-// @params {saito.block} block to add
-// @params {string} "force" if loading from disk and
-//		    we want to skip running callbacks
-//
-// @returns {boolean} can we delete this block from our mempool
-//
-Blockchain.prototype.addBlockToBlockchain = function addBlockToBlockchain(newblock, forceAdd="no") {
+/**
+ * Returns the forkid of our longest chain
+ */
+Blockchain.prototype.returnForkId = function returnForkId() {
+  return this.fork_id;
+}
 
-  var blockchain_self = this;
 
-  //
-  // are we ready to add another block?
-  //
-  if (this.app.monitor.readyToAddBlockToBlockchain() == 0) {
-    console.log("waiting to addBlockToBlockchain for: " + newblock.returnHash());
-    return 0;
+/**
+ * Returns our reference Genesis Block Id
+ */
+Blockchain.prototype.returnGenesisBlockId = function returnGenesisBlockId() {
+  return this.genesis_bid;
+}
+
+
+/**
+ * Returns our reference Genesis Timestamp
+ */
+Blockchain.prototype.returnGenesisTimestamp = function returnGenesisTimestamp() {
+  return this.genesis_ts;
+}
+
+
+/**
+ * Returns the latest block id from the longest chain
+ * @returns {integer} latest_block_id
+ */
+Blockchain.prototype.returnLatestBlockId = function returnLatestBlockId() {
+  if (this.blocks.length == 0) { return 0; }
+  return this.index.bid[this.lc];
+}
+
+
+/**
+ * Returns the Genesis Period of this Blockchain
+ * @returns {integer} latest_block_id
+ */
+Blockchain.prototype.returnGenesisPeriod = function returnGenesisPeriod() {
+  return this.genesis_period;
+}
+
+
+/**
+ * Returns the latest block hash from the longest chain
+ * @returns {string} latest_block_hash
+ */
+Blockchain.prototype.returnLatestBlockHash = function returnLatestBlockHash() {
+  if (this.blocks.length == 0) { return ""; }
+  return this.index.hash[this.lc];
+}
+
+
+/**
+ * Returns the latest block on the longest chain
+ * @param {integer} lc
+ * @returns {saito.block} latest_block
+ */
+Blockchain.prototype.returnLatestBlock = function returnLatestBlock(lc=1) {
+  if (this.blocks.length == 0) { return null; }
+  if (lc == 1) {
+    return this.blocks[this.lc];
   } else {
-    this.currently_indexing == 1;
+    return this.blocks[this.blocks.length-1];
   }
+}
+
+
+/**
+ * Adds block to blockchain
+ *
+ * @param {saito.block} newblock
+ * @param {boolean} force
+ */
+Blockchain.prototype.addBlockToBlockchain = async function addBlockToBlockchain(newblock=null, force=false) {
+
+console.log("ADD BLOCK TO BLOCKCHAIN 1");
+
+  this.indexing_active = true;
 
   //
   // sanity check
   //
-  if (newblock == null || newblock.is_valid == 0) {
-    console.log("BLOCK IS INVALID");
-    this.app.logger.logError("BLOCK IS INVALID",
-      {message:"",err:""});
-
-    this.currently_indexing = 0;
-    return 1;
+  if (newblock == null || !newblock.is_valid) {
+    this.app.logger.logError("BLOCK IS INVALID", {message:"",err:""});
+    this.indexing_active = false;
+    return;
   }
 
   //
-  // another sanity check
+  // if block not null
   //
-  // TODO - hunt this down
-  //
-  // there is some edge case where we will produce a block #1
-  // from OUR mempool and set it as the longest chain even if
-  // we already have a longest chain. So we refuse to add a
-  // block #1 if we already have any blocks in our queue.
-  //
-  // worst case is that some other blocks now need to start from
-  // block 2 when syncing if they receive block #1 later than
-  // a subsequent block;
-  //
-  //if (newblock.block.id == 1 && this.index.hash.length > 0) {
-  //  console.log("ERROR: caught block #1 being produced!");
-  //  console.log(JSON.stringify(newblock.block));
-  //  process.exit();
-  //  return 1;
-  //}
+  let hash                   = newblock.returnHash();
+  let ts                     = newblock.block.ts;
+  let prevhash               = newblock.block.prevhash;
+  let bid                    = newblock.block.id;
+  let old_lc                 = this.lc;
 
-
-  var blockchain_self = this;
-
-  let hash                  = newblock.returnHash('hex');
-  let ts                    = newblock.block.unixtime;
-  let prevhash              = newblock.block.prevhash;
-  let block_id              = newblock.block.id;
-  let old_longestChain      = this.longestChain;
-  this.old_lc               = this.longestChain;
-
+  console.log(`START TIME: adding ${bid} -> ${hash} ${ts}`);
 
   //
-  // we can delete this, just using it to get a sense
-  // of how long various parts of block processing take
-  // for optimization purposes
+  // ignore pre-genesis blocks
   //
-  var startTime = new Date().getTime();
-  console.log("\n\n\nSTART TIME: "+startTime);
-  console.log("Adding block "+block_id + " -> " + hash + " " + newblock.block.unixtime);
-
-  blockchain_self.app.logger.logInfo(`START TIME: ${startTime}`);
-  blockchain_self.app.logger.logInfo(`Adding block ${block_id} -> ${hash} ${newblock.block.unixtime}`)
-
-  //
-  // if the timestamp for this block is BEFORE our genesis block, we
-  // refuse to process it out of principle. Our sorting algorithm will
-  // still accept orphan chains that post-date our genesis block, but
-  // will not try to connect them with the chain. it is a requirement
-  // that the first block we receive is part of the valid longest chain
-  //
-  // we should implement something in the future that allows us to be
-  // notified in the rare case there is a reorganization that pushes
-  // our initial block out-of-sync. This will not happen to a node that
-  // has a fully genesis period of blocks though, and has checked that
-  // it is valid, so it is not a priority.
-  //
-  // this prevents us trying to load blocks endlessly into the past as
-  // we find references to previous block hashes that we do not have
-  // indexed in the historical blocks we are onboarding.
-  //
-  if (ts < this.genesis_ts) {
-    if (forceAdd != "force") {
-      this.currently_indexing = 0;
-      return 1;
+  if (ts < this.genesis_ts || bid < this.genesis_bid) {
+    if (force) {
+      this.indexing_active = false;
+      return;
     }
   }
-  if (this.isHashIndexed(hash) == 1) {
-    this.currently_indexing = 0;
-    return 1;
-  }
 
+
+  //
+  // check hash not already indexed
+  //
+  if (this.isHashIndexed(hash)) {
+    this.indexing_active = false;
+    return;
+  }
 
   ////////////////////
   // missing blocks //
   ////////////////////
   //
-  // if we are adding our first block, we set this as
-  // the ts_limit to avoid requesting missing blocks
-  // ad infinitum into the past. we update the blk_limit
-  // variable so the storage class can check what our
-  // earliest block_id is.
+  // If the previous block hash was not indexed, we want to
+  // fetch it. This block will not be part of the longest
+  // chain.
   //
-  if (this.ts_limit == -1) {
-    this.blk_limit = block_id;
-    if (this.app.options.blockchain != null) {
-      this.ts_limit = this.previous_ts_limit;
-    }
-    if (this.ts_limit == -1) {
-      this.ts_limit = newblock.block.unixtime;
-    }
-  } else {
-    if (this.ts_limit > newblock.block.unixtime && forceAdd != "no") {
-      this.ts_limit = newblock.block.unixtime;
+  if (ts < this.lowest_acceptable_ts) {
+    if (force) {
+      this.lowest_acceptable_ts = ts;
     }
   }
-
   //
-  // if our previous block hash was not indexed we request the missing
-  // block unless its timestamp is going to precede our first block
-  // and genesis block, in which case we don't need it.
+  // do not fetch missing blocks if they preceded our earliest
+  // block by timestamp, or have too low a BID to be relevant
+  // on the current blockchain.
   //
   if (prevhash != "") {
-    if (this.ts_limit <= newblock.block.unixtime) {
-      if (this.isHashIndexed(prevhash) == -1) {
-
-        // update peer reliability
-        this.app.network.updatePeerReliability(newblock.originating_peer, "last_block_connected", -1);
-
-        var response           = {};
-        response.request       = "missing block";
-        response.data          = {};
-        response.data.hash     = prevhash;
-        response.data.lasthash = this.returnLatestBlockHash();
-        this.app.network.sendRequest(response.request, JSON.stringify(response.data));
+    if (ts > this.lowest_acceptable_ts) {
+      if (!this.isHashIndexed(prevhash))  {
+        if ( bid > (this.index.bid[this.lc]-this.genesis_period)) {
+          var response            = {};
+          response.request        = "missing block";
+          response.data           = {};
+          response.data.hash      = prevhash;
+          response.data.last_hash = this.returnLatestBlockHash();
+          this.app.network.sendRequest(response.request, JSON.stringify(response.data));
+        }
       }
     }
   }
-  else {
-    if (this.isHashIndexed(prevhash) == -1) {
-      // update peer reliability
-      this.app.network.updatePeerReliability(newblock.originating_peer, "last_block_connected", 1);
-    }
-  }
-
-
-
 
   ////////////////////
   // insert indexes //
   ////////////////////
-  var pos = this.binaryInsert(this.index.ts, ts, function(a,b) { return a -b;});
+  var pos = this.binaryInsert(this.index.ts, ts, (a,b) => { return a - b; });
+
+  if (pos <= this.lc && this.index.lc.length > 1) { this.lc++; }
   this.index.hash.splice(pos, 0, hash);
   this.index.prevhash.splice(pos, 0, prevhash);
-  this.index.block_id.splice(pos, 0, block_id);
+  this.index.bid.splice(pos, 0, bid);
   this.index.maxtid.splice(pos, 0, newblock.returnMaxTxId());
   this.index.mintid.splice(pos, 0, newblock.returnMinTxId());
-  this.index.lc.splice(pos, 0, 0);              // set longest chain to 0 until we know it is longest chain
-  this.index.burnfee.splice(pos, 0, newblock.returnBurnFee());
-  this.block_hashmap[hash] = block_id;
+  this.index.lc.splice(pos, 0, 0);
+  this.index.bf.splice(pos, 0, newblock.returnBurnFeeValue());
   this.blocks.splice(pos, 0, newblock);
 
-
-
-  //////////////////////////////////////////////////////////
-  // if this is our first block, it is longest by default //
-  //////////////////////////////////////////////////////////
-  if (this.longestChain == -1) { this.longestChain = 0; }
-
-
-  //////////////////////////////////////////////
-  // decrypt any transactions intended for us //
-  //////////////////////////////////////////////
-  //
-  // we handle during indexing to so that
-  // modules can execute properly, i.e.
-  // modules ask for either the decrypted
-  // or original message using the
-  // returnMessage function.
-  //
-  newblock.decryptTransactions();
-
-
-
-  ///////////////////////////
-  // calculate average fee //
-  ///////////////////////////
-  newblock.returnAverageFee();
-
-
-  /////////////////////
-  // affix callbacks //
-  /////////////////////
-  this.blocks[pos].affixCallbacks();
+  this.block_hash_hmap[hash] = bid;
 
 
   /////////////////////////////
   // track the longest chain //
   /////////////////////////////
-  var i_am_the_longest_chain    = 0;
-  var shared_ancestor_index_pos = -1;
-  var validate_transactions     = -1;
-  var rewrite_longest_chain     = 0;
-  var rewrite_nchain_len        = 0;
-  var rewrite_lchain_len        = 0;
-  var rewrite_forceAdd          = "";
-  var rewrite_from_start        = 1; // see below
-  //
-  // possibly adjust longestChain forward
-  // if we stuck our block earlier in a
-  // position earlier in the chain
-  //
-  if (pos <= this.longestChain) {
-    this.longestChain++;
-    if (this.longestChain >= this.index.hash.length) {
-      this.longestChain--;
-    }
-  }
-
-  //
-  // if we are the genesis block, we are the longest chain
-  //
-  if (prevhash == "" && this.index.prevhash.length == 1) {
-    this.longestChain = 0;
-    i_am_the_longest_chain = 1;
-  }
-
-  //
-  // first block from reset blockchains
-  //
-  if (this.previous_block_id != null) {
-    if (this.index.hash.length == 1 && this.previous_block_id == newblock.returnId()-1) {
-      this.longestChain = 0;
-      i_am_the_longest_chain = 1;
-    }
-  }
+  var i_am_the_longest_chain  = 0;
+  var shared_ancestor_pos     = -1;
 
 
   ////////////////////////////
   // IDENTIFY LONGEST CHAIN //
   ////////////////////////////
   //
-  // we go through our index and figure out if the block
-  // we are adding is part of the longest chain, and whether
-  // making it the longest chain will require re-writing the
-  // chain. this will set the variable
+  // use indexes to figure out if this block is potentially the head
+  // of a chain of blocks that would be a contender to replace the
+  // current chain as the longest chain.
   //
-  //   i_am_the_longest_chain
   //
-  // to 1 if we think we are on the longest chain or to 0
-  // if we are not. The rest of our block-addition code
-  // needs to know whether we are longest-chain, so we do
-  // it here first.
+  // if our first block
   //
-  if (block_id >= this.index.block_id[this.longestChain]) {
-    if (prevhash == this.index.hash[this.longestChain] || prevhash == this.previous_block_hash) {
+  if (this.lc == 0 && old_lc == 0) {
 
-      // if prev is longest
-      this.longestChain = pos;
-      i_am_the_longest_chain = 1;
-      validate_transactions = 1;
-
-    } else {
-
-      //
-      // otherwise, we find the last shared ancestor and
-      // calculate the length and aggregate burn fee of
-      // the two competing chains to determine which is
-      // preferred
-      //
-
-      var lchain_pos = this.longestChain;
-      var nchain_pos = pos;
-      var lchain_len = 0;
-      var nchain_len = 0;
-      var lchain_brn = this.index.burnfee[lchain_pos];
-      var nchain_brn = this.index.burnfee[nchain_pos];
-      var lchain_ts  = this.index.ts[lchain_pos];
-      var nchain_ts  = this.index.ts[nchain_pos];
-      var lchain_ph  = this.index.prevhash[lchain_pos];
-      var nchain_ph  = this.index.prevhash[nchain_pos];
-
-      var search_pos = null;
-      var search_ts  = null;
-      var search_hash= null;
-      var search_ph  = null;
-      var search_brn = null;
-
-      var ancestor_precedes_current = 0;
-
-      if (nchain_ts >= lchain_ts) {
-        search_pos = nchain_pos-1;
-      } else {
-        ancestor_precedes_current = 1;
-        search_pos = lchain_pos-1;
-      }
-
-      while (search_pos >= 0) {
-
-        search_ts    = this.index.ts[search_pos];
-        search_hash  = this.index.hash[search_pos];
-        search_ph    = this.index.prevhash[search_pos];
-        search_brn   = this.index.burnfee[search_pos];
-
-        if (search_hash == lchain_ph && search_hash == nchain_ph) {
-          shared_ancestor_index_pos = search_pos;
-          search_pos = -1;
-        } else {
-          if (search_hash == lchain_ph) {
-            lchain_len++;
-            lchain_ph    = this.index.prevhash[search_pos];
-  	        lchain_brn  = parseFloat(lchain_brn) + parseFloat(this.index.burnfee[search_pos]);
-          }
-          if (search_hash == nchain_ph) {
-            nchain_ph    = this.index.prevhash[search_pos];
-            nchain_len++;
-            // this may be inexact, but as long as javascript errors
-            // work the same way on all machines... i.e. hack but
-            // good enough for now
-            nchain_brn  = parseFloat(nchain_brn) + parseFloat(this.index.burnfee[search_pos]);
-          }
-
-	        shared_ancestor_index_pos = search_pos;
-          search_pos--;
-        }
-      }
-
-
-      if (nchain_len > lchain_len && nchain_brn >= lchain_brn) {
-
-        //
-        // to prevent our system from being gamed, we
-        // require the attacking chain to have equivalent
-        // or greater aggregate burn fees. This ensures that
-        // an attacker cannot lower difficulty, pump out a
-        // ton of blocks, and then hike the difficulty only
-        // at the last moment.
-        //
-
-        console.log(`UPDATING LONGEST CHAIN: ${nchain_len} new |||||| ${lchain_len} old 1`);
-        this.app.logger.logInfo(`UPDATING LONGEST CHAIN: ${nchain_len} new |||||| ${lchain_len} old 1`);
-
+    //
+    // if we have a starting point, we
+    // can only start our LC continuing
+    // from it.
+    //
+    // otherwise, we treat this as our
+    // starting point for syncing the
+    // blockchain.
+    //
+    if (this.last_bid > 0) {
+      if (prevhash == this.last_hash) {
         i_am_the_longest_chain = 1;
-        rewrite_longest_chain  = 1;
-        rewrite_nchain_len     = nchain_len;
-        rewrite_lchain_len     = lchain_len;
-        rewrite_forceAdd       = forceAdd;
-        validate_transactions  = nchain_len;
+      }
+    } else {
+      i_am_the_longest_chain = 1;
+    }
 
+  //
+  // everything else
+  //
+  } else {
+    if (bid >= this.index.bid[this.lc]) {
+      if (prevhash == this.index.hash[this.lc]) {
+        i_am_the_longest_chain = 1;
       } else {
 
         //
-        // we have a choice of which chain to support, and we
-       	// support whatever chain matches our preferences
+        // find the last shared ancestor
         //
-        if (nchain_len == lchain_len && nchain_brn >= lchain_brn) {
+        let lchain_pos = this.lc;
+        let nchain_pos = pos;
+        let lchain_len = 0;
+        let nchain_len = 0;
+        let lchain_bf  = this.index.bf[lchain_pos];
+        let nchain_bf  = this.index.bf[nchain_pos];
+        let lchain_ts  = this.index.ts[lchain_pos];
+        let nchain_ts  = this.index.ts[nchain_pos];
+        let lchain_prevhash  = this.index.prevhash[lchain_pos];
+        let nchain_prevhash  = this.index.prevhash[nchain_pos];
 
-          latestBlock = this.returnLatestBlock();
-          if (latestBlock != null) {
-            if (this.app.voter.prefers(newblock, latestBlock)) {
+        let search_pos       = null;
+        let search_bf        = null;
+        let search_ts        = null;
+        let search_hash      = null;
+        let search_prevhash  = null;
 
-              console.log("UPDATING LONGEST CHAIN W/ PREFERENCE: "+nchain_len + " new |||||| " + lchain_len + " old 2");
+        if (nchain_ts >= lchain_ts) {
+          search_pos = nchain_pos - 1;
+        } else {
+          search_pos = lchain_pos - 1;
+        }
+
+        while (search_pos >= 0) {
+
+          search_ts         = this.index.ts[search_pos];
+          search_bf         = this.index.bf[search_pos];
+          search_hash       = this.index.hash[search_pos];
+          search_prevhash   = this.index.prevhash[search_pos];
+
+          //
+          // hey look, it's the common ancestor!
+          //
+          if (search_hash == lchain_prevhash && search_hash == nchain_prevhash) {
+            shared_ancestor_pos = search_pos;
+            search_pos = -1;
+
+          //
+          // keep looking
+          //
+          } else {
+
+            if (search_hash == lchain_prevhash) {
+              lchain_len++;
+              lchain_prevhash = this.index.prevhash[search_pos];
+              lchain_bf = parseFloat(lchain_bf) + parseFloat(this.index.bf[search_pos]);
+            }
+
+            if (search_hash == nchain_prevhash) {
+              nchain_prevhash = this.index.prevhash[search_pos];
+              nchain_len++;
+              nchain_bf = parseFloat(nchain_bf) + parseFloat(this.index.bf[search_pos]);
+            }
+
+            shared_ancestor_pos = search_pos;
+            search_pos--;
+          }
+        }
+
+        //
+        // at this point, we have a shared ancestor position for
+        // our two possible chains, and we need to decide which
+        // we are treating as the longest chain.
+        //
+        if (nchain_len > lchain_len && nchain_bf >= lchain_bf) {
+
+          //
+          // to prevent our system from being gamed, we
+          // require the attacking chain to have equivalent
+          // or greater aggregate burn fee. This ensures that
+          // an attacker cannot lower difficulty, pump out a
+          // ton of blocks, and then hike the difficulty only
+          // at the last moment to claim the longest chain.
+          //
+          this.app.logger.logInfo(`UPDATING LONGEST CHAIN: ${nchain_len} new |||||| ${lchain_len} old 1`);
+          i_am_the_longest_chain = 1;
+
+        } else {
+
+          //
+          // to prevent our system from being gamed, we
+          // require the attacking chain to have equivalent
+          // or greater aggregate burn fee. This ensures that
+          // an attacker cannot lower difficulty, pump out a
+          // ton of blocks, and then hike the difficulty only
+          // at the last moment to claim the longest chain.
+          //
+          // this is like the option above, except that we
+          // have a choice of which block to support.
+          //
+          if (nchain_len == lchain_len && nchain_bf >= lchain_bf) {
+            if (this.app.voter.prefersBlock(newblock, this.returnLatestBlock())) {
               this.app.logger.logInfo(`UPDATING LONGEST CHAIN W/ PREFERENCE: ${nchain_len} new |||||| ${lchain_len} old 2`);
-
               i_am_the_longest_chain = 1;
-              rewrite_longest_chain  = 1;
-              rewrite_nchain_len     = nchain_len;
-              rewrite_lchain_len     = lchain_len;
-              rewrite_forceAdd       = forceAdd;
-              validate_transactions  = nchain_len;
-
             }
           }
         }
       }
     }
-  } else {
-
-    //
-    // this catches an edge case that happens if we ask for blocks starting from
-    // id = 132, but the first block we RECEIVE is a later block in that chain,
-    // such as 135 or so.
-    //
-    // in this case our blockchain class will treat the first block as the starting
-    // point and we run into issues unless we explicitly reset the blockchain to
-    // treat block 132 as the proper first block.
-    //
-    // so we reset this to our first block and mark it as part of the longest chain
-    // the network will figure this out in time as further blocks build on it.
-    //
-    if (newblock.block.prevhash == this.previous_block_hash && newblock.block.prevhash != "") {
-
-      // reset later blocks to non-longest chain
-      for (let h = pos+1; h < this.index.lc.length; h++) {
-        this.index.lc[h] = 0;
-        this.app.storage.onChainReorganization(this.index.block_id[h], this.index.hash[h], 0);
-        this.app.wallet.onChainReorganization(this.index.block_id[h], this.index.hash[h], 0);
-        this.app.modules.onChainReorganization(this.index.block_id[h], this.index.hash[h], 0);
-      }
-
-      // insist that I am the longest chain
-      i_am_the_longest_chain = 1;
-      this.previous_block_hash = hash;
-      this.longestChain = pos;
-      this.app.modules.updateBalance();
-
-      //
-      // we do not need to worry about updating the slips
-      //
-      // the blocks we reset will be reset as lc = 1 when
-      // the next block comes in that has a full chain
-      // starting from this block
-      //
-
-    }
-  }
+  } // genesis block test
 
 
-  ////////////////////////////////
-  // validate the longest chain //
-  ////////////////////////////////
-
-  //
-  // if we are on the longest chain we have to validate our transaction
-  // slips. In order to do this, we creep through the number of blocks
-  // on the new_chain and validate them one-by-one. We must revalidate
-  // starting from the oldest block in order to be sure that our sliips
-  // are all valid.
-  //
-  // if there is a problem validating a block, we reset ourselves
-  // to the previous longest chain and abort the entire process,
-  // so that we never even hit the block purge and/or callback stage
-  //
-  // if a block is not on the longest chain, we skip the validation
-  // and move on to adding inputs to wallets, etc.
-  //
-
+  /////////////////////////////////
+  // potential new longest chain //
+  /////////////////////////////////
   if (i_am_the_longest_chain == 1) {
 
-
-
-    //////////////////
-    // reset miners //
-    //////////////////
-    this.longestChain = pos;
+    this.lc = pos;
     this.index.lc[pos] = 1;
+    this.block_hash_hmap[pos] = newblock.block.id;
+
+    //
+    // start mining
+    //
     this.app.miner.stopMining();
-
     this.app.miner.startMining(newblock);
-    this.app.options.blockchain = this.returnBlockchain();
-    this.app.storage.saveOptions();
 
-
-    //////////////////////////////////////////
-    // get hashes and indexes of two chains //
-    //////////////////////////////////////////
-    var shared_ancestor_hash = this.index.hash[shared_ancestor_index_pos];
 
     //
-    // we are trying to catch an eddge-case for browsers that
-    // receive blocks in the wrong order, and only start marking
-    // blocks as part of the longest chain once they have 
+    // old and new chains
     //
-    // in this case LC should be set at ZERO from this (our first)
-    // LC-identified block back to the -1 point of origin
-    //
-    if (shared_ancestor_index_pos == -1 && this.index.lc[0] == 0) {
-      // 
-      // if last 10 LC are all zero....
-      // we are probably in a bad browser
-      // sync which may affect some UTXI
-      // inputs....
-      //
-      for (let g = pos-1, h = 1; g >= 0, h <= 10; h++, g--) {
-        if (this.index.lc[g] == 1) {
-	  rewrite_from_start = 0;
-        }
-      }
-
-      //
-      // quick fix - we should check and only do this to nodes in the 
-      // longest chain, but for now since this affects lite-clients 
-      // only we just approve anything before the longest chain
-      //
-      if (rewrite_from_start == 1 && this.blocks.length > 0) {
-
-        var thisprevblk = null;
-        var thisnewblk  = this.blocks[0];
-	if (blockchain_self.app.storage.validateBlockInputs(thisnewblk, null, 1) == 1) {
-
-          blockchain_self.app.storage.spendBlockInputs(thisnewblk);
-          blockchain_self.app.storage.onChainReorganization(thisnewblk.block.id, thisnewblk.returnHash(), 1);
-          blockchain_self.app.wallet.onChainReorganization(thisnewblk.block.id, thisnewblk.returnHash(), 1);
-          blockchain_self.app.modules.onChainReorganization(thisnewblk.block.id, thisnewblk.returnHash(), 1);
-          this.index.lc[0] = 1;
-          this.lc_hashmap[thisnewblk.returnHash()] = 1;
-
-          for (let d = 1; d < pos; d++) {
-
-            thisprevblk = thisnewblk;
-            thisnewblk  = this.blocks[d];
-
-	    if (blockchain_self.app.storage.validateBlockInputs(thisnewblk, null, 1) == 1) {
-              blockchain_self.app.storage.spendBlockInputs(thisnewblk);
-              blockchain_self.app.storage.onChainReorganization(thisnewblk.block.id, thisnewblk.returnHash(), 1);
-              blockchain_self.app.wallet.onChainReorganization(thisnewblk.block.id, thisnewblk.returnHash(), 1);
-              blockchain_self.app.modules.onChainReorganization(thisnewblk.block.id, thisnewblk.returnHash(), 1);
-              this.index.lc[d] = 1;
-              this.lc_hashmap[thisnewblk.returnHash()] = 1;
-	      old_longestChain = d;
-	    } else {
-//console.log("ERROR VALIDATING TRANSACTIONS in BLOCKCHAIN EMERGENCY REWRITE!");
-	    }
-	  }
-        } else {
-//console.log("ERROR VALIDATING TRANSACTIONS in BLOCKCHAIN EMERGENCY REWRITE 2!");
-	}
-      }
-    }
-
-
+    var shared_ancestor_hash = this.index.hash[shared_ancestor_pos];
     var new_hash_to_hunt_for = newblock.returnHash('hex');
     var new_block_hashes     = [];
     var new_block_idxs       = [];
     var new_block_ids        = [];
-    var old_hash_to_hunt_for = this.index.hash[old_longestChain];
+    var old_hash_to_hunt_for = this.index.hash[old_lc];
     var old_block_hashes     = [];
     var old_block_idxs       = [];
     var old_block_ids        = [];
+    var rewrite_from_start   = 1;
 
+    //
+    // edge case
+    //
+    if (shared_ancestor_pos == -1 && this.index.lc[0] == 0) {
 
+      //
+      // we are probably in a bad browser sync
+      //
+      for (let g = pos-1, h = 1; g >= 0, h <= 10; h++, g--) {
+        if (this.index.lc[g] == 1) {
+          rewrite_from_start = 0;
+        }
+      }
+
+      //
+      // quick fix
+      //
+      if (rewrite_from_start == 1 && this.blocks.length > 0) {
+
+        //
+        // once chain reorganization is working we should add
+        // back the code that handles this edge-case. we are
+        // checking to make sure that the longest chain will
+        // work.
+        //
+
+      }
+    }
+
+    //
+    // our block builds on the longest chain
+    //
     if (newblock.block.prevhash == old_hash_to_hunt_for) {
-
-      // we have no competing chain, just the
-      // new block claiming to be building on
-      // the existing chain
       new_block_hashes.push(this.index.hash[pos]);
       new_block_idxs.push(pos);
-      new_block_ids.push(this.index.block_id[pos]);
+      new_block_ids.push(this.index.bid[pos]);
+    }
 
-    } else {
+    //
+    // this is a chain reorganization
+    //
+    else {
 
-      ///////////////////////
-      // old longest chain //
-      ///////////////////////
-      for (let j = this.index.hash.length-1; j > shared_ancestor_index_pos; j--) {
+      for (let j = this.index.hash.length-1; j > shared_ancestor_pos; j--) {
         if (this.index.hash[j] == old_hash_to_hunt_for) {
           old_hash_to_hunt_for = this.index.prevhash[j];
           old_block_hashes.push(this.index.hash[j]);
           old_block_idxs.push(j);
-          old_block_ids.push(this.index.block_id[j]);
+          old_block_ids.push(this.index.bid[j]);
         }
       }
       old_block_hashes.reverse();
       old_block_idxs.reverse();
 
-      ///////////////////////
-      // new longest chain //
-      ///////////////////////
-      for (let j = this.index.hash.length-1; j > shared_ancestor_index_pos; j--) {
+      for (let j = this.index.hash.length-1; j > shared_ancestor_pos; j--) {
         if (this.index.hash[j] == new_hash_to_hunt_for) {
           new_hash_to_hunt_for = this.index.prevhash[j];
           new_block_hashes.push(this.index.hash[j]);
           new_block_idxs.push(j);
-          new_block_ids.push(this.index.block_id[j]);
+          new_block_ids.push(this.index.bid[j]);
         }
       }
       new_block_hashes.reverse();
@@ -7068,271 +4906,85 @@ Blockchain.prototype.addBlockToBlockchain = function addBlockToBlockchain(newblo
 
     }
 
+
     //
-    // we are longest chain, so we have to unwind the old chain
-    // and wind the new chain. If there is no old chain we will
-    // just wind the new chain directly.
+    // we are the longest chain, so we have to unwind the old chain
+    // and wind the new chain. If there is no old chain we will just
+    // wind the new chain directly.
     //
-    console.log("validate longest chain...");
-    // LOG INFO
-    this.app.storage.validateLongestChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_idxs, i_am_the_longest_chain, forceAdd);
+    await this.validateLongestChain(newblock, pos, shared_ancestor_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_idxs, i_am_the_longest_chain, force);
 
   } else {
-
-    //
-    // we are not longest-chain, so we jump directly
-    // to the second part of the block addition
-    //
-    console.log("direct to part II...");
-    // LOG INFO
-    this.addBlockToBlockchainPartTwo(newblock, pos, i_am_the_longest_chain, forceAdd);
+    // await
+    await this.addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain);
   }
-
-  // delete from mempool
-  return 1;
 
 }
 
 
-/////////////////////////////////
-// addBlockToBlockchainFailure //
-/////////////////////////////////
-//
-// this function gets called if we fail to validate the LongestChain.
-//
-// in that case, we get kicked out here, with our transaction slips all
-// reset to whatever our original slips were like before we made the
-// valiant effort to add this failure-of-a-block in the first place.
-//
-// this function needs to reset our blockchain class to a state of
-// normality so that we can continue to process the next block.
-//
-// @params {saito.block} block
-// @params {integer} position of block in indexes
-// @params {integer} is block in longest chain
-// @params {string} "force" if added from disk
-// @params {integer} position of previous good longest chain block
-//
-Blockchain.prototype.addBlockToBlockchainFailure = function addBlockToBlockchainFailure(newblock, pos, i_am_the_longest_chain, forceAdd) {
+/**
+ * Nothing wrong with this block, continue to add it to the ledger
+ *
+ * @param {saito.block} newblock block to be added
+ * @param {integer} pos position of block in indexes
+ * @param {integer} i_am_the_longest_chain is block in longest chain
+ * @param {boolean} force true if added from disk
+ */
+Blockchain.prototype.addBlockToBlockchainSuccess = async function addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, force) {
 
-  // update peer reliability
-  this.app.network.updatePeerReliability(newblock.originating_peer, "last_block_valid", -1);
+console.log("ADD BLOCK TO BLOCKCHAIN 2");
+
+  //
+  // update newblock
+  //
+  if (i_am_the_longest_chain == 1) {
+    this.app.wallet.onChainReorganization(newblock.block.id, newblock.returnHash(), i_am_the_longest_chain);
+  }
+
+  //
+  // add slips to wallet
+  //
+  let updated_wallet = false;
+  let publickey = this.app.wallet.returnPublicKey();
+  for (let ti = 0; ti < newblock.transactions.length; ti++) {
+    let slips = newblock.transactions[ti].returnSlipsToAndFrom(publickey);
+    if (slips.to.length > 0 || slips.from.length > 0) {
+      updated_wallet = true;
+      this.app.wallet.processPayment(newblock, newblock.transactions[ti], slips.to, slips.from, i_am_the_longest_chain);
+    }
+  }
+  if (updated_wallet) {
+    if (i_am_the_longest_chain == 1) {
+      this.app.wallet.calculateBalance();
+      this.app.wallet.updateBalance();
+    }
+    this.app.modules.updateBalance();
+    this.app.wallet.saveWallet();
+    this.app.storage.saveOptions();
+  }
 
 
-  console.log(" ... blockchain failure");
-  this.app.logger.logInfo("Failed to validate LongestChain, blockchain failure");
+  //
+  // update
+  //
+  this.app.modules.updateBlockchainSync(newblock.block.id, this.returnTargetBlockId());
 
-  // restore longest chain
-  this.index.lc[this.longestChain] = 0;
-  this.lc_hashmap[newblock.returnHash()] = 0;
-  this.longestChain = this.old_lc;
 
-  // reset miner
-  this.app.miner.stopMining();
-  var latestBlk = this.returnLatestBlock();
-  if (latestBlk != null) { this.app.miner.startMining(latestBlk); }
+  //
+  // save block to disk
+  //
+  await this.app.storage.saveBlock(newblock, i_am_the_longest_chain);
+  this.saveBlockchain();
 
-  // update blockchain info
-  this.updateForkId(this.returnLatestBlock());
-  this.app.options.blockchain = this.returnBlockchain();
-  this.app.storage.saveOptions();
 
-  // remove bad everything
+  //
+  // cleanup
+  //
   this.app.mempool.removeBlockAndTransactions(newblock);
 
-  // empty recovered array because we are not
-  // removing anything after all...
-  this.app.mempool.recovered = [];
-
-  // allow indexing to continue
-  newblock.app.blockchain.currently_indexing = 0;
-  newblock.app.blockchain.app.mempool.processing_bundle = 0;
-
-  console.log("values reset....\n\n");
-
-}
-
-
-/////////////////////////////////
-// addBlockToBlockchainPartTwo //
-/////////////////////////////////
-//
-// this function is called when the longest chain has been validated. now
-// we save the block to disk and perform the second step of updating our
-// wallet, invoking callbacks, etc.
-//
-// @params {saito.block} block
-// @params {integer} position of block in indexes
-// @params {integer} is block in longest chain
-// @params {string} "force" if added from disk
-//
-Blockchain.prototype.addBlockToBlockchainPartTwo = function addBlockToBlockchainPartTwo(newblock, pos, i_am_the_longest_chain, forceAdd) {
-
-  console.log(" ... blockchain pt 2");
-
-  var blockchain_self = this;
-
-  ////////////////
-  // save block //
-  ////////////////
-  this.app.storage.saveBlock(newblock, i_am_the_longest_chain);
-
-
-  ////////////////
-  // lc hashmap //
-  ////////////////
   //
-  // we use the hashmap to find the longest chain
-  // in PartOne, so defer setting it to the longest
-  // chain until we know we should.
+  // delete transactions
   //
-  this.lc_hashmap[newblock.returnHash()] = i_am_the_longest_chain;
-
-
-  var tmpgt2 = new Date().getTime();
-  console.log(" ... updating wallet1: " + tmpgt2);
-
-  console.log(" ... is lc? " + i_am_the_longest_chain);
-
-  ///////////////////
-  // update wallet //
-  ///////////////////
-  var updated_wallet = 0;
-  blockchain_self.app.wallet.purgeExpiredSlips();
-
-  for (let ti = 0; ti < newblock.transactions.length; ti++) {
-    var tx = newblock.transactions[ti];
-    if (tx.isFrom(blockchain_self.app.wallet.returnPublicKey()) || tx.isTo(blockchain_self.app.wallet.returnPublicKey())) {
-      updated_wallet = 1;
-      blockchain_self.app.wallet.paymentConfirmation(newblock, tx, i_am_the_longest_chain);
-    }
-  }
-  if (updated_wallet == 1) {
-    if (i_am_the_longest_chain == 1) {
-      blockchain_self.app.wallet.calculateBalance();
-      blockchain_self.app.wallet.updateBalance();
-    }
-    blockchain_self.app.wallet.saveWallet();
-    blockchain_self.app.storage.saveOptions();
-  }
-  blockchain_self.app.wallet.resetSpentInputs();
-
-
-
-  var tmpgt3 = new Date().getTime();
-  console.log(" ... updating wallet2: " + tmpgt3);
-
-
-
-  ///////////////////
-  // run callbacks //
-  ///////////////////
-  if (blockchain_self.run_callbacks == 1) {
-    if (forceAdd != "force") {
-      var our_longest_chain = blockchain_self.returnLongestChainIndex(blockchain_self.callback_limit);
-      for (let i = 0; i < our_longest_chain.length && i < blockchain_self.callback_limit; i++) {
-
-        //
-        // we may want to shift this to a callback, so that
-        // returnBlockByHash can load locally if it exists or
-        // fetch from disk through the storage class if it doesn't
-        //
-        // we do not handle this through the callback method as we
-        // expect to keep all blocks needed for callbacks in memory
-        //
-        // TODO
-        //
-        // adjust this code so that we can still run callbacks on
-        // blocks that are stored on disk.
-        //
-        var thisblk = blockchain_self.returnBlockByHash(this.index.hash[our_longest_chain[i]]);
-        if (thisblk != null) {
-
-          //
-          // encoding issues can still screw us up
-          //
-          try {
-	          thisblk.runCallbacks(i);
-          } catch (err) {
-            console.log(JSON.stringify(err));
-            blockchain_self.app.logger.logError("Error thrown in addBlocktoBlockchainPart2", err);
-          }
-	        blockchain_self.app.storage.saveConfirmation(thisblk.returnHash(), i);
-        } else {
-  	      // ? error finding block ?
-          console.log("ERROR: we do not have a block within our callback limit in run callbacks in blockchain");
-          blockchain_self.app.logger.logError("No block found in addBlocktoBlockchainPart2", {});
-          process.exit();
-        }
-      }
-    } else {
-
-      //
-      // we are forcing blocks in without callbacks, but we still
-      // update their confirmation numbers.
-      //
-      var our_longest_chain = blockchain_self.returnLongestChainIndex(blockchain_self.callback_limit);
-
-      for (let i = 0; i < our_longest_chain.length; i++) {
-        let thisblk = blockchain_self.returnBlockByHash(blockchain_self.index.hash[our_longest_chain[i]]);
-        thisblk.updateConfirmationNumberWithoutCallbacks(i);
-      }
-    }
-  }
-
-
-
-  //////////////////
-  // confirm save //
-  //////////////////
-  //
-  // the storage class can still be writing our block to disk, so
-  // we start a timer to check when we are ready to continue. we
-  // need to do this as subsequent / final steps in adding blocks
-  // requires our local file to exist to avoid edge case errors.
-  //
-
-  console.log(" ... hitting timer1:   " + new Date().getTime());
-
-  if (blockchain_self.app.storage.saving_blocks == 1) {
-    blockchain_self.block_saving_timer = setInterval(function() {
-      if (blockchain_self.app.storage.saving_blocks == 0) {
-        blockchain_self.addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, forceAdd);
-      }
-    }, this.block_saving_timer_speed);
-  } else {
-    blockchain_self.addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, forceAdd);
-  }
-
-}
-
-
-/////////////////////////////////
-// addBlockToBlockchainSuccess //
-/////////////////////////////////
-//
-// this concludes adding a block to our blockchain, handles deletions and
-// any other functions that may require the block to have already been
-// saved to disk. finally, it resets our variables to permit the next
-// block to be processed.
-//
-// @params {saito.block} block
-// @params {integer} position of block in indexes
-// @params {integer} is block in longest chain
-// @params {string} "force" if added from disk
-//
-Blockchain.prototype.addBlockToBlockchainSuccess = function addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, forceAdd) {
-
-  // update peer reliability
-  this.app.network.updatePeerReliability(newblock.originating_peer, "last_block_valid", 1);
-
-  console.log(" ... blockchain success");
-
-  var blockchain_self = this;
-
-  /////////////////////////
-  // delete transactions //
-  /////////////////////////
   //
   // we delete transaction data once blocks are old enough that
   // we no longer need their data for callbacks.
@@ -7341,15 +4993,15 @@ Blockchain.prototype.addBlockToBlockchainSuccess = function addBlockToBlockchain
   // limit is too short and we don't have the block data actively
   // stored in memory.
   //
-  if (blockchain_self.blocks.length > blockchain_self.callback_limit) {
-    var blk2clear = blockchain_self.blocks.length - blockchain_self.callback_limit-1;
+  if (this.blocks.length > this.callback_limit) {
+    let blk2clear = this.blocks.length - this.callback_limit-1;
     if (blk2clear >= 0) {
-      blockchain_self.blocks[blk2clear].transactions = [];
-      blockchain_self.blocks[blk2clear].block.transactions = [];
+      this.blocks[blk2clear].transactions = [];
+      this.blocks[blk2clear].block.txsjson = [];
       // sanity check for blocks added earlier
       if (pos < blk2clear) {
-        blockchain_self.blocks[pos].transactions = [];
-        blockchain_self.blocks[pos].block.transactions = [];
+        this.blocks[pos].transactions = [];
+        this.blocks[pos].block.txsjson = [];
       }
     }
   }
@@ -7358,61 +5010,506 @@ Blockchain.prototype.addBlockToBlockchainSuccess = function addBlockToBlockchain
   // even if we are still running callbacks, we
   // don't need the JSON copies, just the objs
   //
-  blockchain_self.blocks[pos].block.transactions = [];
+  this.blocks[pos].block.txsjson = [];
 
 
-  /////////////////////
-  // clear the timer //
-  /////////////////////
-  clearInterval(blockchain_self.block_saving_timer);
+
+  //
+  // update transient chain
+  //
+  if (i_am_the_longest_chain == 1) {
+    this.updateGenesisBlock(newblock, pos);
+    if (newblock.block.id%this.fork_id_mod==0) { this.updateForkId(this.returnLatestBlock()); }
+  }
 
 
-  ///////////////////////////////
-  // process any recovered txs //
-  ///////////////////////////////
   //
   // in storage.js we push any transactions from blocks we
   // created that are being undone back into the mempool
   // which is why we put it here -- we need to validate them
   // again.
   //
-  blockchain_self.app.mempool.reinsertRecoveredTransactions();
+  this.app.mempool.reinsertRecoveredTransactions();
 
 
-  /////////////////////
-  // module callback //
-  /////////////////////
-  console.log(" ... on new block");
-  if (forceAdd != "force") { blockchain_self.app.modules.onNewBlock(newblock); }
-
-
-  /////////////////////////
-  // reset miner (again) //
-  /////////////////////////
   //
-  // if we find a solution too fast spammer module can hang
+  // module callback
   //
-  blockchain_self.app.miner.stopMining();
-  var latestBlk = this.returnLatestBlock();
-  if (latestBlk != null) { blockchain_self.app.miner.startMining(latestBlk); }
+  if (!force) { this.app.modules.onNewBlock(newblock); }
+
+console.log("ADD BLOCK TO BLOCKCHAIN 3");
+
+  this.indexing_active = false;
+  return 1;
+
+};
+
+
+/**
+ * Something went wrong validating or adding our block, reverting
+ *
+ * @param {saito.block} newblock block
+ * @param {integer} pos position of block in indexes
+ * @param {integer} i_am_the_longest_chain is block in longest chain
+ * @param {boolean} force true if added from disk
+ */
+Blockchain.prototype.addBlockToBlockchainFailure = function addBlockToBlockchainFailure(newblock, pos, i_am_the_longest_chain, force) {
 
 
 
-  ////////////////////
-  // ok to continue //
-  ////////////////////
-  blockchain_self.app.mempool.currently_processing = 0;
-  blockchain_self.currently_indexing = 0;
+this.app.logger.logInfo("about to update peer as failure: " + newblock.originating_peer + " for block: " + newblock.returnHash());
+
+  console.log(" ... blockchain failure " + (new Date().getTime()));
+//  this.app.logger.logInfo("Failed to validate LongestChain, blockchain failure");
+
+  // restore longest chain
+  this.index.lc[this.lc] = 0;
+  delete this.block_hash_hmap[newblock.returnHash()];
+  this.lc = this.old_lc;
+
+
+  // reset miner
+  this.app.miner.stopMining();
+  let blk = this.returnLatestBlock();
+  if (blk != null) { 
+    this.app.miner.startMining(blk); 
+  }
+
+
+  //
+  // save state
+  //
+  this.updateForkId(this.returnLatestBlock());
+  this.app.storage.saveOptions();
+  this.saveBlockchain();
+
+
+  // remove bad everything
+  this.app.mempool.removeBlockAndTransactions(newblock);
+
+  // empty recovered array because we are not
+  // removing anything after all...
+  this.app.mempool.recovered = [];
+
+  // resume normal operations
+  this.indexing_active = false;
+  return 1;
+
+};
+
+
+
+
+/**
+ * Starts the process of unwinding the old longest chain and winding out
+ * the new longest chain. This will lead to our blockchain either calling
+ *
+ * addBlockToBlockchainSuccess
+ * addBlockToBlockchainFailure
+ *
+ * @param {saito.block} newblock
+ * @param {pos} pos position in index
+ * @param {int} shared_ancestor_pos position of shared ancestor
+ * @param {array of integers} new_block_idxs array of new chain idxs
+ * @param {array of strings} new_block_hashes array of new chain hashes
+ * @param {array of integers} new_block_ids array of new chain ids
+ * @param {array of integers} old_block_idxs array of old chain idxs
+ * @param {array of strings} old_block_hashes array of old chain hashes
+ * @param {array of integers} old_block_ids array of old chain ids
+ * @param {integer} i_am_the_longest_chain is this block considered longest chain?
+ * @param {boolean} force are we forcibly adding this block?
+ */
+Blockchain.prototype.validateLongestChain = async function validateLongestChain(
+  newblock,
+  pos,
+  shared_ancestor_pos,
+  new_block_idxs,
+  new_block_hashes,
+  new_block_ids,
+  old_block_idxs,
+  old_block_hashes,
+  old_block_ids,
+  i_am_the_longest_chain,
+  force
+) {
+
+  //////////////////
+  // lite-clients //
+  //////////////////
+  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) {
+
+    //
+    // unwind old chain
+    //
+    for (let x = 0; x < old_block_ids.length; x++) {
+      this.app.storage.onChainReorganization(old_block_ids[x], old_block_hashes[x], 0);
+      this.app.wallet.onChainReorganization(old_block_ids[x], old_block_hashes[x], 0);
+      this.app.modules.onChainReorganization(old_block_ids[x], old_block_hashes[x], 0);
+      this.app.blockchain.index.lc[old_block_idxs[x]] = 0;
+    }
+
+    //
+    // -1 as we handle newblock in addBlockToBlockchainSuccess
+    //
+    for (let x = 0; x < new_block_ids.length-1; x++) {
+      this.app.storage.onChainReorganization(new_block_ids[x], new_block_hashes[x], 1);
+      this.app.wallet.onChainReorganization(new_block_ids[x], new_block_hashes[x], 1);
+      this.app.modules.onChainReorganization(new_block_ids[x], new_block_hashes[x], 1);
+      this.app.blockchain.index.lc[new_block_idxs[x]] = 1;
+    }
+
+    await this.app.blockchain.addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, force);
+    return;
+
+  }
+
+  ////////////////
+  // full nodes //
+  ////////////////
+  try {
+    if (old_block_hashes.length > 0) {
+      await this.unwindChain(
+        newblock,
+        pos,
+        shared_ancestor_pos,
+        new_block_idxs,
+        new_block_hashes,
+        new_block_ids,
+        old_block_idxs,
+        old_block_hashes,
+        old_block_ids,
+        i_am_the_longest_chain,
+        force,
+        old_block_hashes.length-1,
+        0
+       );
+    } else {
+      await this.windChain(
+        newblock,
+        pos,
+        shared_ancestor_pos,
+        new_block_idxs,
+        new_block_hashes,
+        new_block_ids,
+        old_block_idxs,
+        old_block_hashes,
+        old_block_ids,
+        i_am_the_longest_chain,
+        force,
+        0,
+        0
+      );
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+
+
+/**
+ * Roll back the old longest chain and reset all of the slips in the
+ * shashmap that were spent there to a fresh state so that our new
+ * competing chain will have them available when it tries to roll
+ * out (and validate) its proposed longest chain.
+ *
+ * once we have unwound the entire longest chain, we call the windChain
+ * function which takes responsibility for rolling out, validating
+ * and possibily restoring the oldest chain if there are issues.
+ * @param {saito.block} newblock
+ * @param {integer} pos
+ * @param {integer} shared_ancestor_pos
+ * @param {array} new_block_idxs
+ * @param {array} new_block_hashes
+ * @param {array} new_block_ids
+ * @param {array} old_block_idxs
+ * @param {array} old_block_hashes
+ * @param {array} old_block_ids
+ * @param {integer} i_am_the_longest_chain
+ * @param {string} force
+ * @param {integer} current_unwind_index
+ * @param {integer} resetting_flag
+ */
+Blockchain.prototype.unwindChain = async function unwindChain(
+  newblock,
+  pos,
+  shared_ancestor_pos,
+  new_block_idxs,
+  new_block_hashes,
+  new_block_ids,
+  old_block_idxs,
+  old_block_hashes,
+  old_block_ids,
+  i_am_the_longest_chain,
+  force,
+  current_unwind_index,
+  resetting_flag
+) {
+
+  if (old_block_hashes.length > 0) {
+
+    let blk = await this.returnBlockByHash(old_block_hashes[current_unwind_index]);
+    if (blk == null) {
+
+      console.log("We cannot find a block on disk that should exist in unwindChain");
+
+      //
+      // we need to unwind some of our previously
+      // added blocks from the new chain and wind
+      // the old blocks back out....
+      //
+      var response           = {};
+      response.request       = "missing block";
+      response.data          = {};
+      response.data.hash     = old_block_hashes[current_unwind_index];
+      response.data.lasthash = "";
+      storage_self.app.network.sendRequest(response.request, JSON.stringify(response.data));
+
+      //
+      // handle gracefully so as not to trigger errors
+      //
+      console.log("\n\n\n\n\nCRITICAL ERROR: " + current_unwind_index);
+      console.log(JSON.stringify(response));
+      console.log(JSON.stringify(old_block_hashes));
+      this.addBlockToBlockchainFailure(newblock, pos, i_am_the_longest_chain, force);
+
+      return;
+    }
+
+
+    this.app.storage.onChainReorganization(blk.block.id, blk.returnHash(), 0);
+    this.app.wallet.onChainReorganization(blk.block.id, blk.returnHash(), 0);
+    this.app.modules.onChainReorganization(blk.block.id, blk.returnHash(), 0);
+    this.index.lc[old_block_idxs[current_unwind_index]] = 0;
+
+    //
+    // if we are the node that produced this block, we catch any transactions
+    // that were added to it. we want to add these transactions back into our
+    // mempool once the chain has been rewritten if their inputs are still
+    // valid.
+    //
+    if (this.app.wallet.returnPublicKey() == blk.block.creator) {
+      //
+      // a block that we created is getting undone, so we push all of the
+      // transactions into a special queue that exists in our mempool for
+      // us to check once we have finished re-writing the chain.
+      //
+      if (blk.transactions != null) {
+        for (let i = 0; i < blk.transactions.length; i++) {
+          this.app.mempool.recoverTransaction(blk.transactions[i]);
+        }
+      }
+    }
+
+    blk.unspendInputs();
+
+    //
+    // we either move on to our next block, or we hit
+    // the end of the chain of blocks to unspend and
+    // move on to wind the proposed new chain
+    //
+    if (current_unwind_index == 0) {
+      await this.windChain(newblock, pos, shared_ancestor_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, force, 0, resetting_flag);
+    } else {
+      await this.unwindChain(newblock, pos, shared_ancestor_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, force, current_unwind_index-1, resetting_flag);
+    }
+  } else {
+
+    //
+    // no more old_hashes blocks
+    //
+    await this.windChain(newblock, pos, shared_ancestor_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, force, 0, resetting_flag);
+  }
 
 }
 
 
-//////////////////
-// binaryInsert //
-//////////////////
-//
-// utility function used to add items to our fast indexes
-//
+
+/**
+ * Roll out a proposed longest chain and validate that the transaction
+ * slips are all valid and unspent, and that other things like the
+ * golden tickets and monetary policy.
+ *
+ * If we run into problems rolling out the new chain, we unroll it
+ * and roll the old chain back out again, remembering to set the
+ * resetting_flag to 1 so that we can report back that the chain
+ * reorganization attempt failed once we are done.
+ *
+ * once all of the new blocks are rolled out, we send control back
+ * to the blockchain class to finish either rolling out the new
+ * block or to reset the chain condition so that it is ready to
+ * process the next block.
+ *
+ * addBlockToBlockchainSuccess --> on success
+ * addBlockToBlockchainFailure --> on failure
+ *
+ * @param {saito.block} newblock newest block
+ * @param {interger} pos newest block index in blockchain.index
+ * @param {integer} shared_ancestor_pos block index of last-common-ancestor blockchain.index
+ * @param {array} new_block_idxs sarray of block indexes for new blocks becoming longest chain
+ * @param {array} new_block_hashes array of block hashes for new blocks becoming longest chain
+ * @param {array} new_block_ids array of block_ids for new blocks becoming longest chain
+ * @param {array} old_block_idxs array of block indexes for existing blocks losing longest chain
+ * @param {array} old_block_hashes array of block hashes for existing blocks losing longest chain
+ * @param {array} old_block_ids array of block_ids for existing blocks losing longest chain
+ * @param {integer} i_am_the_longest_chain is newest block longest chain (should be 1)
+ * @param {string} force if block is loaded from disk
+ * @param {integer} current_wind_index position in above old_block_* arrays of this block
+ * @param {integer} resetting_flag 1 if we are unwinding a bad new chain
+ **/
+Blockchain.prototype.windChain = async function windChain(
+  newblock,
+  pos,
+  shared_ancestor_pos,
+  new_block_idxs,
+  new_block_hashes,
+  new_block_ids,
+  old_block_idxs,
+  old_block_hashes,
+  old_block_ids,
+  i_am_the_longest_chain,
+  force,
+  current_wind_index,
+  resetting_flag
+) {
+
+  let this_block_hash = new_block_hashes[current_wind_index];
+
+  //
+  // we have not saved the latest block to disk yet, so
+  // there's no need to go through the delay of opening
+  // files from disk.
+  //
+  if (this_block_hash == newblock.returnHash()) {
+    let block_validates = await newblock.validate();
+    if (block_validates == 1) {
+
+      //
+      // we do not handle onChainReorganization for everything
+      // here as we do for older blocks. the reason for this is
+      // that the block is not yet saved to disk.
+      //
+      // onChainReorganization is run on addBlockToBlockchainSuccess
+      //
+      newblock.spendInputs();
+      await this.addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, force);
+      return;
+
+    } else {
+
+      if (current_wind_index == 0) {
+
+        // this is the first block we have tried to add
+        // and so we can just roll out the older chain
+        // again as it is known good.
+        //
+        // note that old and new hashes are swapped
+        // and the old chain is set as null because
+        // we won't move back to it. we also set the
+        // resetting_flag to 1 so we know to fork
+        // into addBlockToBlockchainFailure.
+        //
+        if (old_block_hashes.length > 0) {
+          await this.windChain(newblock, pos, shared_ancestor_pos, old_block_idxs, old_block_hashes, old_block_ids, null, null, null, i_am_the_longest_chain, force, 0, 1);
+          return;
+        } else {
+          await this.addBlockToBlockchainFailure(newblock, pos, i_am_the_longest_chain, force);
+          return;
+        }
+      } else {
+
+        //
+        // we need to unwind some of our previously
+        // added blocks from the new chain. so we
+        // swap our hashes to wind/unwind.
+        //
+        var chain_to_unwind_hashes = new_block_hashes.splice(current_wind_index);
+        var chain_to_unwind_idxs   = new_block_idxs.splice(current_wind_index);
+        var chain_to_unwind_ids    = new_block_ids.splice(current_wind_index);
+
+        //
+        // unwind NEW and wind OLD
+        //
+        // note that we are setting the resetting_flag to 1
+        //
+        await this.unwindChain(newblock, pos, shared_ancestor_pos, old_block_idxs, old_block_hashes, old_block_ids, chain_to_unwind_idxs, chain_to_unwind_hashes, chain_to_unwind_ids, i_am_the_longest_chain, force, chain_to_unwind_hashes.length, 1);
+
+      }
+    }
+
+  //
+  // this is not the latest block, so we need to
+  // fetch it from disk, and then do exactly the
+  // same thing as above, essentially.
+  //
+  } else {
+
+    var blk = await this.returnBlockByHash(new_block_hashes[current_wind_index]);
+    if (blk == null) {
+       console.log("Cannot open block that should exist in windChain");
+       this.app.logger.logError("Cannot open block that should exist in windChain", { message: "", stack: "" });
+       process.exit();
+    }
+
+    let block_validates = await blk.validate();
+    if (block_validates == 1) {
+
+      this.app.storage.onChainReorganization(blk.block.id, blk.returnHash(), 1);
+      this.app.wallet.onChainReorganization(blk.block.id, blk.returnHash(), 1);
+      this.app.modules.onChainReorganization(blk.block.id, blk.returnHash(), 1);
+      this.app.blockchain.index.lc[new_block_idxs[current_wind_index]] = 1;
+
+      blk.spendInputs();
+
+      if (current_wind_index == new_block_idxs.length-1) {
+        if (resetting_flag == 0) {
+          await this.addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, force);
+        } else {
+          await this.addBlockToBlockchainFailure(newblock, pos, i_am_the_longest_chain, force);
+        }
+      } else {
+        this.windChain(newblock, pos, shared_ancestor_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, force, current_wind_index+1, resetting_flag);
+        return;
+      }
+
+      await this.addBlockToBlockchainSuccess(newblock, pos, i_am_the_longest_chain, force);
+
+
+
+    } else {
+
+      if (current_wind_index == 0) {
+        await this.windChain(newblock, pos, shared_ancestor_pos, old_block_idxs, old_block_hashes, old_block_ids, null, null, null, i_am_the_longest_chain, force, 0, 1);
+      } else {
+        var chain_to_unwind_hashes = new_block_hashes.splice(current_wind_index);
+        var chain_to_unwind_idxs   = new_block_idxs.splice(current_wind_index);
+        var chain_to_unwind_ids    = new_block_ids.splice(current_wind_index);
+        await this.unwindChain(newblock, pos, shared_ancestor_pos, old_block_idxs, old_block_hashes, old_block_ids, chain_to_unwind_idxs, chain_to_unwind_hashes, chain_to_unwind_ids, i_am_the_longest_chain, force, chain_to_unwind_hashes.length, 1);
+      }
+    }
+  }
+}
+
+
+
+
+/**
+ * Checks if the hash has previosly been indexed
+ * @param {string} hash
+ */
+Blockchain.prototype.isHashIndexed = function isHashIndexed(hash) {
+  if (this.block_hash_hmap[hash] > 0) { return true; }
+  return false;
+};
+
+/**
+ * Binary Insert algorithm
+ * @param {array} list
+ * @param {string} item
+ * @param {string} compare
+ * @param {string} search
+ */
 Blockchain.prototype.binaryInsert = function binaryInsert(list, item, compare, search) {
 
   var start = 0;
@@ -7439,175 +5536,139 @@ Blockchain.prototype.binaryInsert = function binaryInsert(list, item, compare, s
   return start;
 }
 
-
-/////////////////
-// importBlock //
-/////////////////
-//
-// the import block function expects to be provided with
-// a JSON object that can be imported. It recreates the
-// block object and then submits it to
-//
-//   validateBlockAndQueueInMempool
-//
-// @params {string} json of block
-// @params {integer} relay block after validating
-// @params {string{ publickey of originating peer
-//
-Blockchain.prototype.importBlock = function importBlock(blkjson, expected_block_hash="", relay_on_validate=1, originating_peer="") {
-  var nb = new saito.block(this.app, blkjson);
-
-  // 
-  // track who sent this
-  //
-  nb.originating_peer = originating_peer;
-  //
-  // lite-clients may receive lite-blocks without the full
-  //
-  if (expected_block_hash == "") { return; }
-  if (nb == null) { return; }
-  if (nb.is_valid == 0) { return; }
-  if (this.app.BROWSER == 0 && expected_block_hash != nb.returnHash()) { return; }
-  nb.size = blkjson.length;
-  this.validateBlockAndQueueInMempool(nb, relay_on_validate);
+/**
+ * Returns indexed min tx id
+ * @returns {int} mintxid
+ */
+Blockchain.prototype.returnMinTxId = function returnMinTxId() {
+  if (this.lc == null) { return 0; }
+  return this.index.mintid[this.lc];
 }
 
 
-//////////////////////
-// isBlockIdIndexed //
-//////////////////////
-//
-// @params {integer} block_id
-// @returns {boolean} is block_id indexed?
-//
-Blockchain.prototype.isBlockIdIndexed = function isBlockIdIndexed(block_id) {
-  for (let n = this.index.block_id.length-1; n >= 0; n--) {
-    if (this.index.block_id[n] == block_id) {
-      return 1;
+/**
+ * Returns indexed max tx id
+ * @returns {int} maxtxid
+ */
+Blockchain.prototype.returnMaxTxId = function returnMaxTxId() {
+  if (this.lc == null) { return 0; }
+  return this.index.maxtid[this.lc];
+}
+
+/**
+ * Calculates the ForkID for our current longest chain
+ *
+ * @param {saito.block} newestblk
+ *
+ **/
+Blockchain.prototype.calculateForkId = function calculateForkId(blk) {
+
+  if (blk == null) { return this.fork_id; }
+
+  let baseblockid = blk.returnId();
+  let fork_id     = "";
+  let indexpos    = this.index.hash.length-1;
+
+  for (let i = 0, stop = 0; stop == 0 && i < this.genesis_period;) {
+
+    let checkpointblkid = baseblockid-i;
+    indexpos = this.returnLongestChainIndexArray(checkpointblkid, indexpos);
+
+    if (indexpos == -1 || checkpointblkid < 0) { stop = 1; }
+    else {
+      // get the hash
+      let th = this.index.hash[indexpos];
+      fork_id += th.substring(0,2);
     }
-    if (this.index.block_id[n] < block_id) {
-      return -1;
-    }
-  }
-  return -1;
-};
-
-
-///////////////////
-// isHashIndexed //
-///////////////////
-//
-// checks if a block with this hash is in our index
-//
-// @params {string} block hash
-// @returns {boolean} is hash in index?
-//
-Blockchain.prototype.isHashIndexed = function isHashIndexed(hash) {
-  if (this.block_hashmap[hash] > 0) { return 1; }
-  return -1;
-};
-
-
-///////////////////////
-// purgeArchivedData //
-///////////////////////
-//
-// this is called whenever we add a block to our blockchain. it
-// calculates how many blocks we can discard and dumps them.
-//
-// @params {integer} id of lowest block to keep
-// @params {integer} position of lowest block in index
-// @returns {integer} new position of lowest block in index
-//
-Blockchain.prototype.purgeArchivedData = function purgeArchivedData(lowest_block_id, pos) {
-
-  let items_before_needed = 0;
-
-  //
-  // find the number of items in our blockchain before
-  // we run into the lowest_block_id. Remember that blocks
-  // are going to be sequential so it is only forks that
-  // we really worry about
-  //
-  for (let x = 0; x < this.index.block_id.length; x++) {
-    if (this.index.block_id[x] < lowest_block_id) {
-      items_before_needed++;
-    }
-    else { x = this.blocks.length; }
-  }
-
-
-  //////////////////////////////
-  // delete transaction slips //
-  //////////////////////////////
-  //
-  // also deletes the block file once done
-  //
-  for (let b = 0; b < items_before_needed; b++) {
-    this.app.storage.purgeBlockStorage(this.index.hash[b]);
-  }
-
-
-  /////////////////////////
-  // delete from hashmap //
-  /////////////////////////
-  for (let x = 0; x < items_before_needed; x++) {
-
-    let bh = this.index.hash[x];
 
     //
-    // this is why we cannot
-    // 'use strict' in this
-    // class
+    // if edited, also change:
     //
-    delete this.block_hashmap[bh];
-    delete this.lc_hashmap[bh];
+    // returnLastSharedBlockId()
+    //
+    if (i == 10000) { i = 50000; }
+    if (i == 5000)  { i = 10000; }
+    if (i == 1000)  { i = 5000; }
+    if (i == 500)   { i = 1000; }
+    if (i == 200)   { i = 500; }
+    if (i == 100)   { i = 200; }
+    if (i == 75)    { i = 100; }
+    if (i == 50)    { i = 75; }
+    if (i == 40)    { i = 50; }
+    if (i == 30)    { i = 40; }
+    if (i == 20)    { i = 30; }
+    if (i == 10)    { i = 20; }
+    if (i == 0)     { i = 10; }
+
+    if (i > this.genesis_period || i == 50000) { stop = 1; }
+
   }
 
-
-  ////////////////////////////////////////////////
-  // delete from fast-access indexes and blocks //
-  ////////////////////////////////////////////////
-  this.index.hash.splice(0, items_before_needed);
-  this.index.ts.splice(0, items_before_needed);
-  this.index.prevhash.splice(0, items_before_needed);
-  this.index.burnfee.splice(0, items_before_needed);
-  this.index.block_id.splice(0, items_before_needed);
-  this.index.mintid.splice(0, items_before_needed);
-  this.index.maxtid.splice(0, items_before_needed);
-  this.index.lc.splice(0, items_before_needed);
-  this.blocks.splice(0, items_before_needed);
-
-  var newpos = pos - items_before_needed;
-
-  //////////////////
-  // and clean up //
-  //////////////////
-  this.longestChain = this.longestChain - items_before_needed;
-  this.app.wallet.purgeExpiredSlips();
-
-  //
-  // deletes database
-  //
-  this.app.storage.deleteBlocks(lowest_block_id);
-
-  return newpos;
+  this.fork_id = fork_id;
 
 }
 
 
-/////////////////////////////
-// returnLastSharedBlockId //
-/////////////////////////////
-//
-// used by the peer class to help nodes identify their last
-// shared ancestor block, in order to give them the full chain
-// from that point.
-//
-// @params {string} saito fork_id
-// @params {integer} last known block_id
-// @returns {integer} last shared block_id
-//
+
+
+
+/**
+ * returns the block with the specified hash if exists
+ * @param {string} hash
+ * @returns {saito.block} block
+ */
+Blockchain.prototype.returnBlockByHash = async function returnBlockByHash(hash, txjson=0) {
+
+  let block = null;
+
+  //
+  // first check our in-memory blocks
+  //
+  if (this.isHashIndexed(hash)) {
+    for (let v = this.blocks.length-1; v >= 0; v-- ) {
+      if (this.blocks[v].hash == hash) {
+        if (txjson == 0) {
+          return this.blocks[v];
+	} else {
+
+	  //
+	  // user is requesting this block only
+	  // if it has the txjson, which means
+	  // we should fetch from disk.
+	  //
+	  v = -1;
+
+	}
+      }
+    }
+  }
+
+  //
+  // or fetch from disk
+  //
+  block = await this.app.storage.loadSingleBlockFromDisk(hash);
+
+  return block;
+
+}
+Blockchain.prototype.returnBlockByHashWithCallback = async function returnBlockByHashWithCallback(hash, mycallback) {
+  let blk = await this.returnBlockByHash(hash);
+  mycallback(blk);
+}
+
+
+
+
+/**
+ * Given a forkid and the last known shared block id, it
+ * returns the last shared ancestry block. This is used to
+ * help peers determine from which point to sync.
+ *
+ * @params {string} fork_id
+ * @params {integer} last known block_id
+ * @returns {integer} last shared block_id
+ *
+ **/
 Blockchain.prototype.returnLastSharedBlockId = function returnLastSharedBlockId(fork_id, latest_known_block_id) {
 
   // if there is no fork_id submitted, we backpedal 1 block to be safe
@@ -7643,8 +5704,9 @@ Blockchain.prototype.returnLastSharedBlockId = function returnLastSharedBlockId(
     if (fii == 12) { our_fork_id_pair_blockid = latest_known_block_id - 10000; }
     if (fii == 13) { our_fork_id_pair_blockid = latest_known_block_id - 50000; }
 
+
     // return hash by blockid
-    var tmpklr = this.returnHashByBlockIdLongestChain(our_fork_id_pair_blockid);
+    var tmpklr = this.returnHashByBlockId(our_fork_id_pair_blockid);
 
     // if we have not found a match, return 0 since we have
     // irreconciliable forks, so we just give them everything
@@ -7665,163 +5727,61 @@ Blockchain.prototype.returnLastSharedBlockId = function returnLastSharedBlockId(
 }
 
 
-/////////////////////////////////////
-// returnHashByBlockIdLongestChain //
-/////////////////////////////////////
-//
-// given a block ID, it returns the hash of the block
-// that has that ID and is on the longest chain.
-//
-// @params {integer} block id
-// @returns {string} hash of block
-//
-Blockchain.prototype.returnHashByBlockIdLongestChain = function returnHashByBlockIdLongestChain(block_id) {
-  for (let n = this.index.block_id.length-1; n >= 0; n--) {
-    if (this.index.block_id[n] == block_id && this.index.lc[n] == 1) {
+
+/**
+ * Given a block id, we return the hash of the block
+ * in the longest-chain that has that ID, if exists
+ *
+ * @params {integer} block id
+ * @returns {string} hash
+ **/
+Blockchain.prototype.returnHashByBlockId = function returnHashByBlockId(bid) {
+  for (let n = this.index.bid.length-1; n >= 0; n--) {
+    if (this.index.bid[n] == bid && this.index.lc[n] == 1) {
       return this.index.hash[n];
     }
-    if (this.index.block_id[n] < block_id) {
+    if (this.index.bid[n] < bid) {
       return "";
     }
 
     //
-    // TODO - otimize
-    //
-    // faster than iterating through, but not optimized
+    // TODO - optimize
     //
     if (n-50 >= 1) {
-      if (this.index.block_id[n-50] > block_id) {
-        n-=50;
+      if (this.index.bid[n-50] > bid) {
+        n -= 50;
       }
     }
+
   }
   return "";
 }
 
 
-///////////////////
-// returnMinTxId //
-///////////////////
-//
-// used by block class
-//
-// @returns {integer} lowest tx_id in blockchain
-//
-Blockchain.prototype.returnMinTxId = function returnMinTxId() {
-  if (this.longestChain == -1) { return 0; }
-  return this.index.mintid[this.longestChain];
-}
 
 
-///////////////////
-// returnMinTxId //
-///////////////////
-//
-// used by block class
-//
-// @returns {integer} lowest tx_id in blockchain
-//
-Blockchain.prototype.returnMaxTxId = function returnMaxTxId() {
-  if (this.longestChain == -1) { return 0; }
-  return this.index.maxtid[this.longestChain];
-}
 
 
-////////////////////
-// returnUnixtime //
-////////////////////
-//
-// given a hash return the unixtime associated with the block
-// that produced the hash, or -1
-//
-// @params {string} block hash
-// @returns {integer} timestamp on success
-// @returns {integer} -1 on failure
-//
-Blockchain.prototype.returnUnixtime = function returnUnixtime(blockhash) {
-  //
-  // TODO
-  //
-  // should not search such a length period
-  //
-  // fix -- check ID from hashmap and search for block that way
-  //
-  if (blockhash == "") { return -1; }
-  for (let i = this.index.hash.length-1; i >= 0 && i > this.index.hash.length-1000; i--) {
-    if (this.index.hash[i] == blockhash) {
-        return this.index.ts[i];
-    }
-  }
-  return -1;
-}
 
 
-/////////////////////////////
-// returnLongestChainIndex //
-/////////////////////////////
-//
-// returns an array with the index positions of the blocks
-// in our indexes that form the longest chain. the chainlength
-// variable controls how deep the function searches
-//
-// @params {integer} how deep to search
-// @returns {array} of integers/index positions
-//
-Blockchain.prototype.returnLongestChainIndex = function returnLongestChainIndex(chainlength=10) {
-  if (this.index.hash.length == 0) { return []; }
-  if (this.index.hash.length < chainlength) { chainlength = this.index.hash.length; }
-  if (chainlength == 0) { return []; }
 
-  var bchainIndex = [];
-  var chain_pos = this.longestChain;
-
-  bchainIndex.push(chain_pos);
-
-  for (let z = 0; z < chainlength; z++) {
-
-    var prev_pos = chain_pos-1;
-    var prev_found = 0;
-
-    if (prev_pos == -1) {
-      z = chainlength+1;
-    } else {
-
-      // get the previous block
-      while (prev_pos >= 0 && prev_found == 0) {
-        if (this.index.hash[prev_pos] == this.index.prevhash[chain_pos]) {
-          bchainIndex.push(prev_pos);
-          prev_found = 1;
-          chain_pos = prev_pos;
-        } else {
-          prev_pos--;
-        }
-      }
-    }
-  }
-  return bchainIndex;
-}
-
-
-//////////////////////////////////////////////
-// returnLongestChainIndexPositionByBlockId //
-//////////////////////////////////////////////
-//
-// returns an array with the index positions of the blocks
-// in our indexes that form the longest chain, stretching
-// back until the block_id provided
-//
-// @params {integer} block_id to find
-// @params {integer} tarting index position
-// @returns {array} of integers/index positions
-//
-Blockchain.prototype.returnLongestChainIndexPositionByBlockId = function returnLongestChainIndexPositionByBlockId(blkid, spos=-1) {
+/**
+ * Returns an array with the index positions of the blocks
+ * that form the longest-chain, stretching back from the
+ * latest block until the bid provided.
+ *
+ * @params {integer} block_id
+ * @params {integer} index position
+ * @returns {array} of integers/index positions
+ */
+Blockchain.prototype.returnLongestChainIndexArray = function returnLongestChainIndexArray(bid, spos=-1) {
   if (this.index.hash.length == 0) { return null; }
   var start_pos = this.index.hash.length-1;
   if (spos != -1) { start_pos = spos; }
   for (let c = start_pos; c >= 0; c--) {
-    if (this.index.block_id[c] == blkid) {
+    if (this.index.bid[c] == bid) {
       if (this.index.lc[c] == 1) {
-	      return c;
+        return c;
       }
     }
   }
@@ -7829,175 +5789,175 @@ Blockchain.prototype.returnLongestChainIndexPositionByBlockId = function returnL
 }
 
 
-///////////////////////
-// returnLatestBlock //
-///////////////////////
-//
-// returns block obj of latest block
-//
-// @returns {saito.block}
-//
-Blockchain.prototype.returnLatestBlock = function returnLatestBlock() {
-  if (this.blocks.length == 0) { return null; }
-  for (let i = this.blocks.length-1; i >= 0; i--) {
-    if (this.blocks[i].hash == this.index.hash[this.longestChain]) {
-      return this.blocks[i];
-    }
-  }
-  return null;
-}
 
 
-///////////////////////////////
-// returnLatestBlockUnixtime //
-///////////////////////////////
-//
-// @returns {integer} timestamp
-//
-Blockchain.prototype.returnLatestBlockUnixtime = function returnLatestBlockUnixtime() {
-  if (this.blocks.length == 0) { return -1; }
-  if (this.blocks.length < this.longestChain) { return -1; }
-  return this.index.ts[this.longestChain];
-}
-
-
-///////////////////////////
-// returnLatestBlockHash //
-///////////////////////////
-//
-// @returns {string} block hash
-//
-Blockchain.prototype.returnLatestBlockHash = function returnLatestBlockHash() {
-  if (this.blocks.length == 0) { return ""; }
-  if (this.blocks.length < this.longestChain) { return ""; }
-  return this.index.hash[this.longestChain];
-}
-
-
-///////////////////////
-// returnLatestBlock //
-///////////////////////
-//
-// @returns {integer} block_id
-//
-Blockchain.prototype.returnLatestBlockId = function returnLatestBlockId() {
-  if (this.index.block_id.length == 0) { return 0; }
-  return this.index.block_id[this.longestChain];
-}
-
-
-///////////////////////
-// returnLatestBlock //
-///////////////////////
-//
-// @returns {saito.block} block
-//
-Blockchain.prototype.returnBlockByHash = function returnBlockByHash(hash, mycallback=null) {
+/**
+ * when the blockchain hits a certain length we throw out all of our older blks
+ * this is possible because block ids are incremental. We do check our last fork_guard
+ * blocks to make sure there is not a block that might reference one of the
+ * blocks we are throwing out before we purge ourselves of them.
+ *
+ * @params {saito.block} block
+ * @params {integer} position in index
+ */
+Blockchain.prototype.updateGenesisBlock = function updateGenesisBlock(blk, pos) {
 
   //
-  // first check our in-memory blocks
+  // we need to make sure this is not a random block that is disconnected
+  // from our previous genesis_id. If there is no connection between it
+  // and us, then we cannot delete anything as otherwise the provision of
+  // the block may be an attack on us intended to force us to discard
+  // actually useful data.
   //
-  for (let v = this.blocks.length-1; v >= 0; v-- ) {
-    if (this.blocks[v].hash == hash) {
-      if (mycallback == null) {
-        return this.blocks[v];
-      } else {
-        mycallback(this.blocks[v]);
-	      return;
+  // we do this by checking that our block is the head of the
+  // verified longest chain.
+  //
+  if (this.index.hash[this.lc] != blk.returnHash('hex')) { return pos; }
+  if (this.index.hash.length < this.genesis_period) { return pos; }
+
+  if (blk.returnId() >= (this.genesis_bid + this.genesis_period + this.fork_guard)) {
+
+    //
+    // check the fork guard period to see if there is a viable
+    // competing chain. If there is we must assume there may be
+    // a viable competing chain to preserve
+    //
+    let is_there_a_challenger = 0;
+    let our_block_id    = blk.returnId();
+    //
+    // -1 accounts for the fact we reclaim the funds from unspent
+    // golden tickets, and need to know for sure that those slips
+    // have not been spent when we calculate getting them back
+    // into circulation. So we keep an extra block on the tail
+    // end, even if it is unspendable, for validation
+    //
+    let lowest_block_id = our_block_id - this.genesis_period - 1;
+
+    //
+    // do not delete if our new genesis block would be less than zero
+    //
+    if (lowest_block_id <= 0) { return; }
+
+    //
+    // otherwise, figure out what the lowest block ID is that would
+    // be possible to grow into a viable fork. We do this by looking
+    // at our recently produced blocks. The fork guard here is an
+    // arbitrary constant.
+    //
+    for (let c = 2; c <= this.fork_guard && c < this.index.bid.length; c++) {
+      if (this.index.bid[this.index.bid.length-c] < lowest_block_id) {
+        lowest_block_id = this.index.bid[this.index.bid.length-2];
       }
     }
+
+    //
+    // this is needed before update genesis_block_id to ensure
+    // wallet slips are updated properly (they are updated in
+    // purgeArchivedData but require a new genesis_period to
+    // calculate, so much udpate genesis_period and THEN purge,
+    // meaning this calculation must be stored
+    //
+    let purge_id = lowest_block_id - this.genesis_period;
+
+    //
+    // finally, update our genesis block_id to the current_block minus
+    // the genesis period. We will run this function again when the
+    // fork guard has passed, and if any forks have not sufficiently
+    // kept pace in that time, they will be discarded them.
+    //
+    this.genesis_block_id = blk.returnId() - this.genesis_period;
+
+    //
+    // in either case, we are OK to throw out everything below the
+    // lowest_block_id that we have found, since even the lowest
+    // fork in our guard_period will not need to access transactions
+    // from before itself and the genesis period.
+    //
+    // we use the purge_id variable since our functions inside
+    // need to delete from wallet slips, which requires genesis
+    // block_id to be set properly.
+    //
+    return this.purgeArchivedData(purge_id, pos);
+
   }
+
+  return pos;
+}
+
+
+
+/**
+ * this is called whenever we add a block to our blockchain. it
+ * calculates how many blocks we can discard and dumps them.
+ *
+ * @params {integer} id of lowest block to keep
+ * @params {integer} position of lowest block in index
+ * @returns {integer} new position of lowest block in index
+ *
+**/
+Blockchain.prototype.purgeArchivedData = function purgeArchivedData(lowest_block_id, pos) {
+
+  let items_before_needed = 0;
 
   //
-  // first check our in-memory blocks
+  // find the number of items in our blockchain before
+  // we run into the lowest_block_id. Remember that blocks
+  // are going to be sequential so it is only forks that
+  // we really worry about
   //
-  if (this.app.BROWSER == 0 && this.app.SPVMODE == 0) {
-    if (mycallback != null) {
-      this.app.storage.openBlockByHash(hash, function(storage_self, blk) {
-        mycallback(blk);
-	      return;
-      });
-      return;
+  for (let x = 0; x < this.index.bid.length; x++) {
+    if (this.index.bid[x] < lowest_block_id) {
+      items_before_needed++;
     }
+    else { x = this.blocks.length; }
+  }
+
+  /////////////////////////
+  // delete from storage //
+  /////////////////////////
+  //
+  // slips / file / database
+  //
+  for (let b = 0; b < items_before_needed; b++) {
+    this.app.storage.deleteBlock(this.index.bid[b], this.index.hash[b], this.index.lc[b]);
   }
 
 
-  if (mycallback == null) {
-    return null;
-  } else {
-    mycallback(null);
-    return;
+  /////////////////////////
+  // delete from hashmap //
+  /////////////////////////
+  for (let x = 0; x < items_before_needed; x++) {
+    let bh = this.index.hash[x];
+    delete this.block_hash_hmap[bh];
   }
+
+
+  ////////////////////////////////////////////////
+  // delete from fast-access indexes and blocks //
+  ////////////////////////////////////////////////
+  this.index.hash.splice(0, items_before_needed);
+  this.index.prevhash.splice(0, items_before_needed);
+  this.index.bid.splice(0, items_before_needed);
+  this.index.mintid.splice(0, items_before_needed);
+  this.index.maxtid.splice(0, items_before_needed);
+  this.index.ts.splice(0, items_before_needed);
+  this.index.bf.splice(0, items_before_needed);
+  this.index.lc.splice(0, items_before_needed);
+  this.blocks.splice(0, items_before_needed);
+
+  var newpos = pos - items_before_needed;
+
+
+  //////////////////
+  // and clean up //
+  //////////////////
+  this.lc = this.lc - items_before_needed;
+  this.app.wallet.purgeExpiredSlips();
+
+  return newpos;
+
 }
 
-
-/////////////////////////////////
-// returnBlockByIdLongestChain //
-/////////////////////////////////
-Blockchain.prototype.returnBlockByIdLongestChain = function returnBlockByIdLongestChain(id=0) {
-  if (this.index.hash.length == 0) { return null; }
-  if (id == 0) { return null; }
-  for (var bi = this.index.block_id.length-1; bi >= 0; bi--) {
-    if (this.index.block_id[bi] == id && this.index.lc[bi] == 1) {
-      return this.blocks[bi];
-    }
-  }
-}
-
-
-//////////////////
-// returnForkId //
-//////////////////
-//
-// @returns {string} fork_id
-//
-Blockchain.prototype.returnForkId = function returnForkId() {
-  return this.fork_id;
-}
-
-
-//////////////////////////
-// returnGenesisBlockId //
-//////////////////////////
-//
-// @returns {integer} genesis block id
-//
-Blockchain.prototype.returnGenesisBlockId = function returnGenesisBlockId() {
-  return this.genesis_block_id;
-}
-
-
-/////////////////////////
-// returnGenesisPeriod //
-/////////////////////////
-//
-// returns block obj of latest block
-//
-// @returns {saito.block}
-//
-Blockchain.prototype.returnGenesisPeriod = function returnGenesisPeriod() {
-  return this.genesis_period;
-}
-
-
-//////////////////////
-// returnBlockchain //
-//////////////////////
-//
-// this is what gets stored in the options file and
-// lets us start up the sync again.
-//
-// @returns {js object}
-//
-Blockchain.prototype.returnBlockchain = function returnBlockchain() {
-  var x = {};
-  x.latest_block_ts    = this.returnLatestBlockUnixtime();
-  x.latest_block_hash  = this.returnLatestBlockHash();
-  x.latest_block_id    = this.returnLatestBlockId();
-  x.genesis_block_id   = this.returnGenesisBlockId();
-  x.fork_id            = this.fork_id;
-  return x;
-}
 
 
 //////////////////
@@ -8010,22 +5970,29 @@ Blockchain.prototype.updateForkId = function updateForkId(blk) {
 
   if (blk == null) { return this.fork_id; }
 
-  let blockid     = blk.returnId();
-  let baseblockid = blockid;
+  let baseblockid = blk.returnId();
   let fork_id     = "";
   let indexpos    = this.index.hash.length-1;
+
+  // roll back to known fork ID measurement
+  for (let x = baseblockid; x >= 0; x--) {
+    if (x%this.fork_id_mod == 0) {
+      baseblockid = x;
+      x = -1;
+    }
+  }
 
   for (let i = 0, stop = 0; stop == 0 && i < this.genesis_period;) {
 
     let checkpointblkid = baseblockid-i;
-    indexpos = this.returnLongestChainIndexPositionByBlockId(checkpointblkid, indexpos);
+    indexpos = this.returnLongestChainIndexArray(checkpointblkid, indexpos);
 
     if (indexpos == -1 || checkpointblkid < 0) { stop = 1; }
     else {
-      // get the hash
       let th = this.index.hash[indexpos];
       fork_id += th.substring(0,2);
     }
+
 
     // if this is edited, we have to
     // also change the function
@@ -8055,117 +6022,32 @@ Blockchain.prototype.updateForkId = function updateForkId(blk) {
 }
 
 
-////////////////////////
-// updateGenesisBlock //
-////////////////////////
-//
-// when the blockchain hits a certain length we throw out all of our older blks
-// this is possible because block ids are incremental. We do check our last fork_guard
-// blocks to make sure there is not a block that might reference one of the
-// blocks we are throwing out before we purge ourselves of them.
-//
-// @params {saito.block} block
-// @params {integer} position in index
-//
-Blockchain.prototype.updateGenesisBlock = function updateGenesisBlock(blk, pos) {
-
-  //
-  // we need to make sure this is not a random block that is disconnected
-  // from our previous genesis_id. If there is no connection between it
-  // and us, then we cannot delete anything as otherwise the provision of
-  // the block may be an attack on us intended to force us to discard
-  // actually useful data.
-  //
-  // we do this by checking that our block is the head of the
-  // verified longest chain.
-  //
-  if (this.index.hash[this.longestChain] != blk.returnHash('hex')) {
-    return pos;
+/**
+ * returns the BID of the block we suspect is the last produced block
+ *
+ * this is used when syncing the blockchain, so that we can provide
+ * a visual update of sync completion.
+ **/
+Blockchain.prototype.returnTargetBlockId = function returnTargetBlockId() {
+  if (this.index.bid.length == 0) { return this.returnLatestBlockId(); }
+  if (this.app.options.blockchain == null) { return this.returnLatestBlockId(); }
+  if (this.app.options.blockchain.target_bid == undefined) { return this.returnLatestBlockId(); }
+  if (this.app.options.blockchain.target_bid < this.returnLatestBlockId()) {
+    this.app.options.blockchain.target_bid = this.returnLatestBlockId();
   }
-  if (this.index.hash.length < this.genesis_period) {
-    return pos;
-  }
-
-  if (blk.returnId() >= (this.genesis_block_id + this.genesis_period + this.fork_guard)) {
-
-    //
-    // check the fork guard period to see if there is a viable
-    // competing chain. If there is we must assume there may be
-    // a viable competing chain to preserve
-    //
-    var is_there_a_challenger = 0;
-    var our_block_id    = blk.returnId();
-
-    //
-    // -1 accounts for the fact we reclaim the funds from unspent
-    // golden tickets, and need to know for sure that those slips
-    // have not been spent when we calculate getting them back
-    // into circulation. So we keep an extra block on the tail
-    // end, even if it is unspendable, for validation
-    //
-    var lowest_block_id = our_block_id - this.genesis_period - 1;
-
-    //
-    // do not delete if our new genesis block would be less than zero
-    //
-    if (lowest_block_id <= 0) { return; }
-
-    //
-    // otherwise, figure out what the lowest block ID is that would
-    // be possible to grow into a viable fork. We do this by looking
-    // at our recently produced blocks. The fork guard here is an
-    // arbitrary constant.
-    //
-    for (let c = 2; c <= this.fork_guard && c < this.index.block_id.length; c++) {
-      if (this.index.block_id[this.index.block_id.length-c] < lowest_block_id) {
-        lowest_block_id = this.index.block_id[this.index.block_id.length-2];
-      }
-    }
-
-    //
-    // this is needed before update genesis_block_id to ensure
-    // wallet slips are updated properly (they are updated in
-    // purgeArchivedData but require a new genesis_period to
-    // calculate, so much udpate genesis_period and THEN purge,
-    // meaning this calculation must be stored
-    //
-    var purge_id = lowest_block_id - this.genesis_period;
-
-    //
-    // finally, update our genesis block_id to the current_block minus
-    // the genesis period. We will run this function again when the
-    // fork guard has passed, and if any forks have not sufficiently
-    // kept pace in that time, they will be discarded them.
-    //
-    this.genesis_block_id = blk.returnId() - this.genesis_period;
-
-    //
-    // in either case, we are OK to throw out everything below the
-    // lowest_block_id that we have found, since even the lowest
-    // fork in our guard_period will not need to access transactions
-    // from before itself and the genesis period.
-    //
-    // we use the purge_id variable since our functions inside
-    // need to delete from wallet slips, which requires genesis
-    // block_id to be set properly.
-    //
-    return this.purgeArchivedData(purge_id, pos);
-
-  }
-
-  return pos;
+  return this.app.options.blockchain.target_bid;
 }
 
+
+
 }).call(this,require('_process'))
-},{"../saito":12,"_process":328}],16:[function(require,module,exports){
+},{"../saito":8,"_process":326,"big.js":75}],12:[function(require,module,exports){
 const saito = require('../saito');
 const fs    = require('fs');
 
-
-
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Constructor
+ **/
 function Browser(app) {
 
   if (!(this instanceof Browser)) {
@@ -8181,27 +6063,28 @@ module.exports = Browser;
 
 
 
-////////////////
-// initialize //
-////////////////
-//
-// when Saito starts up, we check for a _browser_active
-// div on the webpage that is executing the javascript. 
-// this is used so that the software can figure out what
-// module is running, and only execute UI/UX code for that
-// module.
-//
-// One we know what module is running, we can initialize 
-// the HTML for that module and attach events.
-//
+/**
+ * initialize
+ *
+ * when Saito starts up, we check for a _browser_active
+ * div on the webpage that is executing the javascript.
+ * this is used so that the software can figure out what
+ * module is running, and only execute UI/UX code for that
+ * module.
+ *
+ * One we know what module is running, we can initialize
+ * the HTML for that module and attach events.
+**/
 Browser.prototype.initialize = function initialize() {
 
     if (this.app.BROWSER == 0) { return; }
 
-    // set the browser_active variable to 1 for modules we 
+    //
+    // set the browser_active variable to 1 for modules we
     // are interacting with. This avoids running unnecessary
     // interface code that might conflict in DOM management
-    for (var m = 0; m < this.app.modules.mods.length; m++) {
+    //
+    for (let m = 0; m < this.app.modules.mods.length; m++) {
       var divhunt = "#" + this.app.modules.mods[m].name + "_browser_active";
       if ($(divhunt).length > 0) {
         this.app.modules.mods[m].browser_active = 1;
@@ -8225,57 +6108,8 @@ Browser.prototype.initialize = function initialize() {
 }
 
 
-//////////////////////////
-// attachTemplateEvents //
-//////////////////////////
-//
-// Modules can include "templates" which are common
-// HTML/JS bundles that will work the same across 
-// many modules. 
-//
-Browser.prototype.attachTemplateEvents = function attachTemplateEvents(template_name, module_self) {
-
-  if (this.app.BROWSER != 1) { return; }
-
-  if (template_name == "saito-desktop-settings") {
-    var sds = new saito.templates.desktopSettings();
-    sds.attachEvents(module_self);
-  }
-
-  if (template_name == "saito-mobile-settings") {
-    var sms = new saito.templates.mobileSettings();
-    sms.attachEvents(module_self);
-  }
-
-}
-//////////////////////////
-// attachTemplateEvents //
-//////////////////////////
-//
-// Modules can include "templates" which are common
-// HTML/JS bundles that will work the same across 
-// many modules. 
-//
-Browser.prototype.insertTemplateHTML = function insertTemplateHTML(template_name) {
-
-  if (this.app.BROWSER != 1) { return; }
-
-  if (template_name == "saito-desktop-settings") {
-    var sds = new saito.templates.desktopSettings();
-    $('#saito-desktop-settings').html(sds.returnHTML());
-  }
-
-  if (template_name == "saito-mobile-settings") {
-    var sms = new saito.templates.mobileSettings();
-    $('#saito-mobile-settings').html(sms.returnHTML());
-  }
-
-}
-
 
 Browser.prototype.isMobileBrowser = function isMobileBrowser(user_agent) {
-
-console.log("TESTING IF IS MOBILE BROWSER");
 
   var check = false;
   (function(user_agent) {if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(user_agent)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(user_agent.substr(0,4))) check = true;})(user_agent);
@@ -8284,14 +6118,184 @@ console.log("TESTING IF IS MOBILE BROWSER");
 }
 
 
+Browser.prototype.notification = function notification(titletxt, bodyhtml) {
+ 
+  if (this.app.BROWSER == 0) { return; }
+
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  if (Notification.permission === 'granted') {
+    notify = new Notification(titletxt, {
+      body: bodyhtml,
+      tag: "Saito Notification",
+      iconURL: "/img/Logo-blue-icon.png",
+      icon: "/img/Logo-blue-icon.png"
+    });
+  }
+
+}
 
 
 
-},{"../saito":12,"fs":113}],17:[function(require,module,exports){
+
+
+},{"../saito":8,"fs":110}],13:[function(require,module,exports){
+(function (process){
+'use strict'
+
+const Big = require('big.js')
+
+/**
+ * BurnFee Constructor
+ */
+function BurnFee() {
+
+  if (!(this instanceof BurnFee)) {
+    return new BurnFee();
+  }
+
+  // default values
+  this.start         = 200;
+  this.heartbeat     = 5;        // expect new block every 30 seconds
+				  // maximum heartbeat is 2x the heartbeat
+				  // see below in returnMovingBurnFee
+  return this;
+}
+module.exports = BurnFee;
+
+///////////////////////////////
+// Define the burn fee curve //
+///////////////////////////////
+/**
+ * Returns the burn fee needed given the burnfee object and the time elapsed
+ * @param {bf} block.bf object
+ * @param {float} elapsed_time time since last block
+ * @return {float} calculated_burn_fee
+ */
+ //This is a very simple burnFeeCurve
+ //The curve is abstracted here for clarity and ease of adjustment
+BurnFee.prototype.burnFeeCurve = function burnFeeCurve(bf, elapsed_time) {
+  //return bf.start - (bf.start * (elapsed_time / (this.heartbeat * 1000 * 2)));
+  if ((elapsed_time/1000) > (this.heartbeat*2)) {return 0;}
+  return bf.start/(elapsed_time/1000);
+}
+
+//These are functions for determining the moving burn fee at a time
+/**
+ * Returns the burn fee needed given the burnfee object and the time elapsed
+ * @param {saito.block} prvblock to obtain previous burn fee from
+ * @param {int} elapsed_time time since last block
+ * @return {float} calculated_burn_fee
+ */
+//Return the burn fee value on the curve defined in burnFeeCurve
+// at an arbitrary time.
+BurnFee.prototype.returnMovingBurnFee = function returnMovingBurnFee(prevblk, elapsed_time=0) {
+
+  if (prevblk == null) { return 0; } else { var { bf } = prevblk.block; }
+
+  // our maximum blocktime is 2x the heartbeat (1000 converts to milliseconds)
+  let burn_fee_needed = this.burnFeeCurve(bf, elapsed_time);
+
+  if (burn_fee_needed <= 0) {
+    return 0;
+  } else {
+    return burn_fee_needed;
+  }
+
+}
+
+/**
+ * Returns a boolean value if burn_value is greater than the calculated burn_value_needed
+ * @param {saito.block} prevblk previous block
+ * @returns {boolean} is the burn value greater than the necessary burn fees?
+ */
+//Return the value on the burnFeeCurve now.
+BurnFee.prototype.returnMovingBurnFeeNow = function returnMovingBurnFeeNow(prevblk=null) {
+  let prevblk_ts = 0;
+  if (prevblk != null) { prevblk_ts = prevblk.block.ts; }
+  return this.returnMovingBurnFee(prevblk, ((new Date().getTime()) - prevblk_ts));
+}
+
+
+
+//Should this not be written to the block bf object?
+/**
+ * Returns the burn fee needed for THIS block
+ * @return {float} calculated_burn_fee
+ */
+BurnFee.prototype.returnBurnFeePaidForThisBlock = function returnBurnFeePaidForThisBlock(blk=null) {
+
+  if (blk == null) { return 0; }
+  if (blk.block.prevhash == null) { return 0; }
+
+  let prevblk = blk.app.blockchain.returnBlockByHash(blk.block.prevhash);
+  if (prevblk == null) { return 0; }
+  if (prevblk.block == null) { return 0; }
+
+  let elapsed_time = blk.block.ts - prevblk.block.ts;
+  return this.returnMovingBurnFee(prevblk, elapsed_time);
+
+}
+
+// These functions adjstst and validate adjustments to the burn fee.
+// The equeations here pair with the equations above.
+
+
+/**
+ * Returns the burn fee needed given the burnfee object and the time elapsed
+ * @param {saito.block} prvblock
+ * @param {saito.block} block
+ * @return {float} adjusted_burn_fee
+ */
+BurnFee.prototype.burnFeeAdjustment = function burnFeeAdjustment(prevblk=null, blk=null) {
+  //return prevblk.block.bf.start * Math.sqrt((blk.block.ts - prevblk.block.ts) / (this.heartbeat * 1000 * 2));
+  return prevblk.block.bf.start * Math.sqrt((this.heartbeat * 1000)/(blk.block.ts - prevblk.block.ts));
+}
+/**
+ * Calculates what the blk_bf should be given a previous block
+ * @param {saito.block} prevblk previous block
+ * @returns {saito.block} burn fee object
+ */
+BurnFee.prototype.adjustBurnFee = function adjustBurnFee(prevblk=null, blk=null) {
+
+  if (prevblk == null || blk == null) {
+    return { start: this.start };
+  }
+
+  var bf = {};
+  bf.start = this.burnFeeAdjustment(prevblk, blk);
+  console.log("Burn Fee Adjusted to: " + bf.start)
+  return bf;
+
+}
+
+
+/**
+ * Validates the burn fee was calculated correctly
+ * @param {saito.block} prevblk
+ * @param {saito.block} blk
+ * @returns {boolean} is it valid?
+ */
+BurnFee.prototype.validateBurnFee = function validateBurnFee(prevblk=null, blk=null) {
+
+  if (prevblk == null || blk == null) {
+    console.log("VALIDATE BURN FEE NOT WORKING");
+    process.exit(1);
+  }
+
+  let correct_start = this.burnFeeAdjustment(prevblk, blk);
+  if (blk.block.bf.start == correct_start) { return true; }
+
+  return false;
+
+}
+
+}).call(this,require('_process'))
+},{"_process":326,"big.js":75}],14:[function(require,module,exports){
 (function (Buffer){
-'use strict';
+'use strict'
 
-const crypt             = exports;
 const crypto            = require('crypto-browserify');
 const sha256            = require('sha256');
 const merkle            = require('merkle-tree-gen');
@@ -8303,14 +6307,15 @@ const JsonFormatter     = node_cryptojs.JsonFormatter;
 const Base58            = require("base-58");
 
 
-/////////////////
-// CONSTRUCTOR //
-/////////////////
-function Crypt() {
-  if (!(this instanceof Crypt)) { return new Crypt(); }
+
+/**
+ * Crypto Constructor
+ */
+function Crypto() {
+  if (!(this instanceof Crypto)) { return new Crypto(); }
   return this;
 }
-module.exports = Crypt;
+module.exports = Crypto;
 
 
 
@@ -8319,23 +6324,14 @@ module.exports = Crypt;
 // BASIC CRYPTOGRAPHIC FUNCTIONS //
 ///////////////////////////////////
 
-//////////
-// hash //
-//////////
-//
-// hashes a string. 2x sha256 like bitcoin
-//
-// @params {string} tstring to hash
-// @returns {string} hash of string
-//
-Crypt.prototype.hash = function hash(text) { 
+/**
+ * Hashes a string 2x sha256 like bitcoin
+ * @param {string} text
+ * @returns {string} 2x sha256 hash
+ */
+Crypto.prototype.hash = function hash(text) {
   return sha256(sha256(text));
 }
-
-
-
-
-
 
 
 
@@ -8344,138 +6340,108 @@ Crypt.prototype.hash = function hash(text) {
 // ELLIPTICAL CURVE CRYPTOGRAPHY //
 ///////////////////////////////////
 
-///////////////////////
-// compressPublicKey //
-///////////////////////
-//
-// compresses public key
-//
-// @params {string} publickey
-// @returns {string} compressed publickey
-//
-Crypt.prototype.compressPublicKey = function compressPublicKey(pubkey) {
+/**
+ * Compresses public key
+ *
+ * @param {string} pubkey
+ * @returns {string} compressed publickey
+ */
+Crypto.prototype.compressPublicKey = function compressPublicKey(pubkey) {
   return this.toBase58(secp256k1.publicKeyConvert(Buffer.from(pubkey,'hex'), true).toString('hex'));
 }
 
 
-////////////////
-// fromBase58 //
-////////////////
-//
-// converts base58 string to hex string
-//
-// @params {string} string to convert
-// @returns {string} converted string
-//
-Crypt.prototype.fromBase58 = function fromBase58(t) {
+/**
+ * Converts base58 string to hex string
+ *
+ * @param {string} t string to convert
+ * @returns {string} converted string
+ */
+Crypto.prototype.fromBase58 = function fromBase58(t) {
   return Buffer.from(Base58.decode(t), 'Uint8Array').toString('hex');
 }
 
 
-//////////////
-// toBase58 //
-//////////////
-//
-// converts hex string to base58 string
-//
-// @params {string} string to convert
-// @returns {string} converted string
-//
-Crypt.prototype.toBase58 = function toBase58(t) {
+/**
+ * Converts hex string to base58 string
+ *
+ * @param {string} t string to convert
+ * @returns {string} converted string
+ */
+Crypto.prototype.toBase58 = function toBase58(t) {
   return Base58.encode(new Buffer(t, 'hex'));
 }
 
 
-//////////////////
-// generateKeys //
-//////////////////
-//
-// creates a public/private keypair. returns the string
-// of the private key from which the public key can be
-// re-generated.
-//
-// @returns {string} private key
-//
-Crypt.prototype.generateKeys = function generateKeys() {
+/**
+ * Creates a public/private keypair. returns the string
+ * of the private key from which the public key can be
+ * re-generated.
+ * @returns {string} private key
+ */
+Crypto.prototype.generateKeys = function generateKeys() {
   let privateKey;
   do { privateKey = randomBytes(32) } while (!secp256k1.privateKeyVerify(privateKey, false))
   return privateKey.toString('hex');
 }
 
 
-/////////////////////
-// returnPublicKey //
-/////////////////////
-//
-// returns the public key associated with a private key
-//
-// @params {string} private key (hex)
-// @returns {string} public key (hex)
-//
-Crypt.prototype.returnPublicKey = function returnPublicKey(privkey) {
+/**
+ * Returns the public key associated with a private key
+ * @param {string} privkey private key (hex)
+ * @returns {string} public key (hex)
+ */
+Crypto.prototype.returnPublicKey = function returnPublicKey(privkey) {
   return this.compressPublicKey(secp256k1.publicKeyCreate(Buffer.from(privkey,'hex'), false).toString('hex'));
 }
 
 
-/////////////////
-// signMessage //
-/////////////////
-//
-// signs a message with a private key, returns it
-//
-// @params {string} message to sign
-// @params {string} private key (hex)
-// @returns {string} base-58 signed message
-//
-Crypt.prototype.signMessage = function signMessage(msg, privkey) {
+/**
+ * Signs a message with a private key, and returns the message
+ * @param {string} msg message to sign
+ * @param {string} privkey private key (hex)
+ * @returns {string} base-58 signed message
+ */
+Crypto.prototype.signMessage = function signMessage(msg, privkey) {
   return this.toBase58(secp256k1.sign(Buffer.from(this.hash(Buffer.from(msg, 'utf-8').toString('base64')),'hex'), Buffer.from(privkey,'hex')).signature.toString('hex'));
 }
 
 
-/////////////////////////
-// uncompressPublicKey //
-/////////////////////////
-//
-// returns an uncompressed public key
-//
-// @params {string} public key (base-58)
-// @returns {string} public key (hex)
-//
-Crypt.prototype.uncompressPublicKey = function uncompressPublicKey(pubkey) {
+/**
+ * Returns an uncompressed public key from publickey
+ * @param {string} pubkey public key (base-58)
+ * @returns {string} public key (hex)
+ */
+Crypto.prototype.uncompressPublicKey = function uncompressPublicKey(pubkey) {
   return secp256k1.publicKeyConvert(Buffer.from(this.fromBase58(pubkey),'hex'), false).toString('hex');
 }
 
 
-///////////////////
-// verifyMessage //
-///////////////////
-//
-// confirms that a message was signed by the private
-// key associated with a provided public key
-//
-// @params {string} message to check
-// @params {string} signature to confirm
-// @params {string} public key of alleged signer
-// @returns {boolean} is signature valid?
-//
-Crypt.prototype.verifyMessage = function verifyMessage(msg, sig, pubkey) {
+/**
+ * Confirms that a message was signed by the private
+ * key associated with a providded public key
+ * @param {string} msg
+ * @param {string} sig
+ * @param {string} pubkey
+ * @returns {boolean} is signature valid?
+ */
+Crypto.prototype.verifyMessage = function verifyMessage(msg, sig, pubkey) {
   try {
-  return secp256k1.verify(Buffer.from(this.hash(Buffer.from(msg, 'utf-8').toString('base64')),'hex'), Buffer.from(this.fromBase58(sig),'hex'), Buffer.from(this.uncompressPublicKey(pubkey),'hex'));
-  } catch (err) { 
-    return false; 
+    return secp256k1.verify(Buffer.from(this.hash(Buffer.from(msg, 'utf-8').toString('base64')),'hex'), Buffer.from(this.fromBase58(sig),'hex'), Buffer.from(this.uncompressPublicKey(pubkey),'hex'));
+  } catch (err) {
+    console.log(err);
+    return false;
   }
 }
 
 
-/////////////////
-// isPublicKey //
-/////////////////
-//
-// finds out if we have a public key
-//
-// @params {string} publickey?
-//
-Crypt.prototype.isPublicKey = function isPublicKey(publickey) {
+/**
+ * Checks if a publickey passed into a function
+ * fits the criteria for a publickey
+ * @param {string} publickey
+ * @returns {boolean} does publickey fit the criteria?
+ */
+Crypto.prototype.isPublicKey = function isPublicKey(publickey) {
   if (publickey.length == 44 || publickey.length == 45) {
     if (publickey.indexOf("@") > 0) {} else {
       return 1;
@@ -8491,17 +6457,13 @@ Crypt.prototype.isPublicKey = function isPublicKey(publickey) {
 // MERKLE TREES //
 //////////////////
 
-//////////////////////
-// returnMerkleTree //
-//////////////////////
-//
-// takes an array of strings and converts them into a merkle tree
-// of SHA256 hashes.
-//
-// @params {array} array of strings
-// @returns {merkle-tree}
-//
-Crypt.prototype.returnMerkleTree = function returnMerkleTree(inarray) {
+/**
+ * Takes an array of strings and converts them into a merkle tree
+ * of SHA256 hashes.
+ * @param {array} inarray array of strings
+ * @returns {merkle-tree}
+ */
+Crypto.prototype.returnMerkleTree = function returnMerkleTree(inarray) {
   var mt   = null;
   var args = { array: inarray, hashalgo: 'sha256', hashlist: false };
   merkle.fromArray(args, function (err, tree) { mt = tree; });
@@ -8519,10 +6481,10 @@ Crypt.prototype.returnMerkleTree = function returnMerkleTree(inarray) {
 ////////////////////
 //
 // The DiffieHellman process allows two people to generate a shared
-// secret in an environment where all information exchanged between 
+// secret in an environment where all information exchanged between
 // the two can be observed by others.
 //
-// It is used by our encryption module to generate shared secrets, 
+// It is used by our encryption module to generate shared secrets,
 // but is generally useful enough that we include it in our core
 // cryptography class
 //
@@ -8530,15 +6492,14 @@ Crypt.prototype.returnMerkleTree = function returnMerkleTree(inarray) {
 // a shared secret using these functions
 //
 
-/////////////////////////
-// createDiffieHellman //
-/////////////////////////
-//
-// @params {string} public key
-// @params {string} private key
-// @returns {DiffieHellman object} ecdh
-//  
-Crypt.prototype.createDiffieHellman = function createDiffieHellman(pubkey="",privkey="") {
+
+/**
+ * Creates DiffieHellman object
+ * @param {string} pubkey public key
+ * @param {string} privkey private key
+ * @returns {DiffieHellman object} ecdh
+ */
+Crypto.prototype.createDiffieHellman = function createDiffieHellman(pubkey="",privkey="") {
   var ecdh   = crypto.createECDH("secp256k1");
   ecdh.generateKeys();
   if (pubkey != "")  { ecdh.setPublicKey(pubkey); }
@@ -8547,16 +6508,12 @@ Crypt.prototype.createDiffieHellman = function createDiffieHellman(pubkey="",pri
 }
 
 
-//////////////////////////////
-// returnDiffieHellmanKeys //
-/////////////////////////////
-//
-// Given a Diffie-Hellman object, fetch the keys
-//
-// @params {DiffieHellman object} dh
-// @returns {{pubkey:"",privkey:""}} object with keys
-//
-Crypt.prototype.returnDiffieHellmanKeys = function returnDiffieHellmanKeys(dh) {
+/**
+ * Given a Diffie-Hellman object, fetch the keys
+ * @param {DiffieHellman object} dh Diffie-Hellamn object
+ * @returns {{pubkey:"", privkey:""}} object with keys
+ */
+Crypto.prototype.returnDiffieHellmanKeys = function returnDiffieHellmanKeys(dh) {
   var keys = {};
   keys.pubkey  = dh.getPublicKey(null, "compressed");
   keys.privkey = dh.getPrivateKey(null, "compressed");
@@ -8564,22 +6521,20 @@ Crypt.prototype.returnDiffieHellmanKeys = function returnDiffieHellmanKeys(dh) {
 }
 
 
-///////////////////////////////
-// createDiffieHellmanSecret //
-//////////////////////////////
-//
-// Given your private key and your counterparty's public
-// key and an extra piece of information, you can generate
-// a shared secret.
-//
-// @params {DiffieHellman object} counterparty DH
-// @params {string} my_publickey
-//
-// @returns {{pubkey:"",privkey:""}} object with keys
-//
-Crypt.prototype.createDiffieHellmanSecret = function createDiffieHellmanSecret(a_dh, b_pubkey) {
+/**
+ * Given your private key and your counterparty's public
+ * key and an extra piece of information, you can generate
+ * a shared secret.
+ *
+ * @param {DiffieHellman object} counterparty DH
+ * @param {string} my_publickey
+ *
+ * @return {{pubkey:"", privkey:""}} object with keys
+ */
+Crypto.prototype.createDiffieHellmanSecret = function createDiffieHellmanSecret(a_dh, b_pubkey) {
   return a_dh.computeSecret(b_pubkey);
 }
+
 
 
 
@@ -8592,34 +6547,32 @@ Crypt.prototype.createDiffieHellmanSecret = function createDiffieHellmanSecret(a
 ////////////////////////////////
 //
 // once we have a shared secret (possibly generated through the
-// Diffie-Hellman method above), we can use it to encrypt and 
+// Diffie-Hellman method above), we can use it to encrypt and
 // decrypt communications using a symmetrical encryption method
 // like AES.
 //
 
-////////////////
-// aesEncrypt //
-////////////////
-//
-// @param {string} msg to encrypt
-// @param {string} shared secret
-// @returns {string} json object
-//
-Crypt.prototype.aesEncrypt = function aesEncrypt(msg, secret) {
+
+/**
+ * Encrypts with AES
+ * @param {string} msg msg to encrypt
+ * @param {string} secret shared secret
+ * @returns {string} json object
+ */
+Crypto.prototype.aesEncrypt = function aesEncrypt(msg, secret) {
   var rp = new Buffer(secret.toString("hex"), "hex").toString("base64");
   var en = CryptoJS.AES.encrypt(msg, rp, { format: JsonFormatter });
   return en.toString();
 }
 
-////////////////
-// aesDecrypt //
-////////////////
-//
-// @param {string} encrypted json object from aesEncrypt
-// @param {string} shared secret
-// @returns {string} unencrypted
 
-Crypt.prototype.aesDecrypt = function aesDecrypt(msg, secret) {
+/**
+ * Decrypt with AES
+ * @param {string} msg encrypted json object from aesEncrypt
+ * @param {string} secret shared secret
+ * @returns {string} unencrypted string
+ */
+Crypto.prototype.aesDecrypt = function aesDecrypt(msg, secret) {
   var rp = new Buffer(secret.toString("hex"), "hex").toString("base64");
   var de = CryptoJS.AES.decrypt(msg, rp, { format: JsonFormatter });
   return CryptoJS.enc.Utf8.stringify(de);
@@ -8627,19 +6580,21 @@ Crypt.prototype.aesDecrypt = function aesDecrypt(msg, secret) {
 
 
 }).call(this,require("buffer").Buffer)
-},{"base-58":75,"buffer":115,"crypto":158,"crypto-browserify":158,"merkle-tree-gen":282,"node-cryptojs-aes":291,"secp256k1":356,"sha256":371}],18:[function(require,module,exports){
+},{"base-58":72,"buffer":112,"crypto":155,"crypto-browserify":155,"merkle-tree-gen":280,"node-cryptojs-aes":289,"secp256k1":354,"sha256":369}],15:[function(require,module,exports){
 var saito = require('../saito');
 
-//
-// The DNS module is how applications connect to the DNS layer
-//
-// Basically, applications call the functions in this class, which
-// connect to the servers provided as part of the configuration file
-// to fetch the data on which addresses translate to which domains.
-//
-// Servers can setup domains by running Registry modules and 
-// configuring them for whatever domain they want to support.
-//
+/**
+ * Constructor
+ *
+ * DNS module allows applications to translate between human-
+ * readable addresses and publickeys. This is such a core part
+ * of the Saito applications that it is managed by this stand-
+ * alone class.
+ *
+ * Servers interested in running DNS servers can run them as 
+ * registry modules, configured for the domain they wish to
+ * support.
+ **/
 function DNS(app) {
 
   if (!(this instanceof DNS)) {
@@ -8658,15 +6613,12 @@ module.exports = DNS;
 
 
 
-////////////////
-// initialize //
-////////////////
-//
-// we figure out which DNS servers we are supposed to be using and 
-// connect to them if we are not already connected to then, remembering
-// to specify that we will not send blocks, transactions or golden
-// tickets to DNS servers.
-//
+/**
+ * we figure out which DNS servers we are supposed to be using and 
+ * connect to them if we are not already connected to then, remembering
+ * to specify that we will not send blocks, transactions or golden
+ * tickets to DNS servers.
+**/
 DNS.prototype.initialize = function initialize() {
 
   //
@@ -8682,32 +6634,26 @@ DNS.prototype.initialize = function initialize() {
   // connect to dns servers as peers
   //
   for (let i = 0; i < this.dns.domains.length; i++) {
-    this.app.network.addPeer(this.dns.domains[i].host, this.dns.domains[i].port, 0, 0, 0);
+    let { host, port, protocol } = this.dns.domains[i];
+    this.app.logger.logInfo(`DNS attempting to connect to the following peer: ${protocol}://${host}:${port}`);
+    this.app.network.addPeer(host, port, protocol, 0, 0, 0);
   }
 
 }
 
 
-/////////////////////
-// fetchIdentifier //
-/////////////////////
-//
-// send publickey to remote server and get identifier associated
-// with it, if exists.
-//
-// @params {string} publickey 
-// @params {callback}
-//
+/**
+ * fetchIndentifier associated with public key
+ *
+ * @params {string} publickey
+ * @params {callback}
+ *
+**/
 DNS.prototype.fetchIdentifier = function fetchIdentifier(publickey, mycallback) {
 
-console.log(publickey);
-
   for (let s = 0; s < this.dns.domains.length; s++) {
-console.log(this.dns.domains[s]);
     for (let t = 0; t < this.app.network.peers.length; t++) {
       if (this.dns.domains[s].publickey == this.app.network.peers[t].peer.publickey) {
-
-console.log("FOUND: " + this.app.network.peers[t]);
 
         // find out initial state of peer and blockchain
         var userMessage = {};
@@ -8728,16 +6674,13 @@ console.log("FOUND: " + this.app.network.peers[t]);
 }
 
 
-////////////////////
-// fetchPublicKey //
-////////////////////
-//
-// send identifier to remote server and get the publickey
-// associated with it.
-//
-// @params {string} identifier
-// @params {callback}
-//
+/**
+ * fetch publickey associated with identifier
+ *
+ * @params {string} identifier
+ * @params {callback}
+ *
+**/
 DNS.prototype.fetchPublicKey = function fetchPublicKey(id, mycallback) {
 
   let domain = "";
@@ -8790,17 +6733,13 @@ DNS.prototype.fetchPublicKey = function fetchPublicKey(id, mycallback) {
 }
 
 
-///////////////////
-// isRecordValid //
-///////////////////
-//
-// checks that the response to a DNS query provided by
-// another server follows the proper conventions and is
-// cryptographically valid.
-//
-// @params {js obj} response from one of the fetch functions
-//		    above provided by a foreign server
-// @returns 
+/**
+ * checks that a record is cryptographically valid
+ *
+ * @params {js obj} response from one of the fetch functions
+ * @returns boolean
+ *
+**/
 DNS.prototype.isRecordValid = function isRecordValid(answer) {
 
   var obj = JSON.parse(answer);
@@ -8809,11 +6748,6 @@ DNS.prototype.isRecordValid = function isRecordValid(answer) {
 
   let msgtoverify = obj.identifier + obj.publickey + obj.block_id + obj.block_hash;
   let registrysig = this.app.crypt.verifyMessage(msgtoverify, obj.signature, obj.signer);
-
-console.log("\n\nCHECKING VALIDITY OF MESSAGE: ");
-console.log(msgtoverify);
-console.log(registrysig);
-
   return registrysig;
 
 }
@@ -8821,32 +6755,25 @@ console.log(registrysig);
 
 
 
-},{"../saito":12}],19:[function(require,module,exports){
-const saito    = require('../saito');
-const Big      = require('big.js');
+},{"../saito":8}],16:[function(require,module,exports){
+const saito = require('../saito');
+const Big = require('big.js');
 
 
 /////////////////
 // Constructor //
 /////////////////
-function GoldenTicket(app, gtjson="") {
+function GoldenTicket(app, gtjson = "") {
 
   if (!(this instanceof GoldenTicket)) {
     return new GoldenTicket(app, gtjson);
   }
   this.app = app || {};
 
-  this.solution 		= {};
+  this.solution = {};
   this.solution.target 		= "";
-  this.solution.difficulty 	= "";
-  this.solution.difficulty_vote	= "";
-  this.solution.paysplit 	= "";
-  this.solution.paysplit_vote 	= "";
-  this.solution.pubkey	 	= "";
+  this.solution.vote 		= "";
   this.solution.random	 	= "";
-  this.solution.miner_share 	= 0;
-  this.solution.node_share 	= 0;
-  this.solution.sig		= "";
 
   if (gtjson != "") {
     try {
@@ -8855,301 +6782,186 @@ function GoldenTicket(app, gtjson="") {
       return null;
     }
   }
-  
+
   return this;
 
 }
+
 module.exports = GoldenTicket;
 
 
-/////////////////////////
-// calculateDifficulty //
-/////////////////////////
-//
-// calculate difficulty for this block given our vote
-//
-// @params {saito.block} previous block
-//
-GoldenTicket.prototype.calculateDifficulty = function calculatDifficulty(prevblock) {
-  if (this.solution.difficulty_vote == -1) {
-    return (prevblock.returnDifficulty() - 0.0001).toFixed(8);
-  }
-  if (this.solution.difficulty_vote == 1) {
-    return (prevblock.returnDifficulty() + 0.0001).toFixed(8);
-  }
-  return prevblock.returnDifficulty();
+GoldenTicket.prototype.calculateSolution = function calculateSolution(blk, publickey, privatekey, rn) {
+
+  this.solution.name            = "golden ticket";
+  this.solution.target          = blk.returnHash();
+  this.solution.vote            = this.app.voter.returnDifficultyVote(blk.block.difficulty);
+  this.solution.random          = rn;
+
+  return(this.solution);
 }
 
 
-/////////////////////////////
-// calculateMonetaryPolicy //
-/////////////////////////////
-//
-// calculate monetary policy given previous block
-//
-// @params {saito.block} previous block
-//
+GoldenTicket.prototype.validateSolution = function validateSolution(blk, publickey) {
+
+  //
+  // return 1;
+  //
+console.log("NOT BOTHERING TO VALIDATE THE GT SOLUTION...");
+  return 1;
+
+
+  //
+  // the total amount paid to miners and nodes is the
+  // COINBASE for the last block, plus the TOTAL FEES collected
+  // minus the block creator surplus.
+  //
+  //
+  // this code is shared in the golden ticket validate function, where
+  // it validates the node and miner shares of the transactions, in 
+  // addition to making sure that the right people are paid.
+  //
+  let total_fees_needed_for_prevblk    = this.app.burnfee.returnBurnFeePaidForThisBlock(prevblk);
+  let total_fees_available_for_creator = prevblk.returnAvailableFees(prevblk.block.creator);
+  let surplus_fees = Big(total_fees_available_for_creator).minus(Big(total_fees_needed_for_prevblk));
+  let total_fees_for_miners_and_nodes  = Big(total_fees_needed_for_prevblk).minus(surplus_fees).plus(prevblk.returnCoinbase());
+
+  // miner and node shares
+  let miner_share = total_fees_for_miners_and_nodes.div(2).toFixed(8);
+  let node_share =  total_fees_for_miners_and_nodes.minus(Big(miner_share)).toFixed(8);
+
+
+  return 0;
+
+}
+
+/**
+ *
+ * given a solution, we figure out who the recipients of the
+ * token issuance are going to be and return them in an array
+ *
+ * @params {saito.block} previous block
+ * @returns {array} of winners
+ *
+ * TODO: weight the winners based on their share of transaction
+ * or burn fee value, so that winnings reflect proportionality
+ * of work instead of just a simpler lottery.
+ **/
+GoldenTicket.prototype.findWinner = function findWinner(solution, blk=null) {
+
+  var winners    = [];
+
+  //
+  // find which of the previous block transactions is Charlie
+  // based on the hexadecimal number in our signature turned
+  // into a selection mechanism for a walk through an array
+  // of contenders
+  //
+  let children  = this.returnGoldenTicketContenders(blk);
+  if (children.length == 0) { return blk.block.creator; }
+  let winner    = this.app.crypto.hash(solution.random).slice((-1 * (children.length)));
+  let winnerInt = parseInt(winner, 16);
+  let charlie   = children[winnerInt%children.length];
+
+  return charlie;
+
+}
+
+/**
+ * Calculate monetary policy given previous block
+ *
+ * @param {saito.block} prevblk
+ */
 GoldenTicket.prototype.calculateMonetaryPolicy = function calculateMonetaryPolicy(prevblk) {
 
-  let prev_treasury = prevblk.returnTreasury();
+  let prev_treasury  = prevblk.returnTreasury();
   let prev_reclaimed = prevblk.returnReclaimed();
-  let prev_coinbase = prevblk.returnCoinbase();
+  let prev_coinbase  = prevblk.returnCoinbase();
 
-  prev_treasury = Big(prev_treasury).plus(Big(prev_reclaimed)).toFixed(8);
-  prev_treasury = Big(prev_treasury).minus(Big(this.solution.miner_share)).toFixed(8);
-  prev_treasury = Big(prev_treasury).minus(Big(this.solution.node_share)).toFixed(8);
-
-  prev_coinbase = Big(prev_treasury).div(prevblk.app.blockchain.genesis_period).toFixed(8);
+  let new_treasury = Big(prev_treasury).plus(Big(prev_reclaimed));
+  let new_coinbase = Big(new_treasury).div(prevblk.app.blockchain.returnGenesisPeriod()).toFixed(8);
+      new_treasury = Big(new_treasury).minus(Big(new_coinbase)).toFixed(8);
 
   var mp = [];
-  mp[0]  = prev_treasury;
-  mp[1]  = prev_coinbase;
+  mp[0]  = new_treasury;
+  mp[1]  = new_coinbase;
 
   return mp;
 
 }
 
 
-///////////////////////
-// calculatePaysplit //
-///////////////////////
-//
-// calculate paysplit given previous block
-//
-// @params {saito.block} previous block
-//
-GoldenTicket.prototype.calculatePaysplit = function calculatePaysplit(prevblock) {
-  if (this.solution.paysplit_vote == -1) {
-    return (prevblock.returnPaysplit() - 0.0001).toFixed(8);
-  }
-  if (this.solution.paysplit_vote == 1) {
-    return (prevblock.returnPaysplit() + 0.0001).toFixed(8);
-  }
-  return prevblock.returnPaysplit();
-}
+/**
+ *
+ * Returns an array of all possible winners for the node share of
+ * the golden ticket. TODO: note that this needs to be weighted
+ * according to the weight of the value of the transaction to
+ * the network at the time of the node processing it.
+ *
+ * @returns {array} winners
+ *
+ **/
+GoldenTicket.prototype.returnGoldenTicketContenders = function returnGoldenTicketContenders(blk=null) {
 
+  var children = [];
 
-////////////////////
-// createSolution //
-////////////////////
-//
-// given an accurate solution to a golden ticket (block) calculate
-// all of the information we will need to include in a solution and 
-// flesh out that data here in our Golden Ticket object.
-//
-// @params {saito.block} block w/ golden ticket
-// @params {string} public key for solution
-// @params {string} private key for solution
-// @params {integer} random number for solution
-//
-GoldenTicket.prototype.createSolution = function createSolution(block_to_solve, solution_public_key, solution_private_key, solution_random_number) {
+  if (blk == null) { return children; }
+  if (blk.transactions == null) { return children; }
+  if (blk.transactions.length == 0) { return children; }
 
-  //
-  // this code is repeated in several places
-  //
-  // 1. the "validate" Golden Ticket function below
-  // 2. block validation of treasury and coinbase (validateReclaimedFunds)
-  // 3. block creation of treasury and coinbase 
-  //
-  // TODO
-  //
-  // figure out a clean way to avoid having to repeat
-  // this code in multiple places 
-  //
-  let txfees_needed = parseFloat(0.0 + block_to_solve.returnTransactionFeesNeeded(block_to_solve.block.prevhash)).toFixed(8);
-  let total_revenue = parseFloat(txfees_needed) + parseFloat(block_to_solve.block.coinbase);
-  let miner_share   = parseFloat(total_revenue * block_to_solve.block.paysplit).toFixed(8);
-  let node_share    = (total_revenue - miner_share).toFixed(8);
-  if (node_share    < 0)             { node_share = 0; }
+  for (var v = 0; v < blk.transactions.length; v++) {
 
-  this.solution.target          = block_to_solve.returnHash();
-  this.solution.difficulty      = block_to_solve.returnDifficulty();
-  this.solution.difficulty_vote = this.app.voter.returnDifficultyVote(this.solution.difficulty);
-  this.solution.paysplit        = block_to_solve.returnPaysplit();
-  this.solution.paysplit_vote   = block_to_solve.returnPaysplitVote();
-  this.solution.pubkey          = solution_public_key;
-  this.solution.random          = solution_random_number;
-  this.solution.miner_share     = miner_share;
-  this.solution.node_share      = node_share;
-  this.solution.sig             = this.app.crypt.signMessage(this.returnSignatureSource(), solution_private_key);
-    
-}
+    //
+    // only new paying transactions eligible
+    //
+    if (blk.transactions[v].transaction.type == 0) {
+      if (blk.transactions[v].transaction.path.length == 0) {
 
+        //
+        // no path length, so add sender
+        //
+        children.push(blk.transactions[v].transaction.from[0].add);
 
-//////////////////
-// findWinners //
-//////////////////
-//
-// given a solution, we figure out who the recipients of the 
-// token issuance are going to be and return them in an array
-//
-// @params {saito.block} previous block
-// @returns {array} of winners
-//
-GoldenTicket.prototype.findWinners = function findWinners(block_to_solve) {
+      } else {
 
-    var winners    = [];
-
-    // find which of the previous block transactions is Charlie
-    // based on the hexadecimal number in our signature turned
-    // into a selection mechanism for a walk through an array
-    // of contenders
-    let children  = block_to_solve.returnGoldenTicketContenders();
-    let winner    = this.solution.sig.slice((-1 * (children.length)));
-    let winnerInt = parseInt(winner, 16);
-    let charlie   = children[winnerInt%children.length];
-
-    winners[0] = new saito.slip(this.app.wallet.returnAddress(), this.solution.miner_share, 1);
-    winners[1] = new saito.slip(charlie, this.solution.node_share, 1);
-
-    if (winners[1].add == "") { winners[1].add = winners[0].add; }
-
-    return winners;
-
-}
-
-
-///////////////////////////
-// returnSignatureSource //
-///////////////////////////
-//
-// what parts of the signature are we going to sign?
-//
-// @returns {string} string-to-sign
-//
-GoldenTicket.prototype.returnSignatureSource = function returnSignatureSource() {
- return this.solution.target + 
-	this.solution.difficulty_vote + 
-	this.solution.paysplit_vote + 
-	this.solution.miner_share +
-	this.solution.node_share;
-}
-
-
-//////////////
-// validate //
-//////////////
-//
-// validate that this golden ticket is a valid solution
-// to the previous block, and that this block has the 
-// appropriate difficulty and monetary settings.
-//
-// @params {saito.block} previous block
-// @params {saito.block} this block
-//
-GoldenTicket.prototype.validate = function validate(prevblk, thisblk) {
-
-  if (prevblk == null) { return -1; }
-  if (thisblk == null) { return -1; }
-  if (prevblk.is_valid == 0) { return -1; }
-  if (thisblk.is_valid == 0) { return -1; }
-  if (this.solution == null) { return -1; }
-
-  //
-  // validate hash is a proper solution
-  //
-  let ourPublicKey  = this.solution.pubkey;
-  let prevBlockHash = prevblk.returnHash();
-  let randomNumber  = this.solution.random;
-  let hashValue     = this.app.crypt.hash(ourPublicKey + randomNumber);
-
-  let decDifficulty = (prevblk.returnDifficulty() - Math.floor(prevblk.returnDifficulty()));
-      decDifficulty = decDifficulty.toFixed(8);
-  let intDifficulty = Math.floor(prevblk.returnDifficulty());
-
-  let h1 = null;
-  let h2 = null;
-
-  if (intDifficulty == 0) {
-    h1 = 1;
-    h2 = 1;
-  } else {
-    h1 = hashValue.slice((-1 * intDifficulty));
-    h2 = prevblk.returnHash().slice((-1 * intDifficulty));
-  }
-
-  if (h1 == h2) {
-
-    let h3 = hashValue.toString().toLowerCase()[ourPublicKey.length-1-intDifficulty];
-    let h4 = parseInt(h3,16);
-    let intTheDiff = Math.floor((decDifficulty * 10000));
-    let intModBase = 625;
-    let intResult  = Math.floor((intTheDiff/intModBase));
-
-    if (h4 >= intResult) {
-    } else {
-      console.log("Golden Ticket invalid - hash not low enough!");
-      return 0;
-    }
-  } else {
-    console.log("Golden Ticket does not validate - hash not low enough!");
-    return 0;
-  }
-
-  //
-  // validate signature (solution not stolen)
-  //
-  if (this.app.crypt.verifyMessage(this.returnSignatureSource(), this.solution.sig, this.solution.pubkey) == false) {
-        console.log("Golden Ticket does not validate!");
-        return 0;
-  }
-
-  //
-  // this is essentially a copy of the code used to create the 
-  // solution. If changes are needed see this.createSolution()
-  //
-  let txfees_needed = parseFloat(0.0 + prevblk.returnTransactionFeesNeeded(prevblk.block.prevhash)).toFixed(8);
-  let total_revenue = parseFloat(txfees_needed) + parseFloat(prevblk.block.coinbase);
-  let miner_share   = parseFloat(total_revenue * prevblk.block.paysplit).toFixed(8);
-  let node_share    = (total_revenue - miner_share).toFixed(8);
-  if (node_share < 0)             { node_share = 0; }
-
-  //
-  // validate paysplit vote
-  //
-  if (this.solution.paysplit_vote != prevblk.returnPaysplitVote()) {
-    console.log("Paysplit vote does not match previous block");
-    return 0;
-  }
-
-  //
-  // we cannot validate shares if 2nd last block is null
-  //
-  if (prevblk.block.prevhash == "" || prevblk.block.prevhash == null) {
-    if (miner_share != this.solution.miner_share) {
-      console.log("Miner Share does not equal what it should: "+miner_share + " -- " + this.solution.miner_share);
-      return 0;
-    }
-    if (node_share != this.solution.node_share) {
-      console.log("Node Share does not equal what it should: "+node_share + " -- " + this.solution.node_share);
-      return 0;
+        // otherwise, we pick the destination node in each hop through
+        // the transmission path. this eliminates the sender and keeps
+        // the focus on nodes that actively transmitted the message
+        //
+        // NOTE: this is not weighted according to the relative value of
+        // each node during the transmission process. We can add that
+        // later and should to ensure that payout reflects value of the
+        // txs being introduced into the network.
+        //
+        for (var x = 0; x < blk.transactions[v].transaction.path.length; x++) {
+          children.push(blk.transactions[v].transaction.path[x].to);
+        }
+      }
     }
   }
-  return 1;
+  return children;
+
 }
 
 
-/////////////////////////
-// calculateDifficulty //
-/////////////////////////
-//
-// validate monetary policy
-//
-// @params {string} treasury
-// @params {string} coinbase
-// @params {saito.block} previous block
-// @returns {boolean} does validate?
-//
-GoldenTicket.prototype.validateMonetaryPolicy = function validateMonetaryPolicy(adjusted_treasury, adjusted_coinbase, prevblock) {
+/**
+ * Validates monetary policy
+ *
+ * @param {string} treasury
+ * @param {string} coinbase
+ * @param {saito.block} previous block
+ * @returns {boolean} does validate?
+ *
+ */
+GoldenTicket.prototype.validateMonetaryPolicy = function validateMonetaryPolicy(adjusted_treasury, adjusted_coinbase, prevblk) {
 
-  let mp = this.calculateMonetaryPolicy(prevblock);
+  let mp = this.calculateMonetaryPolicy(prevblk);
 
-  if (mp[0] != adjusted_treasury) { 
-    console.log("Treasury invalid: " + adjusted_treasury + " -- " + mp[0]);
+  if (mp[0] != adjusted_treasury) {
+    console.log(`Treasury invalid: ${adjusted_treasury} -- ${mp[0]}`);
     return 0;
   }
-  if (mp[1] != adjusted_coinbase) { 
-    console.log("Coinbase invalid: " + adjusted_coinbase + " -- " + mp[1]);
+  if (mp[1] != adjusted_coinbase) {
+    console.log(`Coinbase invalid: ${adjusted_coinbase} -- ${mp[1]}`);
     return 0;
   }
 
@@ -9158,7 +6970,43 @@ GoldenTicket.prototype.validateMonetaryPolicy = function validateMonetaryPolicy(
 }
 
 
-},{"../saito":12,"big.js":78}],20:[function(require,module,exports){
+/**
+ * Calculate difficult using votes or from previous block
+ *
+ * @param {object} solution
+ * @param {saito.block} prevblk
+ */
+GoldenTicket.prototype.calculateDifficulty = function calculateDifficulty(solution, prevblk) {
+  if (solution.vote == -1) {
+    return (prevblk.returnDifficulty() - 0.01).toFixed(8);
+  }
+  if (solution.vote == 1) {
+    return (prevblk.returnDifficulty() + 0.01).toFixed(8);
+  }
+  return prevblk.returnDifficulty();
+}
+
+
+/**
+ * Calculate paysplit using votes or from previous block
+ *
+ * @param {object} solution
+ * @param {saito.block} prevblk
+ */
+GoldenTicket.prototype.calculatePaysplit = function calculatePaysplit(solution, prevblk) {
+  if (solution.vote == -1) {
+    return (prevblk.returnPaysplit() - 0.0001).toFixed(8);
+  }
+  if (solution.vote == 1) {
+    return (prevblk.returnPaysplit() + 0.0001).toFixed(8);
+  }
+  return prevblk.returnPaysplit();
+}
+
+
+
+
+},{"../saito":8,"big.js":75}],17:[function(require,module,exports){
 const saito         = require('../saito');
 
 
@@ -9174,8 +7022,8 @@ function Key() {
   this.publickey      = "";
   this.tags           = [];
   this.identifiers    = [];
-  this.watched        = 0;
-  this.lock_block     = 0; // after this bid, cannot be reorganized 
+  this.watched        = false;
+  this.lock_block     = false; // after this bid, identifier is locked
   this.aes_publickey  = "";
   this.aes_privatekey = "";
   this.aes_secret     = "";
@@ -9186,103 +7034,84 @@ function Key() {
 module.exports = Key;
 
 
-////////////
-// addTag //
-////////////
-//
-// a tag is a random keyword we can associate with
-// addresses, and then filter on.
-//
-// @params {string} tag
-//
+/**
+ * A tag is a random keyword we can associate with addresses, and then filter on.
+ * @param {string} tag
+ */
 Key.prototype.addTag = function addTag(tag) {
-  if (this.isTagged(tag) == 0) { this.tags.push(tag); }
+  if (!this.isTagged(tag)) { this.tags.push(tag); }
 }
 
 
-///////////////////
-// addIdentifier //
-///////////////////
-//
-// an identifier is an address that can be registered 
-// through our DNS system and used in lieu of a pkey
-//
-// @params {string} identifier
-//
+/**
+ * An identifier is an address that can be registered
+ * through our DNS system and used in lieu of a pkey
+ *
+ * @param {string} identifier
+ */
 Key.prototype.addIdentifier = function addIdentifier(identifier) {
-  if (this.isIdentifier(identifier) == 0) { this.identifiers.push(identifier); }
+  if (!this.isIdentifier(identifier)) { this.identifiers.push(identifier); }
 }
 
 
-///////////////////
-// addIdentifier //
-///////////////////
-//
-// return 1 if we have a shared secret with this key
-// that we can use to encrypt communications
-//
+/**
+ * Checks if a key contains an aes secret used to encrypt communications
+ *
+ * @returns {boolean} has shared secret?
+ */
 Key.prototype.hasSharedSecret = function hasSharedSecret() {
-  if (this.aes_secret != "") { return 1; }
-  return 0;;
+  if (this.aes_secret != "") { return true; }
+  return false;
 }
 
 
-//////////////////
-// isIdentifier //
-//////////////////
-//
-// return 1 if we have a shared secret with this key
-// that we can use to encrypt communications
-//
+/**
+ * Return 1 if we have a shared secret with this key
+ * that we can use to encrypt communications
+ *
+ * @param {string} identifier
+ * @returns {boolean} is identifier?
+ */
 Key.prototype.isIdentifier = function isIdentifier(identifier) {
   for (let x = 0; x < this.identifiers.length; x++) {
-    if (this.identifiers[x] == identifier) { return 1; }
+    if (this.identifiers[x] == identifier) { return true; }
   }
-  return 0;
+  return false;
 }
 
 
-///////////////
-// isWatched //
-///////////////
-//
-// return 1 if this public key is watched
-//
-// @params {string] public key
-// @returns {boolean} is key watched?
-//
+/**
+ * Return true if this public is watched
+ *
+ * @param {string} publickey
+ * @returns {boolean} is key watched?
+ */
 Key.prototype.isWatched = function isWatched(publickey) {
   return this.watched;
 }
 
 
-//////////////
-// isTagged //
-//////////////
-//
-// return 1 if this public key is watched
-//
-// @params {string] public key
-// @returns {boolean} is key watched?
-//
+/**
+ * Return true if the public key is tagged
+ *
+ * @param {string} tag
+ * @returns {boolean} is key tagged?
+ */
 Key.prototype.isTagged = function isTagged(tag) {
   for (let x = 0; x < this.tags.length; x++) {
-    if (this.tags[x] == tag) { return 1; }
+    if (this.tags[x] == tag) { return true; }
   }
-  return 0;
+  return false;
 }
 
 
-//////////////////////
-// removeIdentifier //
-//////////////////////
-//
-// remove identifier from key
-//
-// @params {string] identifier
-//
+/**
+ * Remove identifier from key
+ *
+ * @param {string} identifier
+ */
 Key.prototype.removeIdentifier = function removeIdentifier(identifier) {
-  if (this.isIdentifier(identifier) == 0) { return; }
+  if (!this.isIdentifier(identifier)) { return; }
   for (let x = this.identifiers.length-1; x >= 0; x++) {
     if (this.identifiers[x] == identifier) {
       this.identifiers.splice(x, 1);
@@ -9290,17 +7119,13 @@ Key.prototype.removeIdentifier = function removeIdentifier(identifier) {
   }
 }
 
-
-///////////////
-// removeTag //
-///////////////
-//
-// remove tag from key
-//
-// @params {string] tag
-//
+/**
+ * Removes tag from key
+ *
+ * @param {string} tag
+ */
 Key.prototype.removeTag = function removeTag(tag) {
-  if (this.isTagged(tag) == 0) { return; }
+  if (!this.isTagged(tag)) { return; }
   for (let x = this.tags.length-1; x >= 0; x++) {
     if (this.tags[x] == tag) {
       this.tags.splice(x, 1);
@@ -9309,37 +7134,37 @@ Key.prototype.removeTag = function removeTag(tag) {
 }
 
 
-},{"../saito":12}],21:[function(require,module,exports){
+},{"../saito":8}],18:[function(require,module,exports){
 const saito = require('../saito');
-
 
 
 /////////////////
 // Constructor //
 /////////////////
-function Keys(app) {
+function Keychain(app) {
 
-  if (!(this instanceof Keys)) {
-    return new Keys(app);
+  if (!(this instanceof Keychain)) {
+    return new Keychain(app);
   }
 
   this.app         = app || {};
   this.keys        = [];
 
   return this;
-  
+
 }
-module.exports = Keys;
+module.exports = Keychain;
 
 
-////////////////
-// initialize //
-////////////////
-Keys.prototype.initialize = function initialize() {
+/**
+ * Initialize
+ */
+Keychain.prototype.initialize = function initialize() {
 
   if (this.app.options.keys == null) { this.app.options.keys = {}; }
 
   for (let i = 0; i < this.app.options.keys.length; i++) {
+
     var tk               = this.app.options.keys[i];
 
     var k                = new saito.key();
@@ -9351,28 +7176,28 @@ Keys.prototype.initialize = function initialize() {
         k.identifiers    = [];
         k.tags           = [];
 
-        for (let m = 0; m < tk.identifiers.length; m++) {
- 	  k.identifiers[m] = tk.identifiers[m];
-        }
-        for (let m = 0; m < tk.tags.length; m++) {
- 	  k.tags[m] = tk.tags[m];
-        }
+    for (let m = 0; m < tk.identifiers.length; m++) {
+      k.identifiers[m] = tk.identifiers[m];
+    }
+    for (let m = 0; m < tk.tags.length; m++) {
+      k.tags[m] = tk.tags[m];
+    }
     this.keys.push(k);
   }
-
 
 }
 
 
-////////////
-// addKey //
-////////////
-//
-// this can also add identifiers and kes to existing keys
-//
-// it can upgrade keys to "watched" status but not downgrade watched keys.
-//
-Keys.prototype.addKey = function addKey(publickey, identifier = "", watched = 0, tag = "") {
+
+/**
+ * Adds keys and identifiers to Keychain, and allows keys to be upgraded to "watched" status
+ *
+ * @param {string} publickey
+ * @param {string} identifier
+ * @param {boolean} watched
+ * @param {string} tag
+ */
+Keychain.prototype.addKey = function addKey(publickey, identifier = "", watched = false, tag = "") {
 
   if (publickey == "") { return; }
 
@@ -9387,29 +7212,26 @@ Keys.prototype.addKey = function addKey(publickey, identifier = "", watched = 0,
   } else {
     if (identifier != "") { tmpkey.addIdentifier(identifier); }
     if (tag != "")        { tmpkey.addTag(tag); }
-    if (watched == 1) { tmpkey.watched = 1; }
+    if (watched)          { tmpkey.watched = true; }
   }
   this.saveKeys();
 }
 
 
-////////////////////
-// decryptMessage //
-////////////////////
-//
-// decrypts a message if a shared secret exists
-// for the associated public key.
-//
-// @params {string} publickey
-// @params {string} message
-//
-Keys.prototype.decryptMessage = function decryptMessage(publickey, msg) {
+/**
+ * Decrypts a message provided there is a shared secret for the associated public key
+ *
+ * @param {string} publickey
+ * @param {string} msg
+ * @return {string} msg
+ */
+Keychain.prototype.decryptMessage = function decryptMessage(publickey, encrypted_msg) {
 
   // submit JSON parsed object after unencryption
   for (let x = 0; x < this.keys.length; x++) {
     if (this.keys[x].publickey == publickey) {
       if (this.keys[x].aes_secret != "") {
-        var tmpmsg = this.app.crypt.aesDecrypt(msg, this.keys[x].aes_secret);
+        var tmpmsg = this.app.crypto.aesDecrypt(encrypted_msg, this.keys[x].aes_secret);
         if (tmpmsg != null) {
           var tmpx = JSON.parse(tmpmsg);
           if (tmpx.module != null) {
@@ -9420,49 +7242,41 @@ Keys.prototype.decryptMessage = function decryptMessage(publickey, msg) {
     }
   }
 
-  // or return the original
-  return msg;
+  // or return original
+  return encrypted_msg;
 }
 
 
-///////////////////
-// decryptString //
-///////////////////
-//
-// decrypts a string if a shared secret exists
-// for the associated public key.
-//
-// @params {string} publickey
-// @params {string} message
-//
-Keys.prototype.decryptString = function decryptString(publickey, msg) {
+/**
+ * Decrypts a string if there exists a shared secret for the associated public key
+ *
+ * @param {string} publickey
+ * @param {string} msg
+ */
+Keychain.prototype.decryptString = function decryptString(publickey, encrypted_string) {
 
   // submit JSON parsed object after unencryption
   for (let x = 0; x < this.keys.length; x++) {
     if (this.keys[x].publickey == publickey) {
       if (this.keys[x].aes_secret != "") {
-        var tmpmsg = this.app.crypt.aesDecrypt(msg, this.keys[x].aes_secret);
+        var tmpmsg = this.app.crypto.aesDecrypt(encrypted_string, this.keys[x].aes_secret);
         return tmpmsg;
       }
     }
   }
 
   // or return the original
-  return msg;
+  return encrypted_string;
 }
 
 
-////////////////////
-// encryptMessage //
-////////////////////
-//
-// encrypts a message if a shared secret exists
-// for the associated public key.
-//
-// @params {string} publickey
-// @params {string} message
-//
-Keys.prototype.encryptMessage = function encryptMessage(publickey, msg) {
+/**
+ * Encrypts a message if a shared secret exists for the associated public key.
+ *
+ * @param {string} publickey
+ * @param {string} msg
+ */
+Keychain.prototype.encryptMessage = function encryptMessage(publickey, msg) {
 
   // turn submitted msg object into JSON and then encrypt it, or
   // return the original unencrypted object
@@ -9471,7 +7285,7 @@ Keys.prototype.encryptMessage = function encryptMessage(publickey, msg) {
   for (let x = 0; x < this.keys.length; x++) {
     if (this.keys[x].publickey == publickey) {
       if (this.keys[x].aes_secret != "") {
-        return this.app.crypt.aesEncrypt(jsonmsg, this.keys[x].aes_secret);
+        return this.app.crypto.aesEncrypt(jsonmsg, this.keys[x].aes_secret);
       }
     }
   }
@@ -9480,16 +7294,12 @@ Keys.prototype.encryptMessage = function encryptMessage(publickey, msg) {
 }
 
 
-/////////////////////
-// findByPublicKey //
-/////////////////////
-//
-// return the key associated with this public key
-//
-// @params {string} public key
-//
-Keys.prototype.findByPublicKey = function findByPublicKey(publickey) {
-console.log(JSON.stringify(this.keys));
+/**
+ * Return the key associated with this public key
+ *
+ * @param {string} publickey
+ */
+Keychain.prototype.findByPublicKey = function findByPublicKey(publickey) {
   for (let x = 0; x < this.keys.length; x++) {
     if (this.keys[x].publickey == publickey) { return this.keys[x]; }
   }
@@ -9497,15 +7307,13 @@ console.log(JSON.stringify(this.keys));
 }
 
 
-//////////////////////
-// findByIdentifier //
-//////////////////////
-//
-// returns the key associated with the identifier, or null
-//
-// @params {string} identifier
-//
-Keys.prototype.findByIdentifier = function findByIdentifier(identifier) {
+/**
+ * Returns the key associated with the identifier, or null
+ *
+ * @param {string} identifier
+ * @return {saito.key} key found by identifier
+ */
+Keychain.prototype.findByIdentifier = function findByIdentifier(identifier) {
   for (let x = 0; x < this.keys.length; x++) {
     if (this.keys[x].isIdentifier(identifier) == 1) { return this.keys[x]; }
   }
@@ -9513,58 +7321,52 @@ Keys.prototype.findByIdentifier = function findByIdentifier(identifier) {
 }
 
 
-/////////////////////
-// hasSharedSecret //
-/////////////////////
-//
-// returns 1 if we have a shared secret with this public key
-//
-// @params {string} public key
-//
-Keys.prototype.hasSharedSecret = function hasSharedSecret(publickey) {
+/**
+ * Returns 1 if we have a shared secret with this public key
+ *
+ * @param {string} publickey
+ * @return {boolean}
+ */
+Keychain.prototype.hasSharedSecret = function hasSharedSecret(publickey) {
   for (let x = 0; x < this.keys.length; x++) {
     if (this.keys[x].publickey == publickey || this.keys[x].isIdentifier(publickey) == 1) {
       if (this.keys[x].hasSharedSecret() == 1) {
-        return 1;
+        return true;
       }
     }
   }
-  return 0;
+  return false;
 }
 
 
-///////////////
-// isWatched //
-///////////////
-//
-// returns 1 if we are watching this key
-//
-// @params {string} public key
-//
-Keys.prototype.isWatched = function isWatched(publickey) {
+
+/**
+ * Returns true if we are watching this key
+ *
+ * @param {string} publickey
+ * @return {boolean} is key watched?
+ */
+Keychain.prototype.isWatched = function isWatched(publickey) {
   for (let x = 0; x < this.keys.length; x++) {
-    if (this.keys[x].publickey == publickey || this.keys[x].isIdentifier(publickey) == 1) {
-      if (this.keys[x].isWatched() == 1) {
-        return 1;
+    if (this.keys[x].publickey == publickey || this.keys[x].isIdentifier(publickey)) {
+      if (this.keys[x].isWatched()) {
+        return true;
       }
     }
   }
-  return 0;
+  return false;
 }
 
 
-///////////////////////////
-// initializeKeyExchange //
-///////////////////////////
-//
-// return publickey of alice in key exchange diffie-hellman
-//
-// @params {string} public key
-// @returns (string) public key
-//
-Keys.prototype.initializeKeyExchange = function initializeKeyExchange(publickey) {
+/**
+ * Return publickey of alice in key exchange Diffie-Helman
+ *
+ * @param {string} publickey
+ * @return {string} publickey
+ */
+Keychain.prototype.initializeKeyExchange = function initializeKeyExchange(publickey) {
 
-  var alice            = this.app.crypt.createDiffieHellman();
+  var alice            = this.app.crypto.createDiffieHellman();
   var alice_publickey  = alice.getPublicKey(null, "compressed").toString("hex");
   var alice_privatekey = alice.getPrivateKey(null, "compressed").toString("hex");
   this.updateCryptoByPublicKey(publickey, alice_publickey, alice_privatekey, "");
@@ -9573,41 +7375,35 @@ Keys.prototype.initializeKeyExchange = function initializeKeyExchange(publickey)
 }
 
 
-//////////////
-// isTagged //
-//////////////
-//
-// returns 1 if this public key is tagged with this key
-//
-// @params {string} public key
-// @params {string} tag
-//
-Keys.prototype.isTagged = function isTagged(publickey, tag) {
+/**
+ * Returns true if key found by publickey is tagged
+ *
+ * @param {string} publickey
+ * @param {string} tag
+ * @return {boolean} is tagged
+ */
+Keychain.prototype.isTagged = function isTagged(publickey, tag) {
   var x = this.findByPublicKey(publickey);
-  if (x == null) { return 0; }
+  if (x == null) { return false; }
   return x.isTagged(tag);
 }
 
 
-//////////////
-// saveKeys //
-//////////////
-//
-// saves keys into options file
-//
-Keys.prototype.saveKeys = function saveKeys() {
-  this.app.options.keys = this.returnKeys();
+/**
+ * saves keys into options file
+ */
+Keychain.prototype.saveKeys = function saveKeys() {
+  this.app.options.keys = this.keys;
   this.app.storage.saveOptions();
 }
 
 
-///////////////
-// removeKey //
-///////////////
-//
-// remove key from array of keys
-//
-Keys.prototype.removeKey = function removeKey(publickey) {
+/**
+ * Remove key from array of keys
+ *
+ * @param {string} publickey
+ */
+Keychain.prototype.removeKey = function removeKey(publickey) {
   for (let x = this.keys.length-1; x >= 0; x--) {
     if (this.keys[x].publickey == publickey) {
       this.keys.splice(x, 1);
@@ -9616,13 +7412,13 @@ Keys.prototype.removeKey = function removeKey(publickey) {
 }
 
 
-/////////////////////////////////////
-// removeKeyByidentifierAndKeyword //
-/////////////////////////////////////
-//
-// remove key from array of keys by identifier and tag
-//
-Keys.prototype.removeKeyByIdentifierAndKeyword = function removeKeywordByIdentifierAndKeyword(identifier, tag) {
+/**
+ * Remove key from array of keys by identifier and tag
+ *
+ * @param {string} identifier
+ * @param {string} tag
+ */
+Keychain.prototype.removeKeyByIdentifierAndKeyword = function removeKeywordByIdentifierAndKeyword(identifier, tag) {
   for (let x = this.keys.length-1; x >= 0; x--) {
     if (this.keys[x].isIdentifier(identifier) && this.keys[x].isTagged(tag)) {
       this.removeKey(this.keys[x].publickey);
@@ -9632,60 +7428,53 @@ Keys.prototype.removeKeyByIdentifierAndKeyword = function removeKeywordByIdentif
 }
 
 
-/////////////////////
-// returnKeysByTag //
-/////////////////////
-//
-// remove key from array of keys by identifier and tag
-//
-Keys.prototype.returnKeysByTag = function returnKeysByTag(tag) {
+/**
+ * Remove key from array of keys by identifier and tag
+ *
+ * @param {string} tag
+ * @return {array} keychain
+ */
+Keychain.prototype.returnKeychainByTag = function returnKeychainByTag(tag) {
   var kx = [];
   for (let x = 0; x < this.keys.length; x++) {
-    if (this.keys[x].isTagged(tag) == 1) { kx[kx.length] = this.keys[x]; }
+    if (this.keys[x].isTagged(tag)) { kx[kx.length] = this.keys[x]; }
   }
   return kx;
 }
 
 
-////////////////
-// returnKeys //
-////////////////
-//
-// returns keys
-//
-// @params {saito.keys} key array
-//
-Keys.prototype.returnKeys = function returnKeys() {
+/**
+ * Returns keys
+ *
+ * @return {saito.keys} key array
+ */
+Keychain.prototype.returnKeychain = function returnKeychain() {
   return this.keys;
 }
 
 
-/////////////////////////////////
-// returnPublicKeyByIdentifier //
-/////////////////////////////////
-//
-// return public key by identifier
-//
-Keys.prototype.returnPublicKeyByIdentifier = function returnPublicKeyByIdentifier(identifier) {
+/**
+ * Return public key by identifier
+ *
+ * @param {string} identifier
+ */
+Keychain.prototype.returnPublicKeyByIdentifier = function returnPublicKeyByIdentifier(identifier) {
   for (let x = 0; x < this.keys.length; x++) {
-    if (this.keys[x].isIdentifier(identifier) == 1) { return this.keys[x].publickey; }
+    if (this.keys[x].isIdentifier(identifier)) { return this.keys[x].publickey; }
   }
   return "";
 }
 
 
-/////////////////////////////
-// returnWatchedPublicKeys //
-/////////////////////////////
-//
-// returns the public keys we are watching
-//
-// @returns {array} public keys
-//
-Keys.prototype.returnWatchedPublicKeys = function returnWatchedPublicKeys() {
+/**
+ * Returns the public keys we are watching
+ *
+ * @returns {array} public keys
+ */
+Keychain.prototype.returnWatchedPublicKeys = function returnWatchedPublicKeys() {
   var x = [];
   for (let i = 0; i < this.keys.length; i++) {
-    if (this.keys[i].isWatched() == 1) {
+    if (this.keys[i].isWatched()) {
       x.push(this.keys[i].publickey);
     }
   }
@@ -9693,13 +7482,15 @@ Keys.prototype.returnWatchedPublicKeys = function returnWatchedPublicKeys() {
 }
 
 
-/////////////////////////////
-// updateCryptoByPublicKey //
-/////////////////////////////
-//
-// update the pubkey / privkey / aes secret by publickey
-//
-Keys.prototype.updateCryptoByPublicKey = function updateCryptoByPublicKey(publickey, aes_publickey = "", aes_privatekey = "", shared_secret = "") {
+/**
+ * Update the pubkey / privkey / aes secret by publickey
+ *
+ * @param {string} publickey
+ * @param {string} aes_publickey
+ * @param {string} aes_privatekey
+ * @param {string} shared_secret
+ */
+Keychain.prototype.updateCryptoByPublicKey = function updateCryptoByPublicKey(publickey, aes_publickey = "", aes_privatekey = "", shared_secret = "") {
 
   if (publickey == "") { return; }
 
@@ -9715,24 +7506,24 @@ Keys.prototype.updateCryptoByPublicKey = function updateCryptoByPublicKey(public
 
   this.saveKeys();
 
-  return 0;
+  return true;
 }
 
 
-},{"../saito":12}],22:[function(require,module,exports){
+},{"../saito":8}],19:[function(require,module,exports){
 (function (process){
 'use strict'
-const saito = require('../saito')
 
 const Winston = require('winston');
 require('winston-daily-rotate-file');
 
 /**
- * Logger Class
- * @param app
+ * Logger Constructor
+ * @param {*} app
  */
 
 function Logger(app) {
+
   if (!(this instanceof Logger)) { return new Logger(app); }
 
   this.app    = app || {};
@@ -9740,9 +7531,12 @@ function Logger(app) {
 
   return this;
 }
-
 module.exports = Logger;
 
+/**
+ * Initializes the Logger object
+ * @returns {winston.Logger} logger
+ */
 Logger.prototype.initialize = function initialize() {
   if (this.app.BROWSER == 0) {
     const logger = Winston.createLogger({
@@ -9769,11 +7563,11 @@ Logger.prototype.initialize = function initialize() {
             zippedArchive: true,
         })
       ],
-      exceptionHandlers: [
-          new Winston.transports.File({
-              filename: 'logs/exceptions.log'
-          })
-        ]
+      //exceptionHandlers: [
+      //    new Winston.transports.File({
+      //        filename: 'logs/exceptions.log'
+      //    })
+      //  ]
     });
 
     if (process.env.NODE_ENV !== 'production') {
@@ -9790,15 +7584,29 @@ Logger.prototype.initialize = function initialize() {
   }
 }
 
+/**
+ * Logs a message to info log file
+ * @param {string} message
+ */
 Logger.prototype.logInfo = function logInfo(message) {
   if (this.app.BROWSER == 1) {
-    console.log(message);
     return;
   }
-  this.logger.info(message);
+  console.log(message);
+  process.exit(1)
+  // this.logger.info(message);
 }
 
+
+/**
+ * Logs an error to error log file
+ * @param {string} message
+ * @param {error} err
+ */
 Logger.prototype.logError = function logError(message, err) {
+  console.log(message);
+  process.exit(1);
+
   if (this.app.BROWSER == 1) {
     console.log(message + ": " + err);
     return;
@@ -9811,75 +7619,62 @@ Logger.prototype.logError = function logError(message, err) {
 
 
 }).call(this,require('_process'))
-},{"../saito":12,"_process":328,"winston":405,"winston-daily-rotate-file":401}],23:[function(require,module,exports){
+},{"_process":326,"winston":403,"winston-daily-rotate-file":400}],20:[function(require,module,exports){
 (function (__dirname){
 'use strict';
-
+const Big = require('big.js')
 const saito = require('../saito');
-const request = require('request');
-const fs = require('fs');
-const crypto = require('crypto');
 const path = require('path');
 
-
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Mempool Constructor
+ * @param {*} app
+ */
 function Mempool(app) {
 
   if (!(this instanceof Mempool)) {
     return new Mempool(app);
   }
 
-  this.app                        = app || {};
+  this.app                      = app || {};
 
-  this.data_directory             = path.join(__dirname, '../data/');
+  this.directory                = path.join(__dirname, '../data/');
+  this.blocks                   = [];
+  this.downloads                = [];
+  this.transactions             = [];
+  this.recovered                = [];
+  this.transactions_hmap        = [];  // index is tx.transaction.sig
+  this.transactions_inputs_hmap = [];  // index is slip returnIndex()
 
-  this.transactions               = []; // array
-  this.downloads                  = []; // queue fifo
-  this.blocks                     = []; // queue fifo
-  this.recovered                  = []; // array of recovered txs
-					// used when reorgs affect
-					// our old blocks
+  this.bundling_fees_needed     = "-1";
 
+
+  //
   // mempool safety caps
   //
   // temporary safety limits designed to help avoid
   // spam attacks taking down everyone in the network
-  // by preventing propoagation past a certain point
+  // by preventing propagation past a certain point
   //
   this.transaction_size_cap       = 1024000000;// bytes hardcap 1GB
   this.transaction_size_current   = 0.0;
   this.block_size_cap             = 1024000000; // bytes hardcap 1GB
   this.block_size_current         = 0.0;
-  this.download_size_cap          = 512000000; // bytes hardcap 1GB
-  this.download_size_current      = 0.0;
-
-  this.currently_processing       = 0;
-  this.processing_timer           = null;
-  this.processing_speed           = 300; // 0.3 seconds (add blocks)
-
-  this.currently_downloading      = 0;
-  this.downloading_timer          = null;
-  this.downloading_speed          = 300; // 0.3 seconds
-
-  this.currently_bundling         = 0;
-  this.bundling_timer             = null;
-  ////this.bundling_speed             = 400; // 0.4 seconds
-  this.bundling_speed             = 1000; // 0.4 seconds
-
-  this.currently_clearing         = 0;   // 1 when clearing blks + txs
-  this.currently_creating         = 0;   // 1 when creating a block from our txs
-  this.bundling_fees_needed       = -1;
 
 
-  this.load_time                  = new Date().getTime();
-  this.load_delay                 = 4000; // delay on startup so we have time
-					  // to start reading from disk before
-					  // we leap into block creation.
+  this.bundling_active          = false;
+  this.bundling_speed           = 1000;
+  this.bundling_timer           = null;
 
+  this.processing_active        = false;
+  this.processing_speed         = 500;
+  this.processing_timer         = null;
 
-  if (this.bundling_speed < this.processing_speed) { this.bundling_speed = this.processing_speed+100; }
+  this.downloading_active       = false;
+  this.downloading_speed        = 500;
+  this.downloading_timer        = null;
+
+  this.clearing_active          = false;
 
   return this;
 
@@ -9887,73 +7682,456 @@ function Mempool(app) {
 module.exports = Mempool;
 
 
-////////////////
-// initialize //
-////////////////
-//
-// start the loop to try and bundle blocks
-//
-Mempool.prototype.initialize = function initialize() {
 
-  var mempool_self = this;
+/**
+ * given a block hash, fetches that block from the peer that
+ * has told us they have it.
+ *
+ * @params {saito.peer} who told us they have this
+ * @params {string} the hash of the new block
+ **/
+Mempool.prototype.fetchBlock = function fetchBlock(peer, bhash) {
 
-  if (mempool_self.app.BROWSER == 0 || mempool_self.app.SPVMODE == 0) {
+console.log(" .. .adding to mempool: " + bhash);
 
-    // use a timeout to get network class a 
-    // bit of time to initialize. otherwise
-    // we can have problems with calls to 
-    // returnNumberOfPeers() etc.
-    setTimeout(function() {
-      mempool_self.startBundling();
-    }, 1000);
+  //
+  // avoid dupes
+  //
+  for (let i = 0; i < this.downloads.length; i++) {
+    if (this.downloads[i].bhash == bhash) { return; }
+  }
+  if (this.app.blockchain.isHashIndexed(bhash) == 1) {
+    return;
   }
 
+  //
+  // enqueue
+  //
+  this.downloads.push({ peer : peer , bhash : bhash });
+
+  //
+  // start timer
+  //
+  if (this.downloading_timer == null) {
+    this.downloading_timer = setInterval( () => {
+
+      if (this.downloads.length == 0) {
+        clearInterval(this.downloading_timer);
+        this.downloading_timer = null;
+        this.downloading_active = 0;
+      }
+      if (this.downloading_active == 1) { return; }
+      this.downloading_active = 1;
+
+      //
+      // check we have space
+      //
+      try {
+
+        if ( this.block_size_current <= this.block_size_cap ) {
+
+          let block_to_download = this.downloads[0];
+          let block_to_download_url = block_to_download.peer.peer.protocol + "://" +
+     			              block_to_download.peer.peer.host + ":" +
+ 			              block_to_download.peer.peer.port + "/" +
+			              "blocks/" +
+			              block_to_download.bhash;
+
+          //
+          // servers
+          //
+          if (this.app.BROWSER == 0) {
+
+            var requestSettings = {
+              url: block_to_download_url,
+              method: 'GET',
+              timeout: 5000,
+              encoding: null
+            }
+            request(requestSettings, (err, res, body) => {
+
+              this.downloads.splice(0, 1);
+              this.downloading_active = 0;
+
+              if (err) { return; }
+
+              let blk = new saito.block(this.app, body);
+	      blk.size = body.length;
+              blk.peer_publickey = block_to_download.peer.peer.publickey;
+
+              //
+              // confirm validity
+              //
+              if (blk.returnHash() != block_to_download.bhash) { return; }
+
+	      //
+	      // should we propagate this block (?)
+	      //
+	      this.app.network.propagateBlock(blk);
+
+              this.addBlock(blk);
+              this.processBlocks();
+
+            });
+
+            //
+            // browsers
+            //
+          } else {
+
+            //
+            // AJAX
+            //
+            $.get(
+              block_to_download_url, {
+              }, (data) => {
+                var blk = new saito.block(this.app, data);
+	        blk.size = data.length;
+                if (blk.returnHash() != block_to_download.bhash) { return; }
+                this.addBlock(blk);
+                this.processBlocks();
+                this.downloads.splice(0, 1);
+                this.downloading_active = 0;
+console.log("DOWNLOAD OF: " + block_to_download_url + " completed!");
+              }
+            );
+          }
+       } // mempool capacity check
+      //
+      // in event of error, remove bad block
+      //
+      } catch (err) {
+        this.downloads.splice(0, 1);
+        this.downloading_active = 0;
+      }
+    }, this.downloading_speed);
+  }
 }
 
 
-//////////////
-// addBlock //
-//////////////
-//
-// add block to mempool queue if it does not already exist
-//
-// n.b. if JSON use importBlock
-//
-// @returns {boolean} is successful?
-//
+
+/**
+ * Initializes mempool and starts trying to bundle blocks
+ */
+Mempool.prototype.initialize = function initialize() {
+  if (this.app.BROWSER == 1) { return; }
+  if (this.app.SPVMODE == 1) { return; }
+  try {
+    this.bundling_timer = setInterval(() => { this.bundleBlock(); }, this.bundling_speed);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+
+/**
+ * Adds block to Mempool queue
+ */
 Mempool.prototype.addBlock = function addBlock(blk) {
-  if (blk == null) { return 0; }
-  if (blk.is_valid == 0) { return 0; }
+  if (blk == null) { return false; }
+  if (!blk.is_valid) { return false; }
 
   //
-  // spam check - TODO improve by having
-  // more expensive blocks and txs replace less expensive ones
+  // confirm this will not cause memory-exhaustion attacks
   //
-  // tmp restriction to avoid memory-exhaustion attacks, designed to ensure
-  // that nodes stop propagating garbage before it takes down the network
-  //
-  if ((this.block_size_current + blk.size) > this.block_size_cap) {
-    return 0;
-  }
+  if ( (this.block_size_current + blk.size) > this.block_size_cap) { return false; }
 
   for (let i = 0; i < this.blocks.length; i++) {
-    if (this.blocks[i].returnHash() == blk.returnHash()) { return 0; }
+    if (this.blocks[i].returnHash() == blk.returnHash()) { return false; }
   }
+
   this.blocks.push(blk);
   this.block_size_current += blk.size;
-  return 1;
+
 }
 
 
-////////////////////
-// addTransaction //
-////////////////////
-//
-// add transaction to mempool array if it does not already exist
-//
-// n.b. if JSON use importTransaction
-//
-Mempool.prototype.addTransaction = function addTransaction(tx, relay_on_validate=1) {
+
+
+
+/**
+ * return fees needed to produce a block. used when
+ * checking if a new transaction pushes us over the edge
+ *
+ * @returns {string} bundling_fees_needed
+ */
+Mempool.prototype.returnBundlingFeesNeeded = function returnBundlingFeesNeeded() {
+  return this.bundling_fees_needed;
+}
+
+
+/**
+ * Starts bundling block if there is enough available funds and if bundling_active is false
+ */
+Mempool.prototype.bundleBlock = async function bundleBlock() {
+
+  // ensure not bundling
+  if (this.app.monitor.canMempoolBundleBlock() == false) { return; }
+  this.bundling_active = true;
+
+  let prevblk = this.app.blockchain.returnLatestBlock();
+  let vote    = 0;
+  let credits = "0.0";
+
+
+  if (prevblk != null) {
+    vote = this.app.voter.returnPaysplitVote(prevblk.block.paysplit);
+    credits = this.returnAvailableFees(vote);
+    console.log(`${new Date()} : ${this.app.burnfee.returnMovingBurnFeeNow(prevblk).toFixed(8)} ---- ${credits} ( ${this.transactions.length} / ${this.containsGoldenTicket()} / ${this.app.wallet.returnBalance() } )`);
+  }
+
+  this.bundling_fees_needed = this.app.burnfee.returnMovingBurnFeeNow(prevblk);
+
+  if (Big(this.bundling_fees_needed).lte(Big(credits))) {
+
+    if (
+      this.app.network.isPrivateNetwork() ||
+      this.transactions.length > 0
+    ) {
+
+      try {
+
+        //
+        // create block
+        //
+        var blk = new saito.block(this.app);
+        blk.block.creator = this.app.wallet.returnPublicKey();
+        if (prevblk != null) {
+          blk.block.prevhash = prevblk.returnHash();
+          blk.block.vote = this.app.voter.returnPaysplitVote(prevblk.block.paysplit);
+        }
+
+        //
+        // add mempool transactions
+        //
+        for (let i = 0; i < this.transactions.length; i++) {
+          let addtx = 1;
+          if (this.transactions[i].transaction.type == 1) {
+
+            //
+            // this will happen if we run into a Golden Ticket for an older
+            // block. we do not want to include this as it will make our
+            // block invalid.
+            //
+            // this GT will be removed from our mempool automatically the
+            // next time we receive a golden ticket from someone else.
+            //
+            if (this.transactions[i].transaction.msg.target != prevblk.returnHash()) {
+              addtx = 0;
+            }
+          }
+          if (blk.block.vote == -1) {
+            if (this.transactions[i].transaction.ps == 1) {
+              addtx = 0;
+           }
+          }
+          if (blk.block.vote == 1) {
+            if (this.transactions[i].transaction.ps == -1) {
+              addtx = 0;
+            }
+          }
+          if (addtx == 1) {
+            blk.transactions.push(this.transactions[i]);
+          } else {
+          }
+        }
+
+
+        //
+        // add fee-capture transaction
+        //
+        //
+        // we use "Usable Surplus" because we expect all transactions
+        // in our mempool to be either path-free (originating from us)
+        // or signed and sent to us.
+        //
+
+        if (prevblk != null) {
+
+          let total_fees_needed = this.app.burnfee.returnMovingBurnFee(prevblk, (blk.block.ts - prevblk.block.ts));
+          let total_fees_available = blk.returnAvailableFees();
+          let surplus_fees = Big(total_fees_available).minus(Big(total_fees_needed));
+
+          // add fee surplus
+          let tx = new saito.transaction();
+          tx.transaction.ts  = new Date().getTime();
+          tx.transaction.type = 2;
+
+          // from slips
+          tx.transaction.from = [];
+          tx.transaction.from.push(new saito.slip(this.app.wallet.returnPublicKey(), 0.0, 2));
+
+          // to slips
+          tx.transaction.to.push(new saito.slip(this.app.wallet.returnPublicKey(), surplus_fees.toFixed(8), 2));
+          tx = this.app.wallet.signTransaction(tx);
+          blk.transactions.push(tx);
+
+        }
+
+
+        //
+        // queue and process
+        //
+        await blk.bundle(prevblk);
+
+
+	//
+	// propagate our block
+	//
+	this.app.network.propagateBlock(blk);
+
+
+	//
+	// add it to mempool and process
+	//
+
+        this.addBlock(blk);
+
+        await this.processBlocks();
+
+      } catch(err) {
+        console.log("ERROR: bundling block together: " + err);
+      }
+
+    }
+  }
+
+  // reset for next loop
+  this.bundling_active = false;
+
+}
+
+
+/**
+ * Attempts to process blocks and add them to blockchain
+ */
+Mempool.prototype.processBlocks = async function processBlocks() {
+
+  if (this.processing_active) {
+    console.log("Mempool processing.... not adding new block to blockchain");
+    return;
+  }
+
+  if (this.blocks.length == 0) {
+    console.log("Mempool processing.... no blocks to add to blockchain");
+    this.processing_active = false;
+    return;
+  }
+
+  this.processing_active = true;
+
+  while (this.blocks.length !== 0) {
+    //
+    // implicit check of blk in queue
+    //
+    if (this.app.monitor.canBlockchainAddBlockToBlockchain()) {
+      if (this.blocks.length > 0) {
+        await this.app.blockchain.addBlockToBlockchain(this.blocks.shift());
+      }
+    }
+  }
+
+  this.processing_active = false;
+}
+
+
+
+/**
+ * Returns the "usable value" of the transaction fees in the mempool
+ * that can be used to produce a block with a given paysplit vote
+ *
+ * Note the submission of our own wallet publickey into the transaction
+ * class' returnFeesUsable function. This is unnecessary since the default
+ * behavior of the function is to examine the transaction from our own
+ * perspective. When the same function is called to verify the fees for
+ * a block the creator publickey should be called.
+ *
+ * @param {vote} paysplit vote
+ * @returns {string} credits available
+ */
+Mempool.prototype.returnAvailableFees = function returnAvailableFees(vote=0) {
+
+  var v = Big(0);
+  for (let i = 0; i < this.transactions.length; i++) {
+    switch(vote) {
+      case -1:
+        if (this.transactions[i].transaction.ps <= 0) {
+          v = v.plus(Big(this.transactions[i].returnFeesUsable(this.app, this.app.wallet.returnPublicKey())));
+        }
+        break;
+      case 1:
+        if (this.transactions[i].transaction.ps >= 0) {
+          v = v.plus(Big(this.transactions[i].returnFeesUsable(this.app, this.app.wallet.returnPublicKey())));
+        }
+        break;
+      default:
+        v = v.plus(Big(this.transactions[i].returnFeesUsable(this.app, this.app.wallet.returnPublicKey())));
+        break;
+    }
+  }
+  return v.toFixed(8);
+}
+
+
+
+
+/**
+ * return 1 if mempool already contains this transaction or a transaction
+ * with any UTXO inputs contained in this transaction.
+ *
+ * @params {saito.transaction} transaction to check
+ * @returns {boolean} is transaction in mempool?
+ */
+Mempool.prototype.containsTransaction = function containsTransaction(tx) {
+
+  if (tx == null)                  { return 0; }
+  if (tx.transaction == null)      { return 0; }
+  if (tx.transaction.from == null) { return 0; }
+
+  if (this.transactions_hmap[tx.transaction.sig] == 1) { return 1; }
+  for (let i = 0; i < tx.transaction.from.length; i++) {
+    if (this.transactions_inputs_hmap[tx.transaction.from[i].returnIndex()] == 1) {
+      return 1;
+    }
+  }
+
+  return 0;
+
+}
+
+
+/**
+ *
+ * return 1 if mempool already contains a Golden Ticket
+ *
+ * @param {saito.transaction} transaction to check
+ * @returns {boolean} is transaction in mempool?
+ */
+Mempool.prototype.containsGoldenTicket = function containsGoldenTicket() {
+  for (let m = 0; m < this.transactions.length; m++) {
+    if (this.transactions[m].isGoldenTicket() == 1) { return 1; }
+  }
+  return 0;
+}
+
+
+
+/**
+ * add transaction to mempool if provided with tx json
+ *
+ */
+Mempool.prototype.importTransaction = function importTransaction(txjson) {
+  var tx = new saito.transaction(txjson);
+  if (tx == null) { return; }
+  if (tx.is_valid == 0) { return; }
+  tx.size = txjson.length;
+  this.addTransaction(tx);
+}
+/**
+ * add transaction to mempool if it does not already exist
+ *
+ */
+Mempool.prototype.addTransaction = async function addTransaction(tx, relay_on_validate=0) {
 
   let transaction_imported = 0;
 
@@ -9963,41 +8141,40 @@ Mempool.prototype.addTransaction = function addTransaction(tx, relay_on_validate
   if (this.containsTransaction(tx) == 1) { return; }
   if (tx == null)                        { return; }
   if (tx.transaction == null)            { return; }
-  if (tx.is_valid == 0) 		 { return; }
+  if (tx.is_valid == 0)                  { return; }
 
-  
   //
-  // do not add if this pushes us past our limit
+  // do not add if it pushes us past our limit
   //
   if ( (tx.size + this.transaction_size_current) > this.transaction_size_cap) {
     return;
-  } 
-
+  }
 
 
   //
   // only accept one golden ticket
   //
-  if (tx.transaction.gt != null) {
+  if (tx.isGoldenTicket()) {
+
     for (let z = 0; z < this.transactions.length; z++) {
-      if (this.transactions[z].transaction.gt != null) {
+      if (this.transactions[z].isGoldenTicket()) {
+        //
+        // ensure golden ticket is for the latest block
+        //
 
-	//
-	// ensure golden ticket is for the latest block
-	//
-        if (this.transactions[z].transaction.gt.target == this.app.blockchain.returnLatestBlockHash()) {
+        if (this.transactions[z].transaction.msg.target == this.app.blockchain.returnLatestBlockHash()) {
 
-	  //
-	  // if we already have a golden ticket solution, we will
-	  // replace it with this new one if the new one pays us 
-	  // more in fees and/or is going to pay us money.
-	  //
+          //
+          // if we already have a golden ticket solution, we will
+          // replace it with this new one if the new one pays us
+          // more in fees and/or is going to pay us money.
+          //
           if (
-   	    tx.returnFeeUsable() > this.transactions[z].returnFeeUsable() || (
-	      this.transactions[z].transaction.from[0].add != this.app.wallet.returnPublicKey() && 
-	      tx.transaction.from[0].add == this.app.wallet.returnPublicKey()
-	    )
-	  ) {
+            Big(tx.returnFeesUsable(this.app, this.app.wallet.returnPublicKey())).gt(Big(this.transactions[z].returnFeesUsable(this.app, this.app.wallet.returnPublicKey()))) || (
+              this.transactions[z].transaction.from[0].add != this.app.wallet.returnPublicKey() &&
+              tx.transaction.from[0].add == this.app.wallet.returnPublicKey()
+            )
+          ) {
             this.transactions[z] = tx;
             transaction_imported = 1;
             z = this.transactions.length+1;
@@ -10012,502 +8189,75 @@ Mempool.prototype.addTransaction = function addTransaction(tx, relay_on_validate
   }
 
   if (transaction_imported == 0) {
-    var mempool_self = this;
-    this.app.storage.validateTransactionInputsForMempool(tx, function(app, tx) {
-      if (relay_on_validate == 1) {
 
-	//
-        // propagate if we can't use tx to create a block
-	//
-        if ( mempool_self.bundling_fees_needed > tx.returnFeeUsable() ) {
+    //
+    // sending NULL as the block is used when adding to the mempool
+    // the transaction validation function will by default then check
+    // only for a transaction that is being added to the mempool, and
+    // not for a transaction getting validated as part of a specific
+    // block (i.e. vote consistency, etc.)
+    //
+    if (tx.validate(this.app, null)) {
 
-	  //
-	  // add to mempool before propagating
-	  // as propagateTransaction will check
-	  //
-          mempool_self.transactions.push(tx);
-          mempool_self.transaction_size_current += tx.size;
-          mempool_self.app.network.propagateTransaction(tx);
-	  return;
+
+    //if (this.app.storage.validateTransactionInputs(tx.transaction.from, this.app.blockchain.returnLatestBlockId())) {
+
+      //
+      // propagate if we can't use tx to create a block
+      //
+      if ( Big(this.bundling_fees_needed).gt(Big(tx.returnFeesUsable(this.app, this.app.wallet.returnPublicKey()))) ) {
+
+        //
+        // add to mempool before propagating
+        //
+        this.transactions.push(tx);
+        this.transactions_size_current += tx.size;
+        this.transactions_hmap[tx.transaction.sig] == 1;
+        for (let i = 0; i < tx.transaction.from.length; i++) {
+          this.transactions_inputs_hmap[tx.transaction.from[i].returnIndex()] = 1;
         }
-      }
-      mempool_self.transactions.push(tx);
-    });
-  }
-}
+
+        if (relay_on_validate == 1) {
+          this.app.network.propagateTransaction(tx);
+        }
+        return;
+
+      } else {
 
 
-/////////////////
-// bundleBlock //
-/////////////////
-//
-// we believe we have enough fees to produce a block, so we 
-// set the paysplit vote and bundle in the transactions we
-// can, then submit the block to the block class to finalize.
-//
-// @params {saito.block} previous block
-//
-Mempool.prototype.bundleBlock = function bundleBlock(prevblk) {
+        // propagate if we are a lite-client (not block-producer)
+        if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) {
+          if (relay_on_validate == 1) {
+            this.app.network.propagateTransaction(tx);
+          }
+        } else {
 
-console.log("bundling block...");
-  //
-  // creating a block requires DB access for things
-  // like figuring out the reclaimed fees. this can
-  // cause bad blocks to pile up in the creation process
-  // at large data blocks, so we check to make sure
-  // we are not already in the process of bundling
-  // one before we try again....
-  //
-  if (this.currently_creating == 1) { return; }
-  this.currently_creating = 1;
-
-  //
-  // create the block
-  //
-  var nb = new saito.block(this.app);
-  if (nb == null || nb.is_valid == 0) {
-    this.currently_creating = 0;
-    return;
-  }
-
-  //
-  // set the paysplit vote
-  //
-  nb.block.paysplit_vote = this.app.voter.returnPaysplitVote(prevblk.block.paysplit);
-
-
-  //
-  // add mempool transactions
-  //
-  for (let i = 0; i < this.transactions.length; i++) {
-    let addtx = 1;
-    if (this.transactions[i].transaction.gt != null) { 
-
-      //
-      // this will happen if we run into a Golden Ticket for an older
-      // block. we do not want to include this as it will make our
-      // block invalid.
-      //
-      // this GT will be removed from our mempool automatically the 
-      // next time we receive a golden ticket from someone else.
-      //
-      if (this.transactions[i].transaction.gt.target != prevblk.returnHash()) { 
-        addtx = 0; 
-      } 
-    }
-    if (nb.paysplit_vote == -1) {
-      if (this.transactions[i].transaction.ps == 1) { 
-	addtx = 0;
-      }
-    }
-    if (nb.paysplit_vote == 1) {
-      if (this.transactions[i].transaction.ps == -1) { 
-	addtx = 0;
-      }
-    }
-    if (addtx == 1) { 
-      nb.addTransaction(this.transactions[i]); 
-    }
-  }
-
-  //
-  // add fee-capture transaction
-  //
-  // now handled in block.js because rebroadcast txs
-  // pay fees too!
-  //
-  let my_fees    = nb.returnSurplusFees();
-  if (my_fees == null) { my_fees = 0.0; }
-  if (my_fees > 0) {
-    var tx2 = this.app.wallet.createFeeTransaction(my_fees);
-    nb.addTransaction(tx2);
-  }
-
-  nb.bundleBlock(prevblk);
-  return;
-
-}
-
-
-//////////////////
-// clearMempool //
-//////////////////
-//
-// remove block and its transactions from mempool
-//
-// @params {saito.block} block to delete
-//
-Mempool.prototype.clearMempool = function clearMempool(blk) {
-  if (blk == null) { return; }
-  this.currently_clearing = 1;
-  for (let bt = blk.transactions.length-1; bt >= 0; bt--) {
-    this.removeTransaction(blk.transactions[bt]);
-  }
-  this.removeBlock(blk);
-  this.currently_clearing = 0;
-}
-
-
-//////////////////////////
-// containsGoldenTicket //
-//////////////////////////
-//
-// return 1 if mempool already contains this transaction
-//
-// @params {saito.transaction} transaction to check
-// @returns {boolean} is transaction in mempool?
-//
-Mempool.prototype.containsGoldenTicket = function containsGoldenTicket() {
-  for (let m = 0; m < this.transactions.length; m++) {
-    if (this.transactions[m].isGoldenTicket() == 1) { return 1; }
-  }
-  return 0;
-}
-
-
-/////////////////////////
-// containsTransaction //
-/////////////////////////
-//
-// return 1 if mempool already contains this transaction
-//
-// @params {saito.transaction} transaction to check
-// @returns {boolean} is transaction in mempool?
-//
-Mempool.prototype.containsTransaction = function containsTransaction(tx) {
-
-  if (tx == null)             { return 0; }
-  if (tx.transaction == null) { return 0; }
-
-  //
-  // TODO
-  //
-  // if we insert the transactions into the array based on their sig
-  // data we can optimize searching through the mempool once it is 
-  // sizeable. another option might be using a hashmap to search.
-  //
-  // we check by looking for the signature of the transaction, as that
-  // will be unique to each transaction and not influenced by the path
-  // it has travelled to us from.
-  //
-  for (let mtp = 0; mtp < this.transactions.length; mtp++) {
-    if (this.transactions[mtp].transaction.sig == tx.transaction.sig) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-
-////////////////
-// fetchBlock //
-////////////////
-//
-// after a peer informs us that a block is
-// available, we come here to fetch it and 
-// add it to our queue as needed.
-//
-Mempool.prototype.fetchBlock = function fetchBlock(peer, block_hash) {
-
-  var mempool_self = this;
-
-  //
-  // check download NOT in progress
-  //
-  for (let i = 0; i < mempool_self.downloads.length; i++) {
-    if (mempool_self.downloads[i].bhash == block_hash) { return; }
-  }
-
-  //
-  // check not already indexed
-  //
-  // sanity check - is also done in peer class
-  //
-  if (mempool_self.app.blockchain.isHashIndexed(block_hash) == 1) { return; }
-
-  //
-  // queue download
-  //
-  var mdl       = mempool_self.downloads.length;
-  var md2       = {};
-      md2.peer = peer;
-      md2.bhash = block_hash;
-  mempool_self.downloads.push(md2);
-
-  //
-  // start timer and go through queue
-  //
-  if (mempool_self.downloading_timer == null) {
-    mempool_self.downloading_timer = setInterval(function() {
-
-      if (mempool_self.downloads.length == 0) {
-        clearInterval(mempool_self.downloading_timer);
-        mempool_self.downloading_timer = null;
-        mempool_self.currently_downloading = 0;
-      }
-      if (mempool_self.currently_downloading == 1) { return; }
-      mempool_self.currently_downloading = 1;
-
-
-      //
-      // check that we have space in our mempool for this block
-      //
-      // TODO
-      //
-      // there is a possible attack by making the downloaded file large
-      // enough that it alone crashes the system. we should mitigate 
-      // this.
-      //
-      try {
-        if (mempool_self.block_size_current <= mempool_self.block_size_cap) {
-
-          let dlblk      = mempool_self.downloads[0];
-          let dlblk_url  = "http://" + dlblk.peer.peer.host + ":" + dlblk.peer.peer.port + "/blocks/" + dlblk.bhash;
 
           //
-          // servers
+          // add to mempool before propagating
           //
-          if (mempool_self.app.BROWSER == 0) {
-
-            var requestSettings = {
-              url: dlblk_url,
-              method: 'GET',
-              timeout: 5000,			// remove from queue if not received in 5 seconds
-              encoding: null
-            }
-            request(requestSettings, function(err, res, body) {
-              if (err) {
-
-		// remove failed download
-		console.log("Failed Download of Block from Queue: " + err);
-                mempool_self.downloads.splice(0, 1);
-                mempool_self.currently_downloading = 0;
-
-	      }
-
-	      //
-	      // we seem to have got something
-	      //
-              mempool_self.downloads.splice(0, 1);
-              mempool_self.currently_downloading = 0;
-	      var newblk = new saito.block(mempool_self.app, body);
-	      newblk.originating_peer = dlblk.peer.peer.publickey;
-
-	      //
-	      // confirm is accurate
-	      //
-	      if (newblk.returnHash() != dlblk.bhash) { return; }
-              if (newblk == null) { return; }
-              if (newblk.is_valid == 0) { return; }
-              mempool_self.app.blockchain.validateBlockAndQueueInMempool(newblk,1);
-            });
-
-          //
-          // browsers
-          //
-          } else {
-
-            //
-	    // browsers use AJAX jquery
-            //
-            $.get(
-              dlblk_url, {
-              },function (data) {
-	        var newblk = new saito.block(mempool_self.app, data);
-                mempool_self.downloads.splice(0, 1);
-                mempool_self.currently_downloading = 0;
-                if (newblk == null) { return; }
-                if (newblk.is_valid == 0) { return; }
-                mempool_self.app.blockchain.validateBlockAndQueueInMempool(newblk,1);
-              }
-            );
+          this.transactions_size_current += tx.size;
+          this.transactions.push(tx);
+          this.transactions_hmap[tx.transaction.sig] == 1;
+          for (let i = 0; i < tx.transaction.from.length; i++) {
+            this.transactions_inputs_hmap[tx.transaction.from[i].returnIndex()] = 1;
           }
 
-        } // mempool capacity check
-
-      //
-      // in event of error, remove bad block
-      //
-      } catch (err) {
-        mempool_self.downloads.splice(0, 1);
-        mempool_self.currently_downloading = 0;
-      }
-    }, mempool_self.downloading_speed);
-  }
-}
-
-
-/////////////////
-// importBlock //
-/////////////////
-//
-// create block from json and add to mempool
-//
-// @params {string} block as json
-// @returns {boolean} successful ?
-//
-Mempool.prototype.importBlock = function importBlock(blkjson) {
-  var blk = new saito.block(this.app, blkjson);
-  if (blk == null) { return 0; }
-  if (blk.is_valid == 0) { return 0; }
-  return this.addBlock(blk);
-}
-
-
-///////////////////////
-// importTransaction //
-///////////////////////
-//
-// create transaction from json and add to mempool
-//
-// @params {string} transaction as json
-//
-Mempool.prototype.importTransaction = function importTransaction(txjson) {
-  var tx = new saito.transaction(txjson);
-  if (tx == null) { return; }
-  if (tx.is_valid == 0) { return; }
-  this.addTransaction(tx);
-}
-
-
-///////////////////
-// processBlocks //
-///////////////////
-//
-// if there are any blocks in our mempool, we try to add
-// them to the blockchain one-by-one.
-//
-Mempool.prototype.processBlocks = function processBlocks() {
-
-  if (this.currently_processing == 1) { 
-    console.log("Mempool processing.... not adding new block to blockchain");
-    return; 
-  }
-
-  if (this.blocks.length == 0) {
-    console.log("Mempool processing.... no blocks to add to blockchain");
-    this.currently_processing = 0;
-    return;
-  }
-
-  var mempool_self = this;
-
-  if (this.processing_timer == null) {
-    this.processing_timer = setInterval(function() {
-
-      if (mempool_self.currently_clearing == 1) { return; }
-
-      if (mempool_self.currently_processing == 1) { return; }
-      mempool_self.currently_blocks = 1;
-
-      if (mempool_self.blocks.length == 0) {
-        mempool_self.currently_processing = 0;
-        return;
-      }
-
-      // FIFO adding from our queue
-      var blk = mempool_self.returnBlock();
-      if (blk == null) { 
-	mempool_self.currently_processing = 0;
-        return;
-      }
-
-      // add and delete block unless we get kickback
-      if (blk != null) {
-        var delete_blk_from_mempool = 0;
-        if (blk.prevalidated == 0) {
-          delete_blk_from_mempool = mempool_self.app.blockchain.addBlockToBlockchain(blk);
-	} else {
-          delete_blk_from_mempool = mempool_self.app.blockchain.addBlockToBlockchain(blk, "force");
-	}
-        if (delete_blk_from_mempool == 1) {
-          mempool_self.clearMempool(blk);
         }
       }
-
-      // if we have emptied our queue
-      if (mempool_self.blocks.length == 0) {
-        clearInterval(mempool_self.processing_timer);
-        mempool_self.processing_timer = null;
-      }
-
-      mempool_self.currently_processing = 0;
-
-    }, mempool_self.processing_speed);
-  }
-}
-
-
-////////////////////////
-// recoverTransaction //
-////////////////////////
-//
-// when the chain is reorganized, any nodes that created
-// transactions on the outdated chain will look to see what
-// transactions are still valid and add them to their mempool
-// this provides some continuity over reorgs.
-//
-// @params {saito.transaction} tx
-//
-Mempool.prototype.recoverTransaction = function recoverTransaction(tx) {
-
-  var mempool_self = this;
-
-  if (tx == null) { return; }
-  if (tx.is_valid == 0) { return; }
-
-  mempool_self.recovered.push(tx);
-
-}
-
-
-////////////////////////
-// recoverTransaction //
-////////////////////////
-//
-// when the chain is reorganized, any nodes that created
-// transactions on the outdated chain will look to see what
-// transactions are still valid and add them to their mempool
-// this provides some continuity over reorgs.
-//
-// @params {saito.transaction} tx
-//
-Mempool.prototype.reinsertRecoveredTransactions = function reinsertRecoveredTransactions() {
-
-  var mempool_self = this;
-
-  if (mempool_self.recovered.length == 0) { return; }
-
-  //
-  // loop through recovered, getting txs
-  //
-  while (mempool_self.recovered.length > 0) {
-    var tx2insert = mempool_self.recovered[0];
-    mempool_self.recovered.splice(0, 1);
-
-    if (tx2insert.transaction.gt == null && tx2insert.transaction.ft == null) {
-      // 0 = do not relay on validate
-      mempool_self.addTransaction(tx2insert, 0);
     }
   }
-
-  //
-  // should already be empty
-  //
-  mempool_self.recovered = [];
-
 }
 
 
-/////////////////
-// removeBlock //
-/////////////////
-//
-// remove block from mempool if exists
-//
-// @params {saito.block} block_to_remove
-//
-Mempool.prototype.removeBlock = function removeBlock(blk) {
+
+
+
+
+/**
+ * Remove the block from the mempool
+ */
+Mempool.prototype.removeBlock = function removeBlock(blk=null) {
   if (blk == null) { return; }
   for (let b = this.blocks.length-1; b >= 0; b--) {
     if (this.blocks[b].returnHash() == blk.returnHash()) {
@@ -10518,15 +8268,10 @@ Mempool.prototype.removeBlock = function removeBlock(blk) {
 }
 
 
-////////////////////////////////
-// removeBlockAndTransactions //
-////////////////////////////////
-//
-// removes block and its transactions from mempool
-//
-// @params {saito.block} block
-//
-Mempool.prototype.removeBlockAndTransactions = function removeBlockAndTransactions(blk) {
+/**
+ * Remove the block and all of its transactions from the mempool
+ */
+Mempool.prototype.removeBlockAndTransactions = function removeBlockAndTransactions(blk=null) {
   if (blk == null) { return; }
   for (let b = 0; b < blk.transactions.length; b++) {
     this.removeTransaction(blk.transactions[b]);
@@ -10535,410 +8280,139 @@ Mempool.prototype.removeBlockAndTransactions = function removeBlockAndTransactio
 }
 
 
-////////////////////////
-// removeGoldenTicket //
-////////////////////////
-//
-// removes Golden Ticket from mempool
-//
+
+/**
+ * Remove the golden ticket from the mempool
+ */
 Mempool.prototype.removeGoldenTicket = function removeGoldenTicket() {
   for (let i = this.transactions.length-1; i >= 0; i--) {
-    if (this.transactions[i].transaction.gt != null) {
+    if (this.transactions[i].transaction.type == 1) {
       this.removeTransaction(this.transactions[i]);
       return;
     }
   }
 }
 
-
-///////////////////////
-// removeTransaction //
-///////////////////////
-//
-// remove transaction from mempool if exists
-//
-// @params {saito.transaction} tx_to_remove
-//
-Mempool.prototype.removeTransaction = function removeTransaction(tx) {
+/**
+ * remove the transaction from the mempool
+ *
+ * @param {saito.transaction} tx to remove
+ */
+Mempool.prototype.removeTransaction = function removeTransaction(tx=null) {
   if (tx == null) { return; }
+
+  //
+  // remove transactions from queue
+  //
   for (let t = this.transactions.length-1; t >= 0; t--) {
     if (this.transactions[t].transaction.sig == tx.transaction.sig) {
       this.transaction_size_current -= this.transactions[t].size;
       this.transactions.splice(t, 1);
     }
   }
-}
-
-
-/////////////////
-// returnBlock //
-/////////////////
-//
-// returns next block to process
-//
-// @returns {saito.block} block
-//
-Mempool.prototype.returnBlock = function returnBlock() {
-  if (this.blocks.length == 0) { return null; }
-  var tmpblk = this.blocks[0];
-  return tmpblk;
-}
-
-
-//////////////////////////////
-// returnBundlingFeesNeeded //
-//////////////////////////////
-//
-// return fees needed to produce a block. used when
-// checking if a new transaction pushes us over the edge
-//
-// @returns {decimal} bundling_fees_needed
-//
-Mempool.prototype.returnBundlingFeesNeeded = function returnBundlingFeesNeeded() {
-  return this.bundling_fees_needed;
-}
-
-
-///////////////////////////////////////
-// returnNormalTransactionsInMempool //
-///////////////////////////////////////
-//
-// return total number of non golden-ticket transactions
-// in the mempool.
-//
-// @returns {integer} num of txs
-//
-Mempool.prototype.returnNormalTransactionsInMempool = function returnNormalTransactionsInMempool() {
-  var v = 0;
-  for (let i = 0; i < this.transactions.length; i++) {
-    if (this.transactions[i].transaction.gt == null) { v++; }
-  }
-  return v;
-}
-
-
-/////////////////////////////////
-// returnUsableTransactionFees //
-/////////////////////////////////
-//
-// returns the total value of the transaction fees in the 
-// mempool that can be used to produce a block with a 
-// certain paysplit vote.
-//
-// @params {integer} paysplit_vote
-// returns {string} value;
-//
-Mempool.prototype.returnUsableTransactionFees = function returnUsableTransactionFees(paysplit_vote=0) {
-  var v = 0;
-  for (let i = 0; i < this.transactions.length; i++) {
-    if (paysplit_vote == -1) {
-      if (this.transactions[i].transaction.ps <= 0) {
-        v += this.transactions[i].returnFeeUsable();
-      }
-    }
-    if (paysplit_vote == 0) {
-      v += this.transactions[i].returnFeeUsable();
-    }
-    if (paysplit_vote == 1) {
-      if (this.transactions[i].transaction.ps >= 0) {
-        v += this.transactions[i].returnFeeUsable();
-      }
-    }
-  }
-  return v.toFixed(8);
-}
-
-
-///////////////////
-// startBundling //
-///////////////////
-//
-// start our loop that attempts to bundle blocks
-//
-Mempool.prototype.startBundling = function startBundling() {
-
-  if (this.currently_bundling == 1) { return; }
-
-  var mempool_self = this;
-
-  this.bundling_timer = setInterval(function() { mempool_self.tryToBundleBlock(); }, this.bundling_speed);
-
-}
-
-
-//////////////////
-// stopBundling //
-//////////////////
-//
-// stop trying to bundle blocks
-//
-Mempool.prototype.stopBundling = function stopBundling() {
-  clearInterval(this.bundling_timer);
-  this.currently_bundling = 0;
-}
-
-
-//////////////////////
-// tryToBundleBlock //
-//////////////////////
-//
-// bundling a block is the process of taking the transactions in 
-// our mempool and putting them in a block that will validate. the
-// first step in this process is checking to see if we have enough
-// transactions to actually produce a valid block.
-//
-// if we do have enough transactions, we will create the block and
-// then send it to the block class where it will be completed. the
-// process for adding a block is basically:
-//
-//   Mempool    --> tryToBundleBlock
-//   Mempool    --> bundleBlock
-//   Block      --> createBlock
-//   Mempool    --> addBlock
-//   Mempool    --> processBlock
-//   Blockchain --> addBlockToBlockchain
-//
-Mempool.prototype.tryToBundleBlock = function tryToBundleBlock() {
-
-  var mempool_self = this;
-  var block_paysplit_vote = 0;
 
   //
-  // check we can bundle a block
+  // and delete their UTXO too
   //
-  if (mempool_self.app.monitor.readyToBundleBlock() == 1) {
+  delete this.transactions_hmap[tx.transaction.sig];
+  for (let i = 0; i < tx.transaction.from.length; i++) {
+    delete this.transactions_inputs_hmap[tx.transaction.from[i].returnIndex()];
+  }
 
-    //
-    // fetch the block we are building atop
-    //
-    var latestBlk = mempool_self.app.blockchain.returnLatestBlock();
-    if (latestBlk == null) { 
-      latestBlk = new saito.block(mempool_self.app); 
-      latestBlk.block.id = 0; 
-    } else {
-      block_paysplit_vote = mempool_self.app.voter.returnPaysplitVote(latestBlk.block.paysplit);
-    }
-
-    //
-    // calculate fees available
-    //
-    let fees_needed = 0;
-    let fees_available = mempool_self.returnUsableTransactionFees(block_paysplit_vote);
-    if (fees_available < 0) { fees_available = 0; }
-
-    //
-    // calculate fees needed
-    //
-    if (latestBlk != null) {
-      let unixtime_original = mempool_self.app.blockchain.returnUnixtime(latestBlk.returnHash());
-      let unixtime_current = new Date().getTime();
-      let milliseconds_since_block = unixtime_current - unixtime_original;
-      fees_needed = ( latestBlk.returnBurnFee() - (latestBlk.returnFeeStep() * milliseconds_since_block) );
-      if (fees_needed < 0) { fees_needed = 0; }
-    }
-
-    mempool_self.bundling_fees_needed = fees_needed - fees_available;
-
-    console.log((new Date()) + ": " + fees_needed.toFixed(8) + " ---- " + fees_available + " (" + mempool_self.transactions.length + "/"+mempool_self.returnNormalTransactionsInMempool()+" -- "+mempool_self.app.wallet.returnBalance()+")");
-
-    //
-    // can we bundle a block? 
-    //
-    if (mempool_self.bundling_fees_needed <= 0) {
-
-      ////////////////
-      // FREE block //
-      ////////////////
-      //
-      // to avoid flooding, we only let nodes create a free
-      // block for the money if they are not connected to any
-      // other peers.
-      //
-      // otherwise they need at least one normal transaction
-      //
-
-//
-// temporary for server, so it mints cash even if outdated nodes connected
-//
-if (mempool_self.app.wallet.returnBalance() < 100 && mempool_self.app.wallet.returnPublicKey() == "nR2ecdN7cW91nxVaDR4uXqW35GbAdGU5abzPJ9PkE8Mn") {} else {
-
-      if (mempool_self.returnNormalTransactionsInMempool() == 0) {
-        if (mempool_self.app.options.peers != null) {
-          if (mempool_self.app.options.peers.length > 0) {
-            if (mempool_self.app.options.server != null) {
-              if (mempool_self.app.options.peers.length == 1 && mempool_self.app.options.peers[0].host == mempool_self.app.options.server.host) {} else { 
-	        return;
-	      }
-            } else {
-              return;
-            }
-          }
-        }
-
-	//
-	// also check to make sure we do not have inbound-connections
-	// so as not to flood the network with a free block if we have
-	// just connected but others are connecting to us.
-	//
-	if (mempool_self.app.network.peers.length > 0) { return; }
-      }
+}
 
 
-} // returnBalance
+/**
+ * when the chain is reorganized, any nodes that created
+ * transactions on the outdated chain will look to see what
+ * transactions are still valid and add them to their mempool
+ * this provides some continuity over reorgs.
+ *
+ * @param {saito.transaction} tx
+ */
+Mempool.prototype.recoverTransaction = function recoverTransaction(tx) {
+
+  if (tx == null) { return; }
+  if (tx.is_valid == 0) { return; }
+  this.recovered.push(tx);
+
+}
 
 
-      ///////////////////////////
-      // NON-FREE block if ... //
-      ///////////////////////////
-      //
-      // 1. we have a golden ticket or normal transaction
-      //
-      if (mempool_self.containsGoldenTicket() == 0 && latestBlk.block.id != 0 && mempool_self.returnNormalTransactionsInMempool() == 0) { return; }
+/**
+ * when the chain is reorganized, any nodes that created
+ * transactions on the outdated chain will look to see what
+ * transactions are still valid and add them to their mempool
+ * this provides some continuity over reorgs.
+ */
+Mempool.prototype.reinsertRecoveredTransactions = function reinsertRecoveredTransactions() {
 
-      //
-      // 2. we are a full nodes or at least do not have NO blocks (to avoid flooding on boot)
-      //
-      if ( (mempool_self.app.BROWSER == 0 && mempool_self.app.SPVMODE == 0) || mempool_self.app.blockchain.index.hash.length > 0) {
+  if (this.recovered.length == 0) { return; }
 
-        //
-	// 3. and our mempool doesn't have blocks queued
-	//
-	if (mempool_self.blocks.length == 0) {
-	 
-	  //
-	  // UNCOMMENT FOR SPAMMER MODULE TESTING
-	  // 
-	  // if stress-testing the network, we need to make sure 
-	  // we have enough time to generate a golden ticket in 
-	  // order to avoid never generating new transaction slips.
-	  //
-	  if (mempool_self.containsGoldenTicket() == 1 || mempool_self.app.blockchain.index.hash.length == 0) {
-          //
-	    mempool_self.bundleBlock(latestBlk);
-	  //
-	  }
-	  //
-	}
-      }
+  //
+  // loop through recovered, getting txs
+  //
+  while (this.recovered.length > 0) {
+    var tx2insert = this.recovered[0];
+    this.recovered.splice(0, 1);
+    if (tx2insert.transaction.type == 0) {
+      this.addTransaction(tx2insert, 0);
     }
   }
-};
 
+  //
+  // should already be empty
+  //
+  this.recovered = [];
 
+}
 
 }).call(this,"/saito")
-},{"../saito":12,"crypto":158,"fs":113,"path":319,"request":113}],24:[function(require,module,exports){
+},{"../saito":8,"big.js":75,"path":317}],21:[function(require,module,exports){
 'use strict';
-
 const saito = require('../saito');
+const Big = require('big.js');
 
-
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Miner Constructor
+ * @param {*} app
+ */
 function Miner(app) {
 
   if (!(this instanceof Miner)) {
     return new Miner(app);
   }
 
-  this.app                      = app || {};
+  this.app                = app || {};
 
-  this.mining                   = 1;    // do we mine blocks
-  this.mining_timer             = null; // timer to loop creating block
-  this.mining_speed             = 500;  // try to create a block every half-second
-  this.currently_mining         = 0;    // timer to loop creating block
+  this.mining_active    = false;
+  this.mining_speed     = 2000;
+  this.mining_timer     = null;
 
   return this;
 
 }
 module.exports = Miner;
 
-
-
-
-/////////////////////
-// attemptSolution //
-/////////////////////
-//
-// try to produce a solution to the golden ticket
-// embodied in the previous block (supplied as an
-// argument to this function)
-//
-// @params {saito.block} previous_block
-//
-Miner.prototype.attemptSolution = function attemptSolution(prevblock) {
-
-  if (prevblock == null) { return; }
-  if (prevblock.is_valid == 0) { return; }
-
-  // similar code used to validate golden tickets in golden ticket class validate function
-  let ourPrivateKey = this.app.wallet.returnPrivateKey();
-  let ourPublicKey  = this.app.wallet.returnPublicKey();
-  let prevBlockHash = prevblock.returnHash();
-  let randomNumber  = Math.random().toString();
-  let hashValue     = this.app.crypt.hash(ourPublicKey + randomNumber);
-
-  let decDifficulty = (prevblock.returnDifficulty() - Math.floor(prevblock.returnDifficulty()));
-      decDifficulty = decDifficulty.toFixed(8);
-  let intDifficulty = Math.floor(prevblock.returnDifficulty());
-
-  let h1 = null;
-  let h2 = null;
-
-  if (intDifficulty == 0) {
-    h1 = 1;
-    h2 = 1;
-  } else {
-    h1 = hashValue.slice((-1 * intDifficulty));
-    h2 = prevblock.returnHash().slice((-1 * intDifficulty));
-  }
-
-  if (h1 == h2) {
-
-    let h3 = hashValue.toString().toLowerCase()[ourPublicKey.length-1-intDifficulty];
-    let h4 = parseInt(h3,16);
-    let intTheDiff = Math.floor((decDifficulty * 10000));
-    let intModBase = 625;
-    let intResult  = Math.floor((intTheDiff/intModBase));
-
-    if (h4 >= intResult) {
-
-      this.stopMining();
-
-      let gt = new saito.goldenticket(this.app);
-      gt.createSolution(prevblock, ourPublicKey, ourPrivateKey, randomNumber);
-
-      // find the winners
-      let winners = gt.findWinners(prevblock);
-
-      // create golden transaction
-      let nt = this.app.wallet.createGoldenTransaction(winners, gt.solution);
-
-      // add to mempool and broadcast
-      this.app.mempool.addTransaction(nt);
-      this.app.network.propagateGoldenTicket(nt);
-    }
-  }
-}
-
-
 /////////////////
 // startMining //
 /////////////////
 //
-// start a timer that tries to find solutions to 
+// start a timer that tries to find solutions to
 // golden tickets
 //
-// @params {saito.block} prevblock
 //
+/**
+* Miner Start function
+* @param {*} saito.block
+*/
 Miner.prototype.startMining = function startMining(blk) {
 
   if (blk == null) { return; }
-  if (blk.is_valid == 0) { return; }
+  if (!blk.is_valid) { return; }
 
-  if (this.currently_mining == 1) { clearInterval(this.mining_timer); }
-  this.currently_mining = 1;
+  if (this.mining_active) { clearInterval(this.mining_timer); }
+  this.mining_active = true;
 
   var miner_self = this;
 
@@ -10949,35 +8423,153 @@ Miner.prototype.startMining = function startMining(blk) {
 }
 
 
-////////////////
-// stopMining //
-////////////////
-//
-// stop the timer loop for solving golden tickets
-//
+/**
+* Miner Stop FUNCTION
+*/
 Miner.prototype.stopMining = function stopMining() {
   clearInterval(this.mining_timer);
 }
 
 
+/**
+* Attempt to create a valid solution to Saito's proof-of-work function
+* @param {*} saito.block
+*/
+Miner.prototype.attemptSolution = function attemptSolution(prevblk) {
+
+  //
+  // Check that we have a previous block to mine on.
+  //
+  if (prevblk == null) { return; }
+  if (!prevblk.is_valid) { return; }
+
+  //
+  // Saito uses the miner's public key in it's PoW
+  // This simplifies verifying the origin of solutions
+  //
+  var publickey = this.app.wallet.returnPublicKey();
+  var privatekey = this.app.wallet.returnPrivateKey();
+
+  //
+  // Generate a random hash to check.
+  // And grab the previous block hash.
+  //
+  // TODO: there is probably not enough randomness and length
+  // at high levels of difficulty. But we can make this longer.
+  // random string of some long length.
+  //
+  let randomNumber  = Math.random().toString();
+  let hashValue     = this.app.crypto.hash(publickey + randomNumber);
+
+  //
+  // Set the number of digits to match - difficultyOrder
+  // As our difficulty is granular to several decimal places
+  // we check that the last digit in the test is within the
+  // difficultyGrain - the decimal part of the difficulty
+  //
+  let difficultyOrder = Math.floor(prevblk.returnDifficulty());
+  let difficultyGrain = prevblk.returnDifficulty() % 1;
+
+  //
+  // We are testing our generated has against the hash of the previous block.
+  // th is the test hash.
+  // ph is the previous hash.
+  //
+  let th = parseInt(hashValue.slice(0,difficultyOrder+1),16);
+  let ph = parseInt(prevblk.returnHash().slice(0,difficultyOrder+1),16);
+
+  if (th >= ph && (th-ph)/16 <= difficultyGrain) {
+    console.log("we have a mining solution");
+    this.stopMining();
+
+    let gt = new saito.goldenticket(this.app);
+    let gtobj = gt.calculateSolution(prevblk, publickey, privatekey, randomNumber);
+    let is_valid = gt.validateSolution(prevblk, JSON.stringify(gtobj), publickey);
+
+    let winning_node = gt.findWinner(gtobj, prevblk);
+    if (winning_node == "") { winning_node = this.app.wallet.returnAddress(); }
+
+    //
+    // this code is shared in the golden ticket validate function, where
+    // it validates the node and miner shares of the transactions, in
+    // addition to making sure that the right people are paid. It is also 
+    // used in the money module.
+    //
+    let total_fees_needed_for_prevblk    = this.app.burnfee.returnBurnFeePaidForThisBlock(prevblk);
+    let total_fees_available_for_creator = prevblk.returnAvailableFees(prevblk.block.creator);
+    let total_fees_in_prevblk            = prevblk.returnFeesTotal();
+    let creator_surplus			 = Big(total_fees_available_for_creator).minus(Big(total_fees_needed_for_prevblk));
+    let total_fees_for_miners_and_nodes  = Big(total_fees_in_prevblk).minus(creator_surplus).plus(prevblk.returnCoinbase());
+
+    // miner and node shares
+    let miner_share = total_fees_for_miners_and_nodes.div(2).toFixed(8);
+    let node_share =  total_fees_for_miners_and_nodes.minus(Big(miner_share)).toFixed(8);
+
+    // create the golden ticket transaction
+    let tx = new saito.transaction();
+    tx.transaction.ts  = new Date().getTime();
+    tx.transaction.type = 1;
+    tx.transaction.msg = gtobj;
+
+    // from slips
+    if (Big(this.app.wallet.returnAvailableInputs()).gte(this.app.wallet.returnDefaultFee())) {
+      //tx.transaction.from = this.app.wallet.returnAdequateInputs(this.app.wallet.returnDefaultFee());
+
+      //
+      // set a low fee for testing
+      // TODO: remove once module debugged
+      //
+      tx.transaction.from = this.app.wallet.returnAdequateInputs(0.0001);
+    } else {
+      tx.transaction.from = [];
+      tx.transaction.from.push(new saito.slip(this.app.wallet.returnPublicKey(), 0.0, 1));
+    }
 
 
-},{"../saito":12}],25:[function(require,module,exports){
+    // to slips
+    tx.transaction.to = [];
+    tx.transaction.to.push(new saito.slip(this.app.wallet.returnPublicKey(), miner_share, 1));
+    tx.transaction.to.push(new saito.slip(winning_node, node_share, 1));
+
+    // set slip ids
+    for (let i = 0; i < tx.transaction.to.length; i++) {
+      tx.transaction.to[i].sid = i;
+    }
+
+    // change address
+    //let change_amount = Big(tx.transaction.from[0].amt).minus(Big(this.app.wallet.returnDefaultFee()));
+
+    //
+    // set a low fee for testing
+    // TODO: remove one module debugged
+    //
+    let change_amount = Big(tx.transaction.from[0].amt).minus(Big(0.0001));
+    if (change_amount.gt(0)) {
+      tx.transaction.to.push(new saito.slip(this.app.wallet.returnPublicKey(), change_amount.toFixed(8), 0));
+      tx.transaction.to[tx.transaction.to.length-1].type = 0;
+    }
+
+    tx = this.app.wallet.signTransaction(tx);
+
+    this.app.network.propagateTransaction(tx);
+
+  }
+}
+
+},{"../saito":8,"big.js":75}],22:[function(require,module,exports){
 'use strict';
 
-const saito = require('../saito');
-
-
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Monitor Constructor
+ * @param {*} app
+ */
 function Monitor(app) {
 
   if (!(this instanceof Monitor)) {
     return new Monitor(app);
   }
 
-  this.app = app || {};
+  this.app                = app || {};
 
   return this;
 
@@ -10985,70 +8577,62 @@ function Monitor(app) {
 module.exports = Monitor;
 
 
-
-////////////////////////
-// readyToBundleBlock //
-////////////////////////
-//
-// called by the mempool object to check if it is clear
-// to create a block from its pool of available transaction.
-//
-// @returns {boolean}
-//
-Monitor.prototype.readyToBundleBlock = function readyToBundleBlock() {
-
-  if (	this.app.mempool.currently_processing    == 0 &&
-        this.app.mempool.currently_creating      == 0 &&
-        this.app.mempool.currently_clearing      == 0 &&
-        this.app.blockchain.currently_reclaiming == 0 &&
-        this.app.blockchain.currently_indexing   == 0 &&
-        this.app.storage.currently_reindexing    == 0
-  ) { return 1; }
-  return 0;
-
+/**
+ * returns mempool_is_bundling field
+ * @returns {boolean} mempool_is_bundling
+ */
+Monitor.prototype.canMempoolBundleBlock = function canMempoolBundleBlock() {
+  if (
+    this.app.mempool.bundling_active == false && this.app.mempool.processing_active == false
+  ) {
+    return true;
+  }
+  return false;
 }
 
 
-/////////////////////////////////
-// readyToAddBlockToBlockchain //
-/////////////////////////////////
-Monitor.prototype.readyToAddBlockToBlockchain = function readyToAddBlockToBlockchain() {
 
-  if (	this.app.blockchain.currently_indexing   == 0 &&
-        this.app.blockchain.currently_reclaiming == 0 &&
-        this.app.mempool.currently_clearing      == 0 &&
-        this.app.mempool.currently_creating      == 0
-  ) { return 1; }
-  return 0;
-
+/**
+ * returns mempool_is_bundling field
+ * @returns {boolean} mempool_is_bundling
+ */
+Monitor.prototype.canBlockchainAddBlockToBlockchain = function canBlockchainAddBlockToBlockchain() {
+  if (
+    this.app.mempool.blocks.length > 0 &&
+    this.app.blockchain.indexing_active == false
+  ) {
+    return true;
+  }
+  return false;
 }
 
 
 
 
 
-
-},{"../saito":12}],26:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 const saito = require('../saito');
 
 
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Network Constructor
+ * @param {*} app
+ */
 function Network(app) {
 
   if (!(this instanceof Network)) {
     return new Network(app);
   }
 
-  this.app     = app || {};
 
-  this.peers    		= [];
-  this.peer_monitor_timer 	= null;
+  this.app                      = app || {};
+
+
+  this.peers                    = [];
+  this.peer_monitor_timer       = null;
   this.peer_monitor_timer_speed = 10000;  // check socket status every 10 seconds
-  this.peers_connected 		= 0;
-  this.peers_connected_limit	= 20; // max peers
-
+  this.peers_connected          = 0;
+  this.peers_connected_limit    = 20; // max peers
 
   return this;
 
@@ -11057,79 +8641,84 @@ module.exports = Network;
 
 
 
-
-////////////////
-// initialize //
-////////////////
-//
-// We check our options to see to which peers we should 
-// be connecting, and start the connection process. Note
-// that connections are not instant, which is why the 
-// mempool class checks the options file to see if we
-// have active peers.
-//
-// Once peers are setup, we start a timer that monitors 
-// them to handle socket disconnections, etc.
-//
+/**
+ * Initialize Network
+ *
+ * Check our options file to see which peers we should
+ * connect to and start the connection process. Note that
+ * connections are not instant, so other parts of the
+ * application may not be able to use the network right
+ * when they are initializing
+ *
+ * Once peers are setup, we start a timer that monitors
+ * the quality of the connections and handles socket
+ * disconnections.
+ */
 Network.prototype.initialize = function initialize() {
-
-  var network_self = this;
 
   // connect to peers
   if (this.app.options.peers != null) {
     for (let i = 0; i < this.app.options.peers.length; i++) {
-      var {host, port, protocol} = this.app.options.peers[i];
-      this.addPeer(host, port, protocol);
+      console.log("Initialize our Network and Connect to Peers");
+      this.addPeer(JSON.stringify(this.app.options.peers[i]));
     }
   }
 
-  // monitor peers
-  this.peer_monitor_timer = setInterval(function() {
-    for (let i = network_self.peers.length-1; i >= 0; i--) {
-      if (network_self.peers[i].isConnected() == 0) {
-        network_self.cleanupDisconnectedSocket(network_self.peers[i]);
+  // and monitor them
+  this.peer_monitor_timer = setInterval(() => {
+    for (let i = this.peers.length-1; i >= 0; i--) {
+      if (!this.peers[i].isConnected()) {
+	      console.log("We should cleanup this disconnected socket");
+        this.cleanupDisconnectedSocket(this.peers[i]);
       }
     }
-  }, network_self.peer_monitor_timer_speed);
+  }, this.peer_monitor_timer_speed);
 
 }
 
 
-/////////////
-// addPeer //
-/////////////
-//
-// This function connects outwards to other nodes. If another
-// node connects to us, it will come in through the function
-//
-//   addPeerWithSocket
-//
-// We do a quick sanity check to make sure we are not connecting
-// to ourselves before we connect to a peer node.
-//
-// @params {string} peer IP address
-// @params {integer} peer port
-// @params {boolean} send blocks to this peer
-// @params {boolean} send transactions to this peer
-// @params {boolean} send golden ticket solutions to this peer
-//
-Network.prototype.addPeer = function addPeer(peerhost, peerport, peerprotocol='http', sendblks=1, sendtx=1, sendgtix=1) {
+
+
+
+
+
+/**
+ * Add a remote peer to our network connection class
+ *
+ * We do a quick sanity check to make sure we are not connecting
+ * to ourselves before we connect to a peer node.
+ *
+ * @param {string} peerjson json on peer
+ * @param {boolean} sendblks send blocks to this peer
+ * @param {boolean} sendtx send transactions to this peer
+ * @param {boolean} sendgtix golden ticket solutions to this peer
+ *
+ **/
+Network.prototype.addPeer = function addPeer(peerjson, sendblks=1, sendtx=1, sendgtix=1) {
+
+  let peerhost = "";
+  let peerport = "";
+
+  let peerobj = JSON.stringify(peerjson);
+
+  if (peerobj.host != undefined) { peerhost = peerobj.host; }
+  if (peerobj.port != undefined) { peerport = peerobj.port; }
+
 
   //
   // no duplicate connections
   //
   for (let i = 0; i < this.peers.length; i++) {
     if (this.peers[i].peer.host == peerhost && this.peers[i].peer.port == peerport) {
-      if (sendblks == 1) { this.peers[i].sendblocks = 1; }
+      if (sendblks == 1) { this.peers[i].sendblocks = 1;       }
       if (sendtx   == 1) { this.peers[i].sendtransactions = 1; }
-      if (sendgtix == 1) { this.peers[i].sendtickets = 1; }
+      if (sendgtix == 1) { this.peers[i].sendtickets = 1;      }
       return;
     }
   }
 
   //
-  // we check our own address to be sure we are
-  // not the node to which we are connecting.
+  // do not connect to ourselves
   //
   if (this.app.options.server != null) {
     if (this.app.options.server.host == peerhost && this.app.options.server.port == peerport) {
@@ -11138,35 +8727,28 @@ Network.prototype.addPeer = function addPeer(peerhost, peerport, peerprotocol='h
     }
   }
 
-  this.peers.push(new saito.peer(this.app));
-  this.peers[this.peers.length-1].peer.host        = peerhost;
-  this.peers[this.peers.length-1].peer.port        = peerport;
-  this.peers[this.peers.length-1].peer.protocol    = peerprotocol;
-  this.peers[this.peers.length-1].sendblocks       = sendblks;
-  this.peers[this.peers.length-1].sendtransactions = sendtx;
-  this.peers[this.peers.length-1].sendtickets      = sendgtix;
-  this.peers[this.peers.length-1].connect();
-
+  //
+  // create peer and add it
+  //
+  let peer = new saito.peer(this.app, peerjson);
+  peer.connect();
+  this.peers.push(peer);
   this.peers_connected++;
 
 }
 
 
-///////////////////////
-// addPeerWithSocket //
-///////////////////////
-//
-// Foreign-originated connections hit our network class here.
-// If we are originating the connection ourselves, we want to
-// use the function:
-//
-//   addPeer
-//
-// Sanity check this is not a duplicate connection then add.
-//
-// @params {socket.io-client socket} peer socket
-//
-Network.prototype.addPeerWithSocket = function addPeerWithSocket(socket) {
+
+
+/**
+ * Foreign-originated connections hit our network class here.
+ * If we are originating the connection ourselves, we want to
+ * use the function:
+ *
+ * @param {socket.io-client socket} socket peer socket
+ *
+ **/
+Network.prototype.addRemotePeer = function addRemotePeer(socket) {
 
   // deny excessive connections
   if (this.peers_connected >= this.peers_connected_limit) {
@@ -11185,163 +8767,183 @@ Network.prototype.addPeerWithSocket = function addPeerWithSocket(socket) {
     }
   }
 
-  this.peers.push(new saito.peer(this.app));
-  this.peers[this.peers.length-1].socket = socket;
-  this.peers[this.peers.length-1].addSocketEvents();
-  this.peers[this.peers.length-1].connect("remote-originated-connection");
-
+  //
+  // add peer
+  //
+  let peer = new saito.peer(this.app);
+  peer.socket = socket;
+  peer.connect();
+  this.peers.push(peer);
   this.peers_connected++;
 
 }
 
 
-///////////////////////////////
-// cleanupDisconnectedSocket //
-///////////////////////////////
-//
-// remove disconnected peers from our list of peers
-//
-// @params {saito.peer} peer to remove
-//
+
+
+
+
+/**
+ * Is Private Network
+ *
+ * Returns 1 if we are the only node on this network.
+ *
+ * This is used by the mempool class when producing blocks
+ * as we do not want to flood a public network with blocks
+ * created when the burn value hits 0.0 if we are on a public
+ * network -- it may just be that our connection dropped.
+ */
+Network.prototype.isPrivateNetwork = function isPrivateNetwork() {
+
+  // we calculate the number of peers to which we ARE connected
+  // and/or the number of peers we have specified that we want
+  // to be connected with in order to determine if we are on a
+  // private network.
+
+  // private networks are useful for testing functionality, as
+  // we will not produce blocks without transactions on a public
+  // network.
+
+  return true;
+
+}
+
+
+
+
+
+/**
+ * Remove disconnected peers from our list of peers
+ *
+ * @param {saito.peer} peer peer to remove
+ *
+ **/
 Network.prototype.cleanupDisconnectedSocket = function cleanupDisconnectedSocket(peer) {
 
   for (let c = 0; c < this.peers.length; c++) {
     if (this.peers[c] == peer) {
 
       //
-      // we do not want to remove socket connections from
-      // peers that are explicitly in our list, as they
-      // may reconnect and we will want to resync.
+      // do not remove peers we asked to add
       //
       if (this.app.options.peers != null) {
         for (let d = 0; d < this.app.options.peers.length; d++) {
           if (this.app.options.peers[d].host == peer.peer.host && this.app.options.peers[d].port == peer.peer.port) {
-	    return;
-	  }
+            return;
+          }
         }
       }
 
       //
-      // otherwise remove peer, they will
-      // have to explicitly reconnect to get
-      // us to message them again.
+      // do not remove peers serving dns
+      //
+      if (this.app.options.peers != null) {
+        if (this.app.options.dns != null) {
+          for (let d = 0; d < this.app.options.dns.length; d++) {
+            if (this.app.options.dns[d].host == peer.peer.host && this.app.options.dns[d].port == peer.peer.port) {
+              return;
+            }
+          }
+        }
+      }
+
+
+      //
+      // otherwise, remove peer
       //
       clearInterval(this.peers[c].message_queue_timer);
       this.peers.splice(c, 1);
       c--;
       this.peers_connected--;
-console.log("REMOVING PEERS, peers remaining: " + this.peers_connected + " -- " + this.peers.length);
     }
   }
 }
 
 
-/////////////////
-// isConnected //
-/////////////////
-//
-// returns 1 if we are connected to this peer
-//
-// @params {boolean} is connected?
-//
-Network.prototype.isConnected = function isConnected() {
-  for (let k = 0; k < this.peers.length; k++) {
-    if (this.peers[k].isConnected() == 1) { return 1; }
-  }
-  return 0;
-}
-
-
-/////////////////////
-// isPeerConnected //
-/////////////////////
-//
-// returns 1 if we are connected to this peer
-//
-// @params {boolean} is connected?
-//
-Network.prototype.isPeerConnected = function isPeerConnected(publickey="") {
-  for (let k = 0; k < this.peers.length; k++) {
-    if (this.peers[k].peer.publickey == publickey) {
-      if (this.peers[k].isConnected() == 1) { return 1; }
-    }
-  }
-  return 0;
-}
 
 
 
-
-
-////////////////////
-// propagateBlock //
-////////////////////
-//
-// propagates a block to the network
-//
-// right now this directly calls the "sendBlock" function
-// but we have a separate function here as in the future 
-// we may wish to be more selective about the nodes to 
-// which we send blocks as part of active bandwidth 
-// management.
-//
-// We should aim to have the code send blocks here if they
-// want the network class to deal with them, or directly to 
-// sendBlock if they want to send it to all connections.
-//
-// @params {saito.block} block
-//
+/**
+ * propagates a block to the network
+ *
+ * right now this directly calls the "sendBlock" function
+ * but we have a separate function here as in the future
+ * we may wish to be more selective about the nodes to
+ * which we send blocks as part of active bandwidth
+ * management.
+ *
+ * We should aim to have the code send blocks here if they
+ * want the network class to deal with them, or directly to
+ * sendBlock if they want to send it to all connections.
+ *
+ * @param {saito.block} blk
+ **/
 Network.prototype.propagateBlock = function propagateBlock(blk) {
+
   if (blk == null) { return; }
   if (blk.is_valid == 0) { return; }
-  this.sendBlock("block", blk);
+
+  var data = { bhash : blk.returnHash() };
+  for (let i = 0; i < this.peers.length; i++) {
+    this.peers[i].sendRequest("block", data);
+  }
+
 }
 
-
-///////////////////////////
-// propagateGoldenTicket //
-///////////////////////////
-//
-// propagates a golden ticket to all peers
-//
-// @params {saito.transaction} transaction with a golden ticket solution
-//
-Network.prototype.propagateGoldenTicket = function propagateGoldenTicket(gttx) {
-  if (gttx == null) { return; }
-  if (gttx.is_valid == 0) { return; }
-  if (gttx.transaction.gt == null) { return; }
-  this.propagateTransaction(gttx, "golden ticket");
-}
-
-
-//////////////////////////
-// propagateTransaction //
-//////////////////////////
-//
-// propagate a transaction out onto the network
-//
-// note that golden tickets piggy-back on this 
-// by changing the outboundMessage, which is why
-// it is not hard-coded.
-//
-// @params {saito.transaction}
-// @params {callback}
-//
-Network.prototype.propagateTransaction = function propagateTransaction(tx, outboundMessage="transaction", mycallback=null) {
-
+/**
+ * Propagates a golden ticket to all peers
+ *
+ * @param {saito.transaction} tx transaction with a golden ticket solution
+ **/
+Network.prototype.propagateGoldenTicket = function propagateGoldenTicket(tx) {
   if (tx == null) { return; }
   if (tx.is_valid == 0) { return; }
+  if (tx.transaction.gt == 0) { return; }
+  if (tx.transaction.msg == "") { return; }
+
+  this.propagateTransaction(tx, "golden ticket");
+
+}
+
+
+/**
+ *
+ * this lets us micromanage the information we broadcast
+ * to our peers. the message is what is filtered-on by
+ * peers when deciding how to treat incoming messages, while
+ * the data is whatever data is then read-in by the software
+ *
+ * @params {string} request message
+ * @params {saito.block} request data
+ **/
+Network.prototype.sendRequest = function sendRequest(message, data="") {
+  for (let x = this.peers.length-1; x >= 0; x--) {
+    this.peers[x].sendRequest(message, data);
+  }
+}
+
+
+/**
+ * propagates a transaction to all peers
+ *
+ * @param {saito.transaction} tx transaction
+ * @param {string} outbound_message the message added to the transaction
+ **/
+Network.prototype.propagateTransaction = function propagateTransaction(tx, outbound_message="transaction") {
+
+  if (tx == null) { return; }
+  if (!tx.is_valid) { return; }
 
   //
   // add to mempool if it does not already exit
   //
   if (this.app.BROWSER == 0 && this.app.SPVMODE == 0) {
     if (this.app.mempool.containsTransaction(tx) != 1) {
-      if ( (this.app.mempool.returnBundlingFeesNeeded() - tx.returnFeeUsable()) <= 0) {
+      if ( (this.app.mempool.returnBundlingFeesNeeded() - tx.returnFeesUsable(this.app, this.app.wallet.returnPublicKey())) <= 0) {
         this.app.mempool.addTransaction(tx);
         //
         // return as we can create a block
-	//
+        //
         return;
       } else {
         this.app.mempool.addTransaction(tx);
@@ -11349,140 +8951,47 @@ Network.prototype.propagateTransaction = function propagateTransaction(tx, outbo
     }
   }
 
+
   //
   // sign transaction for our peers and propagate
   //
-  for (let networki = 0; networki < this.peers.length; networki++) {
+  for (let i = 0; i < this.peers.length; i++) {
 
     // if peer not on path
-    if (! this.peers[networki].inTransactionPath(tx) ) {
+    if (! this.peers[i].inTransactionPath(tx) ) {
 
       // create a temporary transaction
       //
       // try/catch block exists as it is possible to create
       // a JSON string that JSON class cannot parse successfully
       //
+
       try {
         var tmptx = new saito.transaction();
-            tmptx.transaction = JSON.parse(JSON.stringify(tx.transaction));
-      } catch (err) { 
-	      return; 
+        tmptx.transaction = JSON.parse(JSON.stringify(tx.transaction));
+      } catch (err) {
+        return;
       }
 
       // add our path
-      var tmppath = new saito.path();
+      var tmppath      = new saito.path();
           tmppath.from = this.app.wallet.returnPublicKey();
-          tmppath.to   = this.peers[networki].returnPublicKey();
-          tmppath.sig  = this.app.crypt.signMessage(tmppath.to, this.app.wallet.returnPrivateKey());
+          tmppath.to   = this.peers[i].returnPublicKey();
+          tmppath.sig  = this.app.crypto.signMessage(tmppath.to, this.app.wallet.returnPrivateKey());
 
       tmptx.transaction.path.push(tmppath);
-      if (mycallback == null) {
-	      this.peers[networki].sendRequest(outboundMessage, JSON.stringify(tmptx.transaction));
-      } else {
-	      this.peers[networki].sendRequestWithCallback(outboundMessage, JSON.stringify(tmptx.transaction), mycallback);
-      }
+      // if (mycallback == null) {
+      this.peers[i].sendRequest(outbound_message, JSON.stringify(tmptx.transaction));
+      // } else {
+      //   this.peers[i].sendRequestWithCallback(outbound_message, JSON.stringify(tmptx.transaction), mycallback);
+      // }
     }
   }
 }
 
-
-//////////////////////////////////////
-// propagateTransactionWithCallback //
-//////////////////////////////////////
-//
-// socket.io allows us to send messages and have the 
-// other peer invoke a callback. this function wraps
-// this functionality. it is provided so that modules
-// can confirm.
-//
-// TODO:
-//
-// make callback messages secure/encrypted by default
-// if a key exists between us and our target peer. 
-//
-// make sure callback message only fires X times, 
-// instead of once for every peer that receives it.
-//
-Network.prototype.propagateTransactionWithCallback = function propagateTransactionWithCallback(tx, mycallback=null) {
-  this.propagateTransaction(tx, "transaction", mycallback);
-}
-
-
-///////////////
-// sendBlock //
-///////////////
-//
-// broadcast block to all peers
-//
-// some redundancy with propagateBlock
-//
-// @params {string} request for message
-// @params {saito.block} block
-//
-Network.prototype.sendBlock = function sendBlock(message, blk) {
-  if (blk == null) { return; }
-  if (blk.is_valid == 0) { return; }
-  for (let x = this.peers.length-1; x >= 0; x--) {
-    this.peers[x].sendBlock(message, blk);
-  }
-}
-
-
-/////////////////
-// sendRequest //
-/////////////////
-//
-// this lets us micromanage the information we broadcast
-// to our peers. the message is what is filtered-on by
-// peers when deciding how to treat incoming messages, while
-// the data is whatever data is then read-in by the software
-//
-// i.e. for a block this would be:
-//
-//   message = "block"
-//   data    = JSON.stringify(blk.block)
-//
-// @params {string} request message
-// @params {saito.block} request data
-//
-Network.prototype.sendRequest = function sendRequest(message, data="") {
-  for (var x = this.peers.length-1; x >= 0; x--) {
-    this.peers[x].sendRequest(message, data);
-  }
-}
-
-
-/////////////////////
-// fetchBlockchain //
-/////////////////////
-//
-// we know we need to fetch the blockchain, so lets do that
-// this informs our peers that we would like to sync the 
-// blockchain. it passes control individually to the individual
-// peers.
-//
-// the fork_id comes in here, as we may have peers with slightly
-// different IDs, which is why we sync across the whole network.
-//
-// TODO
-//
-// improve efficiency and avoid bandwidth issues by making our
-// blockchain syncing code more efficient, so that we only need
-// to fetch data from one server, for instance, and then check
-// that data with other servers.
-//
-Network.prototype.fetchBlockchain = function fetchBlockchain() {
-  for (let x = 0; x < this.peers.length; x++) {
-    if (this.peers[x].socket != null) {
-      if (this.peers[x].isConnected() == true) {
-        this.peers[x].fetchBlockchain();
-        return;
-      }
-    }
-  }
-  return;
-}
-
+/**
+ * close all network connections -- called on shutdown
+ **/
 Network.prototype.close = function close() {
   for (let i = 0; i < this.peers.length; i++) {
     this.peers[i].socket.disconnect();
@@ -11491,46 +9000,8 @@ Network.prototype.close = function close() {
 }
 
 
-///////////////////////////
-// updatePeerReliability //
-///////////////////////////
-//
-// updates the reliability value of the peer with the specified 
-// key. this is used to track how reliable the peers are in order
-// to provide a basic defense against flooding attacks.
-//
-// @params {string} public key of peer
-// @params {string} variable to update
-// @params {value}  new value (-1, 0, 1);
-//
-Network.prototype.updatePeerReliability = function updatePeerReliability(publickey="", feature="", value=0) {
 
-  for (let x = 0; x < this.peers.length; x++) {
-    if (this.peers[x].peer.publickey == publickey) {
-      this.peers[x].updatePeerReliability(feature, value);
-      return;
-    }
-  }
-
-  return;
-
-}
-Network.prototype.isPeerReliable = function isPeerReliable(publickey) {
-
-  for (let x = 0; x < this.peers.length; x++) {
-    if (this.peers[x].peer.publickey == publickey) {
-      return this.peers[x].isPeerReliable();
-    }
-  }
-
-  return 1;
-
-}
-
-
-
-
-},{"../saito":12}],27:[function(require,module,exports){
+},{"../saito":8}],24:[function(require,module,exports){
 const saito    = require('../saito');
 
 
@@ -11553,101 +9024,84 @@ module.exports = Path;
 
 
 
-},{"../saito":12}],28:[function(require,module,exports){
-const saito        = require('../saito');
-const io           = require('socket.io-client');
-const util         = require('util');
+},{"../saito":8}],25:[function(require,module,exports){
+const io    = require('socket.io-client');
+const saito = require('../saito');
 
-
-/////////////////
-// Constructor //
-/////////////////
-function Peer(app) {
+/**
+ * Peer Constructor
+ * @param {*} app
+ */
+function Peer(app, peerjson="") {
 
   if (!(this instanceof Peer)) {
-    return new Peer(app);
+    return new Peer(app, peerjson);
   }
 
-  this.app = app || {};
+  this.app     = app || {};
+
 
   this.peer                  = {};
   this.peer.host             = "localhost";
   this.peer.port             = "12101";
   this.peer.publickey        = "";
   this.peer.protocol         = "http";
-  this.peer.keylist          = [];		// only used with lite/spv modes
-  this.peer.synctype         = "full"; 		// full = full blocks
-            // lite = spv client
+  this.peer.synctype         = "full";          // full = full blocks
+                                                 // lite = spv client
 
-  if (this.app.SPVMODE == 1) { this.peer.synctype = "lite"; }
+  //
+  // validating publickey
+  //
+  this.handshake_signature   = "";
+  this.handshake_completed   = 0;
+  this.handshake_requests_in = 0;
+  this.handshake_requests_out= 0;
+  this.verified              = 0;
+  this.challenge_remote      = null;            // challenge peer creates
+  this.challenge_local       = null;            // challenge I create
 
-  // tracking connection
-  this.initializing          = 1;		// 0 - once connection is made
-  this.contact	   	         = 0;		// 0 - we initiated contact request
-  this.disconnected          = 0;               // 1 - we were disconnected
-  this.block_sync            = null;		// id of last block sent in initial sync
-
-  // what do we send
+  //
+  // what to send
+  //
   this.sendblocks            = 1;
   this.sendtransactions      = 1;
   this.sendtickets           = 1;
 
-  // tracking syncing
-  this.sync_sending          = 0;
-  this.sync_sending_chunk    = 0;
-  this.sync_sending_bid      = 0;
-  this.sync_latest_bid       = 0;
-  this.sync_sending_db_bid   = 0;
-  this.sync_timer            = null;
-  this.sync_timer_speed      = 800;             // 0.8 seconds
-
+  //
   // queue to prevent flooding
   //
-  // note, this is only used for syncing blocks
-  // from the blockchain, since having the queue
-  // causes issues right now with websocket
-  // management otherwise.
-  //
   this.message_queue         = [];
-  this.message_queue_speed   = 500;             // sent
+  this.message_queue_speed   = 1000;             // sent
   this.message_queue_timer   = null;
 
-  // socket
-  this.socket                = null;
-  this.socket_id             = null;
 
+  if (this.app.SPVMODE == 1 || this.app.BROWSER == 1) {
+    this.peer.synctype       = "lite";
+  }
 
-
-  //
-  // these variables determine if the peer is sending us
-  // good blocks or transactions and whether we relay them
-  // or protect the rest of the network. a node that always
-  // sends good data should not have any problems
-  //
-  // 1 ==> good
-  // -1 ==> bad
-  // 0 ==> do not know
-  //
-  this.last_block_connected       = 0;
-  this.last_block_valid           = 0;
-  this.last_transaction_valid     = 0;
-
-
+  if (peerjson != "") {
+    let peerobj = JSON.parse(peerjson);
+    if (peerobj.host != undefined)      { this.peer.host      = peerobj.host; }
+    if (peerobj.port != undefined)      { this.peer.port      = peerobj.port; }
+    if (peerobj.publickey != undefined) { this.peer.publickey = peerobj.publickey; }
+    if (peerobj.protocol != undefined)  { this.peer.protocol  = peerobj.procotol; }
+    if (peerobj.synctype != undefined)  { this.peer.synctype  = peerobj.synctype; }
+  }
 
   //
   // manage blockchain sync queue
   //
-  var peer_self = this;
-  this.message_queue_timer = setInterval(function() {
-    if (peer_self.message_queue.length > 0) {
-      if (peer_self.socket != null) {
-        if (peer_self.socket.connected == true) {
-          peer_self.socket.emit('request',peer_self.message_queue[0]);
-          peer_self.message_queue.splice(0, 1);
+  this.message_queue_timer = setInterval( () => {
+    if (this.message_queue.length > 0) {
+      if (this.socket != null) {
+        if (this.socket.connected == true) {
+          this.socket.emit('request',this.message_queue[0]);
+          this.message_queue.splice(0, 1);
         }
       }
     }
   }, this.message_queue_speed);
+
 
 
   return this;
@@ -11656,457 +9110,401 @@ function Peer(app) {
 module.exports = Peer;
 
 
-//
-// NOTE TO DEVELOPERS:
-//
-// This is a harder class to understand, because the same code
-// needs to handle interactions on both sides: the node that
-// is originating a connection and the node that is receiving
-// the connection.
-//
-// The general structure is that the node that wants to 
-// initiate the connection will create a peer object and update
-// it with the relevant information (host, post, etc.) and then
-// call the function:
-//
-//   connect
-//
-// This will format a JS request and send it to the remote 
-// server through a websocket it will open. The remote server
-// will create a REPLY message and send it back to this server.
-// Both machines will automatically start syncing blocks to 
-// each other depending on where they are in the chain.
-//
-// Once the connection has been established, the most important
-// function from a development perspective is:
-//
-//   addSocketEvents
-//
-// As this is where the code is written that specifies what 
-// we do with the requests that we receive over the network
-// once a connection is established.
-//
+
+/**
+ * Initialize Peer 
+ */
+Peer.prototype.initialize = function initialize() {
+
+}
+
+/**
+ * Returns the publickey of the peer
+ */
+Peer.prototype.returnPublicKey = function returnPublicKey() {
+  return this.peer.publickey;
+}
 
 
-/////////////////////
-// addSocketEvents //
-/////////////////////
-//
-// After we connect to a remote node, we add events to the 
-// socket. This function creates those events, which fire
-// on connection / disconnection and whenever we receive 
-// data from the remote node.
-//
-// This is the HEART of the peer class. All of the important
-// behavior is defined in this function.
-//
-Peer.prototype.addSocketEvents = function addSocketEvents() {
 
-  var peer_self = this;
+
+
+/**
+ * Connect to another peer in the network
+ */
+Peer.prototype.connect = function connect() {
 
   //
-  // we wrap this whole thing in a try / catch error
-  // clause so that problems don't crash our server
+  // remote-originated connection
+  //
+  if (this.isConnected() == true) {
+
+    console.log("CONNECT RUNNING... but from an already-connected socket");
+
+  //
+  // our connection
+  //
+  } else {
+
+    console.log("CONNECT RUNNING... no socket, time to open one.");
+
+    //
+    // open socket
+    //
+    var serverAddress = `${this.peer.protocol}://${this.peer.host}:${this.peer.port}`;
+    var socket = io(serverAddress);
+    this.socket = socket;
+
+  }
+
+  //
+  // add events
+  //
+  this.addSocketEvents();
+  this.sendHandshake();
+
+}
+
+
+
+/**
+ * Sends the initial connection information to the remote peer
+ **/
+Peer.prototype.sendHandshake = function sendHandshake() {
+
+  this.handshake_request_out++;
+  if (this.handshake_request_out > 5) {
+    this.app.network.cleanupDisconnectedSocket(this);
+    return;
+  }
+
+  var request                           = {};
+  request.request                       = "handshake";
+  request.data                          = {};
+  request.data.host                     = "";
+  request.data.port                     = "";
+  request.data.publickey                = this.app.wallet.returnPublicKey();
+  this.challenge_local                  = (new Date().getTime());
+  request.data.challenge                = this.challenge_local;
+  request.data.synctype                 = this.peer.synctype;
+  request.data.blockchain_send          = 1;
+  request.data.last_bid                 = this.app.blockchain.returnLatestBlockId();
+  request.data.forkid                   = this.app.blockchain.returnForkId();
+  request.data.genesis_bid              = this.app.blockchain.returnGenesisBlockId();
+  request.data.sendtransactions         = 1;
+  request.data.sendtickets              = 1;
+  request.data.sendblocks               = 1;
+  request.data.keylist                  = this.app.keys.returnWatchedPublicKeys();
+  request.data.keylist.push               (this.app.wallet.returnPublicKey());
+
+  if (this.app.BROWSER == 0) {
+    request.data.host                   = this.app.options.server.host;
+    request.data.port                   = this.app.options.server.port;
+  }
+
+  console.log("About to send request now!");
+  this.sendRequest(request.request, request.data);
+
+}
+
+
+
+
+/**
+ * Send a message to another Saito peer
+ *
+ * all messages are interpreted according to
+ * the logic defined in the function:
+ *
+ * addSocketEvents
+ *
+ *
+ * @param {string} message (i.e. "block")
+ * @param {string} data {i.e json object}
+ * @param {integer} propagate NOW instead of queueing?
+ **/
+Peer.prototype.sendRequest = function sendRequest(message, data="") {
+
+  // avoid sending unwelcome data
+  if (this.sendblocks == 0       && message == "block")         { return; }
+  if (this.sendtransactions == 0 && message == "transaction")   { return; }
+  if (this.sendtickets == 0      && message == "golden ticket") { return; }
+
+  // find out initial state of peer and blockchain
+  var userMessage = {};
+      userMessage.request  = message;
+      userMessage.data     = data;
+
+  //
+  // only send the message if we are connected, otherwise
+  // cleanup the connection.
+  //
+  if (this.socket != null) {
+    if (this.socket.connected == true) {
+      this.socket.emit('request',JSON.stringify(userMessage));
+    } else {
+      this.message_queue.push(JSON.stringify(userMessage));
+      return;
+    }
+  } else {
+    this.app.network.cleanupDisconnectedSocket(this);
+    return;
+  }
+}
+
+
+
+/**
+ * Is our peer connected?
+ * @returns {boolean} isConnected
+ */
+Peer.prototype.isConnected = function isConnected() {
+  if (this.socket != null) {
+    if (this.socket.connected == true) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+
+/**
+ * Allow our socket to send and receive messages
+ *
+ * After we connect to a remote node, we add events to the
+ * socket. This function creates those events, which fire
+ * on connections / disconnection and whenever we receive
+ * data from the remote node.
+ *
+ * This is the heart of the peer class. All of the important
+ * behavior is defined in this function.
+ */
+Peer.prototype.addSocketEvents = function addSocketEvents() {
+
+  //
+  // we wrap the entire function in a try / catch block
+  // so that any problems triggered by remote servers 
+  // will not crash our server.
   //
   try {
 
     /////////////
-    // decrypt //
-    /////////////
-    //
-    // TODO
-    //
-    // handle default encryption for nodes with
-    // a shared secret. Need to be careful that
-    // we actually intend for this to be encrypted
-    //
-
-
-    /////////////
     // connect //
     /////////////
-    this.socket.on('connect', function(){
-      this.initializing = 0;
+    this.socket.on('connect', () => {
       console.log("client connect");
-      if (peer_self.contact == 0) {
-        if (peer_self.disconnected == 1) {
-          peer_self.socket.emit('request',JSON.stringify(peer_self.returnConnectMessage()));
-        }
-      }
     });
-
 
     ////////////////
     // disconnect //
     ////////////////
-    this.socket.on('disconnect', function(){
+    this.socket.on('disconnect',() => {
       console.log("client disconnect");
-      peer_self.disconnected = 1;
     });
 
-    this.socket.on('event', function(){});
+    ///////////
+    // event //
+    ///////////
+    this.socket.on('event', () => {});
+
 
     //////////////////
     // other events //
     //////////////////
-
-    this.socket.on('request', function (data, mycallback=null) {
+    this.socket.on('request', (data, mycallback=null) => {
 
       let response = {}
-
       let message = JSON.parse(data.toString());
+
 
       /////////////////////
       // module callback //
       /////////////////////
-      peer_self.app.modules.handlePeerRequest(message, peer_self, mycallback);
+      this.app.modules.handlePeerRequest(message, this, mycallback);
 
-      /////////////
-      // connect //
-      /////////////
-      //
-      // inbound connection request
-      //
-      // we fetch the data the other node tells us about itself
-      // and start sending it blocks depending on its state of
-      // sync with our blockchain
-      //
-      if (message.request == "connect") {
 
-        peer_self.contact           = 1; // i received connect request
-        peer_self.disconnected      = 0;
-        peer_self.sendblocks        = message.data.sendblocks;
-        peer_self.sendtransactions  = message.data.sendtransactions;
-        peer_self.sendtickets       = message.data.sendtickets;
+      ///////////////
+      // handshake //
+      ///////////////
+      if (message.request == "handshake") {
 
-        peer_self.peer.publickey    = message.data.publickey;
-        peer_self.peer.keylist      = message.data.keylist;
-        peer_self.peer.synctype     = message.data.synctype;
-
-        let peer_reindexing         = message.data.reindexing;
-        let my_last_block           = peer_self.app.blockchain.returnLatestBlock();
-        let my_last_bid             = 0;
-        let peer_last_bid  	        = message.data.lastblock;
-        let peer_fid       	        = message.data.forkid;
-
+        console.log("HANDSHAKE: ");
+        console.log(JSON.stringify(message));
 
         //
-        // update port and host info
+        // peer preferences
         //
-        if (message.data.host != "") {
-          peer_self.peer.host       = message.data.host;
-        }
-        if (message.data.port != "") {
-          peer_self.peer.port       = message.data.port;
-        }
+        if (message.data.sendblocks < this.sendblocks) { this.sendblocks = message.data.sendblocks; }
+        if (message.data.sendtransactions < this.sendtransactions) { this.sendtransactions = message.data.sendtransactions; }
+        if (message.data.sendtickets < this.sendtickets) { this.sendtickets = message.data.sendtickets; }
 
-
-        console.log("SETTING PEER TO: ");
-        console.log(JSON.stringify(peer_self.peer));
-
-
+        this.peer.publickey = message.data.publickey;
+        this.peer.keylist   = message.data.keylist;
+        if (message.data.synctype == "lite") { this.peer.synctype = "lite"; }
+        if (message.data.host != "") { this.peer.host = message.data.host; }
+        if (message.data.port != "") { this.peer.port = message.data.port; }
 
         //
-        // if we are reindexing from disk, do not ask for updates
+        // confirm publickey
         //
-        if (peer_reindexing == 1) {
-          return;
-        }
-
-        if (peer_self.app.storage.currently_reindexing == 1) {
-          return;
-        }
-
-        //
-        // update our last block_id based on what our blockchain tells us
-        //
-        // this cannot be handled above as my_last_block may be null on a new chain
-        //
-        if (my_last_block != null) { my_last_bid = my_last_block.returnId(); }
+        this.challenge_remote  = message.data.challenge;
+        var sigmessage      = {};
+        sigmessage.request  = "connect-sig";
+        sigmessage.data     = {};
+        sigmessage.data.sig = this.app.crypto.signMessage("_"+this.challenge_remote, this.app.wallet.returnPrivateKey());
+        this.socket.emit('request', JSON.stringify(sigmessage));
 
         //
-        // if the remote peer included a peer_last_bid (their last block_id) then
-        // we can use that in conjunction with the peer_fid (their fork_id) to figure
-        // out our last shared block and send them everything after that.
+        // check blockchain
         //
-        // using this method to find the proper syncing point prevents an edge-case
-        // wherein our remote node has produced a block on its own and only asks us 
-        // for blocks FOLLOWING it, while we have no knowledge of that block as we
-        // are on the proper chain.
-        //
-        let bid_from_fid = peer_self.app.blockchain.returnLastSharedBlockId(peer_fid, peer_last_bid);
-        if (bid_from_fid < peer_last_bid) {
-          if (peer_self.peer.synctype == "full") {
-            peer_last_bid = bid_from_fid;
-          }
-        }
+        let peer_last_bid    = message.data.last_bid;
+        let peer_forkid      = message.data.forkid;
+        let peer_genesis_bid = message.data.genesis_bid;
 
         //
-        // if a lite-client tells us they want everything from scratch, we don't 
-        // believe them and reset the peer_last_bid to nothing so that we will 
-        // only sync them the latest blocks needed to get them started.
+        // NOTE -- when fetching blocks from peers, you have to update
+        // the lowest_acceptable_ts if you do not already have something
+        // acceptable in your options / blockchain.
         //
-        if (peer_last_bid == 0 && peer_self.peer.synctype == "lite") {
-          peer_last_bid = "";
-        }
 
-        ////////////////
-        // lite-nodes //
-        ////////////////
-        if (peer_self.peer.synctype == "lite") {
 
-        //
-        // lite-nodes get the last 10 blocks if they
-        // tell us they want to sync from scratch
-        //
-          if (peer_last_bid === "" || peer_last_bid == 0) {
-            let start_bid = my_last_bid-10;
-            if (start_bid < 0) { start_bid = 0; }
-            peer_self.sendBlockchain(start_bid, peer_self.peer.synctype);
-
-          //
-          // but if they give us a real number, we give
-          // them the blocks since that time
-          //
-          // TODO:
-          //
-          // what if the lite-node wants to sync from a
-          // point that is no-longer part of the chain
-          // because it has fallen off the end? in that
-          // case we should notify them....
-          //
-          } else {
-            peer_self.sendBlockchain(peer_last_bid, peer_self.peer.synctype);
-          }
-
-        ////////////////
-        // full-nodes //
-        ////////////////
+        // update blockchain sync data
+        let my_last_bid = this.app.blockchain.returnLatestBlockId();
+        if (peer_last_bid > my_last_bid) {
+          this.app.options.blockchain.target_bid = peer_last_bid;
+          this.app.modules.updateBlockchainSync(my_last_bid, peer_last_bid);
         } else {
-
-          //
-          // sync from scratch
-          //
-          if (peer_last_bid === "" || peer_last_bid == 0) {
-            peer_self.sendBlockchain(0, peer_self.peer.synctype);
-
-          //
-          // or from their last contact point
-          //
-          // TODO
-          //
-          // what if a full-node wants to sync from a point 
-          // that is too far back in the transient chain 
-          // for us to handle? we should notify them.
-          //
-          } else {
-              peer_self.sendBlockchain(peer_last_bid, peer_self.peer.synctype);
-          }
-        }
-      return;
-    }
-
-
-    ///////////////////////
-    // denied connection //
-    ///////////////////////
-    if (message.request == "connect-deny") {
-      this.socket = null;
-      this.app.network.cleanupDisconnectedSocket(this);
-      return;
-    }
-
-
-    /////////////////////////
-    // reply to connection //
-    /////////////////////////
-    //
-    // we receive this from a server we have connected to. it
-    // will contain information such as the public key of that
-    // computer that is necessary for us to propagate txs,
-    // along with details of their blockchain fork, so that we
-    // can send them information if they have fallen behind
-    //
-    if (message.request == "connect-reply") {
-
-      peer_self.peer.publickey = message.data.publickey;
-
-    //
-    // TODO:
-    //
-    // we need to decide how we handle remote servers that tell
-    // us they handle DNS domains. just trusting them seems like
-    // a poor decision, but if we do not have a way to decentralize
-    // DNS requests that will limit our to serve DNS properly.
-    //
-    // for (let v = 0; v < message.data.dns.length; v++) {
-    //
-    // NB: addDomain function has been removed from DNS class
-    //
-        //  peer_self.app.dns.addDomain(message.data.dns[v], peer_self.peer.publickey);
-        //}
-
-      let my_last_bid         = peer_self.app.blockchain.returnLatestBlockId();
-      let their_last_block_id = message.data.current_block_id;
-      let their_fork_id       = message.data.current_fork_id;
-
-    //
-    // update port and host info
-    //
-      if (message.data.host != "") {
-        peer_self.peer.host         = message.data.host;
-      }
-      if (message.data.port != "") {
-        peer_self.peer.port         = message.data.port;
-      }
-
-      console.log("SETTING PEER TO 2: ");
-      console.log(JSON.stringify(peer_self.peer));
-
-
-      //
-      // if remote peerreindexing, do not send
-      //
-      if (message.data.reindexing == 1) { return; }
-
-        if (peer_self.peer.synctype == "lite" && message.data.synctype == "full") { peer_self.peer.synctype = "lite"; }
-
-        if (their_last_block_id < my_last_bid) {
-          if (peer_self.peer.synctype == "lite") {
-            peer_self.sendBlockchain(their_last_block_id, peer_self.peer.synctype);
-          } else {
-            if (peer_self.app.BROWSER == 0 && peer_self.app.SPVMODE == 0) {
-              peer_self.sendBlockchain(their_last_block_id, peer_self.peer.synctype);
-            }
-          }
+          this.app.modules.updateBlockchainSync(my_last_bid, my_last_bid);
         }
 
-        peer_self.app.storage.saveOptions();
+
+        //
+        // figure out our last common block
+        //
+        let last_shared_bid = this.app.blockchain.returnLastSharedBlockId(peer_forkid, peer_last_bid);
+
+        //
+	// send blockchain info
+	//
+	if (this.app.blockchain.returnLatestBlockId() > last_shared_bid) {
+	  this.sendBlockchain(last_shared_bid);
+	}
+
+	//
+	// we already received a signature confirming
+	// their publickey, but had not received their
+	// initial handshake. So now that we have 
+	// the handshake, lets validate them.
+	//
+	if (this.handshake_signature != "") {
+          if (this.app.crypto.verifyMessage("_"+this.challenge_local, this.handshake_signature, this.peer.publickey) == 0) {
+console.log("handshake signature failed verification...");
+            var sigmessage      = {};
+            sigmessage.request  = "connect-deny";
+            sigmessage.data     = {};
+            this.socket.emit('request', JSON.stringify(sigmessage));
+            this.app.network.cleanupDisconnectedSocket(this);
+          } else {
+console.log("handshake signature getting verified...");
+            this.verified = 1;
+          }
+	}
+
+	//
+	// complete handshake
+	//
+	this.handshake_completed = 1;
+
+      }
+
+
+
+      /////////////////
+      // connect-sig //
+      /////////////////
+      if (message.request == "connect-sig") {
+        if (message.data == undefined) { return; }
+	
+	//
+	// we have the sig-reply but no handshake
+	// which means a connection issue with
+	// websockets firing randomly
+	//
+	// at this point we should be connected
+	// so we send another handshake request
+	// and save this signature so we can 
+	// process it on receipt of the handshake
+	//
+        let sig = message.data.sig;
+	if (this.handshake_completed == 0) { 
+
+	  this.handshake_signature = sig;
+	  //
+	  // request handshake
+	  //
+          var sigmessage      = {};
+          sigmessage.request  = "handshake request";
+          sigmessage.data     = {};
+          this.socket.emit('request', JSON.stringify(sigmessage));
+	  return;
+
+	}
+        if (sig != "") {
+          if (this.app.crypto.verifyMessage("_"+this.challenge_local, sig, this.peer.publickey) == 0) {
+          } else {
+            this.verified = 1;
+          }
+        }
+      }
+
+
+      ///////////////////////
+      // handshake request //
+      ///////////////////////
+      if (message.request == "handshake request") {
+	this.handshake_requests_out++;
+	if (this.handshake_requests > 5) {
+          this.socket = null;
+	  this.app.network.cleanupDisconnectedSocket(this);
+	}
+        this.sendHandshake();
         return;
       }
 
 
-      ////////////////////
-      // missing blocks //
-      ////////////////////
+      //////////////////
+      // connect-deny //
+      //////////////////
+      if (message.request == "connect-deny") {
+        this.socket = null;
+        this.app.network.cleanupDisconnectedSocket(this);
+        return;
+      }
+
+
+      ///////////////////
+      // missing block //
+      ///////////////////
       if (message.request == "missing block") {
 
-        let t = JSON.parse(message.data);
-        let lasthash = t.lasthash;
+        // note that lasthash is now "last_hash"
 
-      // if lasthash == "", we just send the requested block
-        if (lasthash == "") {
-          peer_self.app.blockchain.returnBlockByHash(t.hash, function(blk) {
-            peer_self.sendBlock("block", blk);
-            return;
-          });
-        }
-
-
-
-        // check to see what the ID of the last hash is....
-        peer_self.app.blockchain.returnBlockByHash(lasthash, function(tmpblk) {
-
-        if (tmpblk == null) { return; }
-
-          if (peer_self.app.BROWSER == 0 && peer_self.app.SPVMODE == 0) {
-
-            peer_self.app.blockchain.returnBlockByHash(t.hash, function(blk) {
-
-              if (blk == null) { return; }
-
-              let lastblkid = blk.returnId();
-              if (tmpblk != null) {
-                if (tmpblk.is_valid != 0) {
-                  lastblkid = tmpblk.returnId();
-                }
-              }
-
-              // if we need to send more, send whole blockchain
-              if (blk.returnId() > lastblkid) {
-                      peer_self.sendBlockchain(tmpblk.returnId()+1, peer_self.peer.synctype);
-              } else {
-                peer_self.sendBlock("block", blk);
-              }
-              if (mycallback != null) { mycallback(); }
-            });
-          }
-          return;
-        });
       }
 
 
-      ////////////
-      // blocks //
-      ////////////
+      ///////////
+      // block //
+      ///////////
       if (message.request == "block") {
-
-        let expected_block_hash = message.bhash;
-
-        if (peer_self.peer.synctype == "full") {
-
-          peer_self.app.blockchain.importBlock(message.data, expected_block_hash, 1, peer_self.peer.publickey);
-
-        } else {
-      //
-      // lite blocks not relayed
-      //
-      // TODO:
-      //
-      // we probably want something more sophisticated so that
-      // we can have chains of lite-nodes and not everyone needs
-      // to connect to a full-node. But it isn't critical for now.
-      //
-      // note that the block hash may not match for lite clients
-      // because we may have pruned transactions. The blockchain 
-      // class will have to deal with this edge case, but we note
-      // it here.
-      //
-          peer_self.app.blockchain.importBlock(message.data, expected_block_hash, 0, peer_self.peer.publickey);
-        }
-        return;
-      }
-
-
-      //
-      // receive notification block is available
-      //
-      /////////////////////
-      // block available //
-      /////////////////////
-      if (message.request == "block available") {
-        if (message.bhash == null) { return; }
-        let block_hash     = message.bhash;
-        if (peer_self.app.blockchain.isHashIndexed(block_hash) != 1) {
-          peer_self.app.mempool.fetchBlock(peer_self, block_hash);
-        }
-        return;
-      }
-
-
-      //////////////////
-      // transactions //
-      //////////////////
-      if (message.request == "transaction") {
-        var tx = new saito.transaction(message.data);
-        if (tx == null) { return; }
-        if (tx.is_valid == 0) { return; }
-        tx.size = message.data.length;
-        peer_self.app.mempool.importTransaction(message.data);
-        if (mycallback != null) { mycallback(); }
-        return;
-      }
-
-
-      ////////////////////
-      // golden tickets //
-      ////////////////////
-      if (message.request == "golden ticket") {
-        var tx = new saito.transaction(message.data);
-        if (tx == null) { return; }
-        if (tx.is_valid == 0) { return; }
-        peer_self.app.network.propagateGoldenTicket(tx);
-        peer_self.app.mempool.importTransaction(message.data);
+console.log("RECEIVED A BLOCK!");
+console.log(JSON.stringify(message));
+        if (message.data == null) { return; }
+        if (message.data.bhash == null) { return; }
+console.log("\n\n________________________________");
+console.log("BLOCK AVAILABLE: " + message.data.bhash);
+console.log("________________________________\n");
+        if (this.app.blockchain.isHashIndexed(message.data.bhash) != 1) { this.app.mempool.fetchBlock(this, message.data.bhash); }
         return;
       }
 
@@ -12115,135 +9513,112 @@ Peer.prototype.addSocketEvents = function addSocketEvents() {
       // blockchain //
       ////////////////
       if (message.request == "blockchain") {
-        peer_self.sendBlockchain(message.data.block_id, message.data.synctype);
+
+console.log("receiving blockchain message: " + message.data);
+
+	let blocks = message.data;
+	let prevhash = blocks.start;
+
+console.log(JSON.stringify(blocks));
+
+        for (let i = 0; i < blocks.prehash.length; i++) {
+	  let bid  = blocks.bid[i];
+	  let hash = this.app.crypto.hash(blocks.prehash[i] + prevhash);
+          prevhash = hash;
+console.log("CALCULATED BID " + bid + " is " + hash);
+          if (this.app.blockchain.isHashIndexed(hash) != 1) { this.app.mempool.fetchBlock(this, hash); }
+        } 
+
+      }
+
+
+      /////////////////
+      // transaction //
+      /////////////////
+      if (message.request == "transaction") {
+        var tx = new saito.transaction(message.data);
+        if (tx == null) { return; }
+        if (tx.is_valid) { return; }
+        this.app.mempool.addTransaction(message.data);
+        if (mycallback != null) { mycallback(); }
         return;
       }
 
 
-      //////////////////
-      // dns requests //
-      //////////////////
-      //
-      // TODO
-      //
-      // DNS requests should be encrypted. We should also wonder
-      // if they should be so low down.
-      //
-      if (message.request == "dns") {
-        peer_self.app.modules.handleDomainRequest(message, peer_self, mycallback);
+      ///////////////////
+      // golden ticket //
+      ///////////////////
+      if (message.request == "golden ticket") {
+        var tx = new saito.transaction(message.data);
+        if (tx == null) { return; }
+        if (tx.is_valid == 0) { return; }
+        this.app.network.propagateGoldenTicket(tx);
+        this.app.mempool.importTransaction(message.data);
         return;
+      }
+
+
+      /////////
+      // dns //
+      /////////
+      if (message.request == "dns") {
       }
 
     });
 
   } catch (err) {
-    console.log("ERROR - processing remote request: ");
-    console.log(JSON.stringify(err));
+    console.log("ERROR: Peer.addSocketEvents - " + JSON.stringify(err));
   }
 
 }
 
 
-/////////////
-// connect //
-/////////////
-//
-// This function is called whenever we connect to another
-// node in the network. In typical use case (see the class
-// network.js) we will create the peer object and then
-// manually add the relevant data before running this
-// function as the starting point.
-//
-// If we are initiating the connection then we set our socket
-// events. But either way, we send a message to the remote
-// server so that it knows our own situation and we can
-// take care of mutual syncing, etc.
-//
-// The argument remote maps "remote-originated-connection"
-// and is 1 for connections that are originated by another
-// node.
-//
-// @params {integer} are we initiating connection?
-//
-Peer.prototype.connect = function connect(remote = 0) {
 
-  var peer_self = this;
 
-  //
-  // is this a remote-originated connection?
-  //
-  if (remote == 0) {
+Peer.prototype.sendBlockchain = function sendBlockchain(start_bid) {
 
-    //
-    // sanity check: do not connect to myself
-    //
-    if (this.app.options.server != null) {
-      if ((this.peer.port == this.app.options.server.port && this.peer.host == this.app.options.server.host) && this.app.BROWSER == 0) { 
-        return;
-      }
+  if (start_bid == 0) {
+    let start_bid = this.app.blockchain.returnLatestBlockId() - 10;
+    if (start_bid < 0) { start_bid = 0; }
+  }
+
+  let message      = {};
+      message.request       = "blockchain";
+      message.data          = {};
+      message.data.start    = "";
+      message.data.prehash  = [];
+      message.data.bid	    = [];
+
+  let starting_blockchain_index = 0;
+  let start_idx;
+
+  for (let i = this.app.blockchain.index.bid.length; i >= 0; i--) {
+    if (this.app.blockchain.index.bid[i] < start_bid) {
+      i = -1;
+    } else {
+      start_bid = i;
     }
-
-    //
-    // open socket
-    //
-    // var serverAddress;
-
-    // console.log(this.app.options);
-    // if (this.app.server.endpoint != null) {
-    //   if (this.app.server.endpoint.host != "") {
-    //     var { host, port, protocol } = this.app.server.endpoint;
-    //     serverAddress = `${protocol}://${host}:${port}`;
-    //   }
-    // } else {
-    //   serverAddress = `http://${this.peer.host}:${this.peer.port}`;
-    // }
-
-    var serverAddress = `${this.peer.protocol}://${this.peer.host}:${this.peer.port}`;
-    var socket = io(serverAddress);
-    this.socket = socket;
-
-    //
-    // add events to socket
-    //
-    this.addSocketEvents();
-
-    //
-    // send polite reply with our info, such as our
-    // public key so that they can route transactions
-    // to us.
-    //
-    socket.emit('request',JSON.stringify(this.returnConnectMessage()));
-
-
-  } else {
-
-    //
-    // here we respond to a connection attempt
-    // by confirming we have all of the information
-    // we need about the remote host
-    //
-    this.socket.emit('request',JSON.stringify(this.returnConnectResponseMessage()));
-
   }
+
+  for (let i = start_bid; i < this.app.blockchain.index.hash.length; i++) {
+    if (this.app.blockchain.index.lc[i] == 1) {
+      if (message.data.start == "") {
+        message.data.start = this.app.blockchain.blocks[i].block.prevhash;
+      }
+      message.data.prehash.push(this.app.blockchain.blocks[i].prehash);
+      message.data.bid.push(this.app.blockchain.index.bid[i]);
+    }
+  }
+  
+console.log("sending message..." + JSON.stringify(message));
+  this.socket.emit('request', JSON.stringify(message));
+  return;
+
 }
 
 
-/////////////////////
-// fetchBlockchain //
-/////////////////////
-//
-// tell this peer to send us their blockchain
-//
-Peer.prototype.fetchBlockchain = function fetchBlockchain() {
-  var response                           = {};
-  response.request                       = "blockchain";
-  response.data                          = {};
-  response.data.type                     = this.peer.synctype;
-  response.data.block_id		         = this.app.blockchain.returnLatestBlockId();
-  response.data.keylist                  = this.app.keys.returnWatchedPublicKeys();
-  response.data.keylist.push(this.app.wallet.returnPublicKey());
-  this.sendRequest(response.request, response.data);
-}
+
+
 
 
 ///////////////////////
@@ -12254,6 +9629,9 @@ Peer.prototype.fetchBlockchain = function fetchBlockchain() {
 //
 // @params {saito.transaction} transaction to check
 //
+/**
+ * Checks if a peer is in the transaction path of the provided transaction
+ **/
 Peer.prototype.inTransactionPath = function inTransactionPath(tx) {
   if (tx == null) { return 0; }
   if (tx.isFrom(this.peer.publickey)) { return 1; }
@@ -12265,335 +9643,18 @@ Peer.prototype.inTransactionPath = function inTransactionPath(tx) {
   return 0;
 }
 
-/////////////////
-// isConnected //
-/////////////////
-//
-// do we have an active connection?
-//
-// @returns {boolean} is connected?
-//
-Peer.prototype.isConnected = function isConnected() {
-  if (this.socket != null) {
-    if (this.socket.connected == true) {
-      return 1;
-    }
-  }
-  return 0;
-}
 
 
-//////////////////////////
-// returnConnectMessage //
-//////////////////////////
-//
-// Once we open the socket, we send this message to the
-// remote server. This will be processed by the remote 
-// server through the functionality that is part of the 
-// addSocketEvents class. They will send us a response, 
-// through the function:
-//
-//   returnConnectResponseMessage 
-// 
-// We will then read their response and sync them up-to-
-// date as needed while making sure we have thei public
-// key and other key information saved.
-//
-Peer.prototype.returnConnectMessage = function returnConnectMessage() {
-
-  var message = {};
-  message.encrypted             = "no";
-  message.request               = "connect";
-  message.data                  = {};
-  message.data.lastblock        = "";
-  message.data.forkid           = "";
-  message.data.reindexing       = this.app.storage.currently_reindexing;
-  message.data.info             = this.sendtransactions + " / " + this.sendblocks + " / " + this.sendtickets;
-  message.data.sendtransactions = this.sendtransactions;
-  message.data.sendblocks       = this.sendblocks;
-  message.data.sendtickets      = this.sendtickets;
-  message.data.publickey        = this.app.wallet.returnPublicKey();
-  message.data.keylist          = this.app.keys.returnWatchedPublicKeys();
-  message.data.keylist.push(this.app.wallet.returnPublicKey());
-
-  //
-  // TODO
-  //
-  // does this open us up to attack on any grounds? people
-  // can DDOS by providing false host data that other clients
-  // with then use?
-  //
-  // it may, but why not just DDOS directly without the use of
-  // Saito as an inefficient intermediary, since this is only
-  // used for fetching BLOCKS.
-  //
-  if (this.app.BROWSER == 0) {
-    message.data.host             = this.app.options.server.host;
-    message.data.port             = this.app.options.server.port;
-  }
-  message.data.synctype         = "full";
-
-  if (this.app.SPVMODE == 1) {
-    this.peer.synctype            = "lite";
-    message.data.synctype         = "lite";
-  }
-
-  //
-  // tell them about where we are in our blockchain
-  //
-  if (this.app.options.blockchain != null) {
-    if (this.app.options.blockchain.latest_block_id > -1) {
-      message.data.lastblock    = this.app.options.blockchain.latest_block_id;
-    }
-    if (this.app.blockchain.returnLatestBlockId() > message.data.lastblock) {
-      message.data.lastblock = this.app.blockchain.returnLatestBlockId();
-    }
-    if (this.app.options.blockchain.fork_id != null) {
-      message.data.forkid    = this.app.options.blockchain.fork_id;
-    }
-  } else {
-    message.data.lastblock = -1;
-    message.data.forkid = "";
-  }
-  return message;
-}
 
 
-//////////////////////////////////
-// returnConnectResponseMessage //
-//////////////////////////////////
-//
-// If someone else connects to us, we send them this
-// message. This includes basic information about our
-// server and blockchain status, as well as information
-// about what DNS hosts we serve.
-//
-Peer.prototype.returnConnectResponseMessage = function returnConnectResponseMessage() {
-
-  var response                           = {};
-  response.request                       = "connect-reply";
-  response.data                          = {};
-  response.data.dns                      = [];
-  response.data.publickey                = this.app.wallet.returnPublicKey();
-  response.data.synctype                 = this.peer.synctype;
-  response.data.reindexing               = this.app.storage.currently_reindexing;
-  response.data.current_block_id         = this.app.blockchain.returnLatestBlockId();
-  response.data.current_fork_id          = this.app.blockchain.returnForkId();
-  response.data.current_genesis_block_id = this.app.blockchain.returnGenesisBlockId();
-  if (this.app.BROWSER == 0) {
-    response.data.host               	 = this.app.options.server.host;
-    response.data.port             	 = this.app.options.server.port;
-  }
-  response.data.sendConnectReplyResponse = 1;
-
-  //
-  // tell the remote server what DNS domains we host
-  //
-  // they can decide if they trust us or not
-  //
-  for (let mdns = 0; mdns < this.app.modules.mods.length; mdns++) {
-    if (this.app.modules.mods[mdns].isDomainRegistry == 1) {
-      response.data.dns.push(this.app.modules.mods[mdns].domain);
-    }
-  }
-
-  return response;
-
-}
 
 
-/////////////////////
-// returnPublicKey //
-/////////////////////
-//
-// return Public Key of this peer
-//
-// @returns {string} public key
-//
-Peer.prototype.returnPublicKey = function returnPublicKey() {
-  return this.peer.publickey;
-}
-
-
-////////////////////
-// sendBlockchain //
-////////////////////
-//
-// TODO
-//
-// this is a a rather brutal firehose of data at scale
-// and we need to improve the way we handle this but for 
-// now, when someone asks for the blockchain, they get it.
-//
-// @params {integer} block_id to send from
-// @params {string} "full" or "lite"
-//
-Peer.prototype.sendBlockchain = function sendBlockchain(start_bid, type="full") {
-
-  console.log("SENDING BLOCKS FROM DATABASE STARTING WITH BLOCK: "+start_bid + " and type " + type);
-
-  if (start_bid == null) { 
-    let tmpx = this.app.blockchain.returnLatestBlock();
-    if (tmpx != null) {
-      tmpx = tmpx.returnId()-10;
-      if (tmpx < 0) { tmpx = 9; }
-      start_bid = tmpx;  
-    } else {
-      start_bid = 0;
-    }
-  }
-
-  //
-  // kick this into the storage class, which manages
-  // the chain sync
-  //
-  this.app.storage.sendBlockchain(start_bid, type, this);
-
-}
-
-
-///////////////
-// sendBlock //
-///////////////
-//
-// send a block to this peer.
-//
-// if this is a full-node connection we send the entire
-// block. if this is a lite-node connection we send only
-// the header data plus any requested transactions.
-//
-// @params {string} "block"
-// @params {saito.block} block to send
-// @params {boolean} propagate now
-//
-Peer.prototype.sendBlock = function sendBlock(message, blk, instant=1) {
-
-  // message to send
-  //
-  // note that we include the hash here
-  // so that nodes can check to see if the
-  // data they have downloaded is accurate
-  // and cut blocks that do not inform
-  // them of expected integrity
-  //
-
-  var userMessage = {};
-      userMessage.request  = message;
-      userMessage.data     = "";
-      userMessage.bhash    = blk.returnHash();
-
-  // abort if we should
-  if (this.sendblocks == 0 && message == "block") { return; }
-
-  // backup txs
-  let original_transactions = blk.block.transactions;
-
-  // lite-clients
-  if (this.peer.synctype == "lite") {
-
-    var is_important_block = 1;
-
-    //
-    // check to see if there is a transaction
-    // in this block for this peer. If not
-    // just eliminate all transactions from
-    // the block.
-    //
-    // also check for watchedkeys
-    //
-    if (this.peer.keylist.length == 0) {
-      if (! blk.containsTransactionFor(this.peer.publickey)) {
-        is_important_block = 0;
-      }
-    } else {
-      is_important_block = 0;
-      for (let itib = 0; itib < this.peer.keylist.length && is_important_block == 0; itib++) {
-        if (blk.containsTransactionFor(this.peer.keylist[itib])) {
-          is_important_block = 1;
-        }
-      }
-      if (is_important_block == 0) {
-        if (blk.containsTransactionFor(this.peer.publickey)) {
-          is_important_block = 1;
-        }
-      }
-    }
-    if (is_important_block == 0) {
-      blk.block.transactions = [];
-    }
-    userMessage.data = JSON.stringify(blk.block);
-  } else {
-
-    //
-    // SERVERS
-    //
-    // notify that the block is available, and just send
-    // a quick notice so the other server can decide if
-    // if wants to download the whole thing
-    //
-    //if (blk.filename == "") {
-    userMessage.request = "block available";
-    userMessage.data    = {};
-    //
-    // send in-message
-    //} else {
-    //
-    //  userMessage.request = "block";
-    //  userMessage.data    = JSON.stringify(blk.block);
-    //
-    //}
-  }
-
-  //
-  // restore transactions
-  //
-  blk.block.transactions = original_transactions;
-
-
-  //
-  // send or disconnect from peer
-  //
-  // TODO
-  //
-  // NOTE -- the message queue should only
-  // be used at the beginning when we are
-  // syncing the blockchain as otherwise
-  // it causes issues maintaining a connection
-  // for some reason we need to debug.
-  //
-  if (instant == 1) {
-    if (this.socket != null) {
-      if (this.socket.connected == true) {
-        this.socket.emit('request',JSON.stringify(userMessage));
-      } else {
-        this.app.network.cleanupDisconnectedSocket(this);
-        return;
-      }
-    } else {
-      this.app.network.cleanupDisconnectedSocket(this);
-      return;
-    }
-  } else {
-    this.message_queue.push(JSON.stringify(userMessage));
-  }
-}
-
-
-/////////////////
-// sendRequest //
-/////////////////
-//
-// like sendBlock only for sending a more general request
-// that will be interpreted by the function:
-//
-//   addSocketEvents
-//
-// on the remote server
-//
-// @params {string} message (i.e. "block")
-// @params {string} data {i.e json object}
-// @params {integer} propagate NOW instead of queueing?
-//
+/**
+ * send a request to a peer server
+ *
+ * @param {string} message (i.e. "block")
+ * @param {string} data {i.e json object}
+ **/
 Peer.prototype.sendRequest = function sendRequest(message, data="") {
 
   // find out initial state of peer and blockchain
@@ -12616,39 +9677,37 @@ Peer.prototype.sendRequest = function sendRequest(message, data="") {
     if (this.socket.connected == true) {
       this.socket.emit('request',JSON.stringify(userMessage));
     } else {
+      this.socket.null;
       this.app.network.cleanupDisconnectedSocket(this);
       return;
     }
   } else {
+    this.socket = null;
     this.app.network.cleanupDisconnectedSocket(this);
     return;
   }
-
 }
 
-/////////////////////////////
-// sendRequestWithcallback //
-/////////////////////////////
-//
-// like sendRequest only with a callback
-//
-// TODO
-//
-// add encryption if key available
-//
-// @params {string} message (i.e. "block")
-// @params {string} data {i.e json object}
-// @params {callback}
-//
-// note that propagates instantly because we have a
-// callback to execute and cannot afford to wait
-//
+
+
+/**
+ * like sendRequest only with a callback
+ *
+ * @param {string} message (i.e. "block")
+ * @param {string} data {i.e json object}
+ * @param {callback}
+ **/
 Peer.prototype.sendRequestWithCallback = function sendRequestWithCallback(message, data="", mycallback) {
 
   // find out initial state of peer and blockchain
   var userMessage = {};
       userMessage.request  = message;
       userMessage.data     = data;
+
+  // avoid sending unwelcome data
+  if (this.sendblocks == 0       && message == "block")         { return; }
+  if (this.sendtransactions == 0 && message == "transaction")   { return; }
+  if (this.sendtickets == 0      && message == "golden ticket") { return; }
 
   // only send if we have an active connection
   if (this.socket != null) {
@@ -12662,74 +9721,48 @@ Peer.prototype.sendRequestWithCallback = function sendRequestWithCallback(messag
   // this only executes if we are not connected
   // to the peer above
   //
-  tmperr = {}; tmperr.err = "peer not connected";
+  tmperr = { err: "peer not connected" };
   mycallback(tmperr);
 
 }
 
 
-Peer.prototype.updatePeerReliability = function updatePeerReliability(feature="", value=0) {
-
-  if ("last_block_connected" == feature) {
-    this.last_block_connected = value;
-  }
-  if ("last_block_valid" == feature) {
-    this.last_block_valid = value;
-  }
-  if ("last_transaction_valid" == feature) {
-    this.last_transaction_valid = value;
-  }
-
-}
-Peer.prototype.isPeerReliable = function isPeerReliable() {
-
-  if (this.last_block_valid == -1) {
-    return -1;
-  }
-  if (this.last_block_connected == 1) {
-    return 1;
-  }
-
-  return -1;
-
-}
 
 
-},{"../saito":12,"socket.io-client":372,"util":395}],29:[function(require,module,exports){
+},{"../saito":8,"socket.io-client":370}],26:[function(require,module,exports){
 (function (__dirname){
 const saito        = require('../saito');
 const net          = require('net');
 const http         = require('http');
-const util         = require('util');
 const fs           = require('fs');
 const path         = require('path');
 
 
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Constructor
+ */
 function Server(app) {
 
   if (!(this instanceof Server)) {
     return new Server(app);
   }
 
-  this.app               = app || {};
+  this.app                        = app || {};
 
-  this.blocks_dir        = path.join(__dirname, '../data/blocks/');
-  this.server            = {};
-  this.server.host       = "";
-  this.server.port       = 0;
-  this.server.publickey  = "";
-  this.server.protocol   = "";
+  this.blocks_dir                 = path.join(__dirname, '../data/blocks/');
+  this.server                     = {};
+  this.server.host                = "";
+  this.server.port                = 0;
+  this.server.publickey           = "";
+  this.server.protocol            = "";
 
   this.server.endpoint            = {};
   this.server.endpoint.host       = "";
   this.server.endpoint.port       = 0;
   this.server.endpoint.protocol   = "";
 
-  this.webserver         = null;
-  this.io                = null;
+  this.webserver                  = null;
+  this.io                         = null;
 
   return this;
 
@@ -12738,21 +9771,20 @@ module.exports = Server;
 
 
 
-////////////////
-// initialize //
-////////////////
-//
-// this function creates the server that will feed 
-// out our HTML files. It then passes control to 
-// all of its installed modules, which can affix 
-// their own content to the web-server.
-//
+/**
+ * Initialize our Server
+ *
+ * This creates the server that will feed out our HTML
+ * files. It then passes control to any installed modules
+ * which can affix their own content to the web-server.
+ */
 Server.prototype.initialize = function initialize() {
 
   if (this.app.BROWSER == 1) { return; }
 
-  var server_self = this;
-
+  //
+  // update publickey
+  //
   this.server.publickey = this.app.wallet.returnPublicKey();
 
   //
@@ -12764,12 +9796,17 @@ Server.prototype.initialize = function initialize() {
     this.server.protocol = this.app.options.server.protocol;
   }
 
+  //
+  // sanity check 
+  //
   if (this.server.host == "" || this.server.port == 0) {
     console.log("Not starting local server as no hostname / port in options file");
     return;
   }
 
+  //
   // init endpoint
+  //
   if (this.app.options.server.endpoint != null) {
     this.server.endpoint.port = this.app.options.server.endpoint.port;
     this.server.endpoint.host = this.app.options.server.endpoint.host;
@@ -12781,92 +9818,106 @@ Server.prototype.initialize = function initialize() {
     this.app.options.server.endpoint = {host, port, protocol, publickey};
     this.app.storage.saveOptions();
   }
-  //
-  // write server info to options file
-  //
-  if (this.app.options.server == null) {
-    this.app.options.server = this.server;
-  }
 
   //
   // save options
   //
+  this.app.options.server = this.server;
   this.app.storage.saveOptions();
 
-  const app 	   = require('express')();
-  const fileUpload = require('express-fileupload');
-  const webserver  = require('http').Server(app);
-  const io 	   = require('socket.io')(webserver);
-  const bodyParser = require('body-parser');
 
+  //
+  // now we setup our server
+  //
+  const express     = require('express');
+  const app 	    = express();
+  const fileUpload  = require('express-fileupload');
+  const webserver   = require('http').Server(app);
+  const io          = require('socket.io')(webserver);
+  const bodyParser  = require('body-parser');
+
+
+  //
+  // enable cross origin polling for socket.io
+  //
+  io.origins('*:*');
+
+
+  //
+  // plugins and modules
+  //
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(fileUpload());
+
+
+  app.all('/', function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    next();
+  });
 
   ////////////
   // blocks //
   ////////////
-  app.get('/blocks/:blockhash', function (req, res) {
-    var blkh = req.params.blockhash;
+  app.get('/blocks/:bhash', (req, res) => {
+
+    let bhash = req.params.bhash;
+    if (bhash == null) { return; }
+
     try {
-      // if block is in mempool, serve mempool
-      for (let mtp = 0; mtp < server_self.app.mempool.blocks.length; mtp++) {
-        let tmpblk = server_self.app.mempool.blocks[mtp];
 
-        if (tmpblk.returnHash() == blkh) {
-          let blk2send = JSON.stringify(tmpblk.block).toString('utf8');
-
-          res.write(blk2send);
-          res.end();
-
-          return;
+      //
+      // serve from mempool if exists
+      //
+      for (let i = 0; i < this.app.mempool.blocks.length; i++) {
+        let blk = this.app.mempool.blocks[i];
+        if (blk.returnHash() == bhash) {
+          let blkjson = JSON.stringify(blk.block).toString('utf8');
+          if (blk.block.id == 1 || blk.block.transactions.length > 0) {
+            res.write(blkjson);
+            res.end();
+            return;
+          }
+	  i = this.app.mempool.blocks.length;
         }
       }
 
-      server_self.app.blockchain.returnBlockByHash(blkh, function(blk) {
-        if (blk == null) { return; }
 
-        if (blk.filename != "") {
-          let blkfilename = server_self.blocks_dir + blk.filename;
-
+      // return file requested
+      //
+      // TODO - this uses a callback, is it possible to change over 
+      // to using a promise, or are we unable to do this because we
+      // would need to change the Express server function to operate
+      // asynchronously.
+      //
+      this.app.storage.returnBlockFilenameByHash(bhash, (filename) => {
+        if (filename != null) {
+          let blkfilename = this.blocks_dir + filename;
           res.sendFile(blkfilename);
           return;
-        } else {
-          let blk2send = JSON.stringify(blk.block).toString('utf8');
-
-          res.write(blk2send);
-          res.end();
-
-          return;
         }
-
-        if (mycallback != null) { mycallback(); }
-
       });
 
     } catch (err) {
-      console.log("FAILED REQUEST: could not find block "+blkh);
+      console.log("FAILED SERVER REQUEST: could not find block: " + bhash);
     }
+    return;
   });
 
 
   /////////////////////////
   // general web content //
   /////////////////////////
-  app.all('/', function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    next();
-  });
   app.get('/', function (req, res) {
     res.sendFile(__dirname + '/web/index.html');
     return;
   });
-  app.get('/style.css', function (req, res) {
-    res.sendFile(__dirname + '/web/style.css');
-    return;
-  });
-  app.get('/favicon.ico', function (req, res) {
-    res.sendFile(__dirname + '/web/favicon.ico');
+  app.get('/options', (req, res) => {
+    this.app.storage.saveClientOptions();
+    res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
+    res.setHeader("expires","-1");
+    res.setHeader("pragma","no-cache");
+    res.sendFile(__dirname + '/web/client.options');
     return;
   });
   app.get('/browser.js', function (req, res) {
@@ -12875,9 +9926,9 @@ Server.prototype.initialize = function initialize() {
     // may be useful in the future, if we gzip
     // files before releasing for production
     //
-    // gzipped, cached -- if you enable cached 
-    // and gzipped, be sure to manually edit the 
-    // content-length to reflect the size of the 
+    // gzipped, cached -- if you enable cached
+    // and gzipped, be sure to manually edit the
+    // content-length to reflect the size of the
     // file
     //
     //res.setHeader("Cache-Control", "public");
@@ -12891,116 +9942,78 @@ Server.prototype.initialize = function initialize() {
     res.setHeader("expires","-1");
     res.setHeader("pragma","no-cache");
     res.sendFile(__dirname + '/web/browser.js');
+    //
+    //  non-gzipped, cached
+    //
+    //res.setHeader("Cache-Control", "public");
+    //res.setHeader("expires","72000");
+    //res.sendFile(__dirname + '/web/browser.js');
     return;
   });
-  app.get('/client.options', function (req, res) {
-    server_self.app.storage.saveClientOptions();
-    res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
-    res.setHeader("expires","-1");
-    res.setHeader("pragma","no-cache");
-    res.sendFile(__dirname + '/web/client.options');
-    return;
-  });
-
-  app.get('/img/:imagefile', function (req, res) {
-    var imgf = '/web/img/'+req.params.imagefile;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  app.get('/img/graphs/:imagefile', function (req, res) {
-    var imgf = '/web/img/graphs/'+req.params.imagefile;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  app.get('/docs/:basefile', function (req, res) {
-    var imgf = '/web/docs/'+req.params.basefile;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  app.get('/jquery/:basefile', function (req, res) {
-    var imgf = '/web/lib/jquery/'+req.params.basefile;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  app.get('/qrcode/:basefile', function (req, res) {
-    var imgf = '/web/lib/qrcode/'+req.params.basefile;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  app.get('/fancybox/:filename', function (req, res) {
-    var imgf = '/web/lib/fancybox/'+req.params.filename;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  app.get('/font-awesome/css/:filename', function (req, res) {
-    var imgf = '/web/lib/font-awesome/css/'+req.params.filename;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
-  app.get('/font-awesome/fonts/:filename', function (req, res) {
-    var imgf = '/web/lib/font-awesome/fonts/'+req.params.filename;
-    if (imgf.indexOf("\/") != false) { return; }
-    res.sendFile(__dirname + imgf);
-    return;
-  });
+  app.use(express.static(path.join(__dirname, 'web')));
 
 
   /////////////////
   // module data //
   /////////////////
+  //
+  // module support is not yet active
+  // when we reactivate the modules
+  // we should re-enable this callback
+  //
   this.app.modules.webServer(app);
 
   webserver.listen(this.server.port);
+  this.webserver = webserver;
 
-  this.webServer = webserver;
-
-  // update network
-  io.on('connection', function (socket) {
-    server_self.app.network.addPeerWithSocket(socket);
-  });
+  // incoming sockets
+  io.on('connection', (socket) => { this.app.network.addRemotePeer(socket); });
 
 }
 
 Server.prototype.close = function close() {
-  this.webServer.close();
+  this.webserver.close();
 }
 
+
 }).call(this,"/saito")
-},{"../saito":12,"body-parser":113,"express":113,"express-fileupload":113,"fs":113,"http":113,"net":113,"path":319,"socket.io":113,"util":395}],30:[function(require,module,exports){
+},{"../saito":8,"body-parser":110,"express":110,"express-fileupload":110,"fs":110,"http":110,"net":110,"path":317,"socket.io":110}],27:[function(require,module,exports){
 'use strict';
 
-function Slip(add="", amt=0.0, gt=0, bid=0, tid=0, sid=0, bhash="", lc=1, ft=0, rn=-1) {
+/**
+ * Slip Constructor
+ * @param {*} add
+ * @param {*} amt
+ * @param {*} type
+ * @param {*} bid
+ * @param {*} tid
+ * @param {*} sid
+ * @param {*} bhash
+ * @param {*} lc
+ * @param {*} rn
+ */
+function Slip(add="", amt="0", type=0, bid=0, tid=0, sid=0, bhash="", lc=1, rn=-1) {
 
   if (!(this instanceof Slip)) {
-    return new Slip(add, amt, gt, bid, tid, sid, bhash, lc, ft, rn);
+    return new Slip(add, amt, type, bid, tid, sid, bhash, lc, rn);
   }
 
   this.add    = add;
   this.amt    = amt;
-  this.gt     = gt;
-  this.bid    = bid; 
+  this.type   = type;	// 0 = normal transaction
+      // 1 = golden ticket
+      // 2 = fee ticket
+      // 3 = automatic tx rebroadcasting
+  this.bid    = bid;
   this.tid    = tid;
   this.sid    = sid;
   this.bhash  = bhash;
   this.lc     = lc;
-  this.ft     = ft;
   this.rn     = rn;
 
   ///////////////////
   // random number //
   ///////////////////
-  //
-  // can be removed long-term
-  // used currently to test
-  // sharding.
-  //
   if (this.rn == -1) { this.rn = Math.floor(Math.random()*100); }
 
   return this;
@@ -13008,310 +10021,346 @@ function Slip(add="", amt=0.0, gt=0, bid=0, tid=0, sid=0, bhash="", lc=1, ft=0, 
 }
 module.exports = Slip;
 
+/**
+ * Returns the index created from the fields of the slip
+ * @return {string} index
+ */
+Slip.prototype.returnIndex = function returnIndex() {
+  return this.bid.toString() + this.type.toString() + this.tid.toString() + this.sid.toString() + this.bhash + this.amt.toString();
+}
 
-},{}],31:[function(require,module,exports){
+
+
+},{}],28:[function(require,module,exports){
 (function (process,__dirname){
 'use strict';
 
 const saito    = require('../saito');
-const fs       = require('fs');
+const fs       = require('fs-extra')
 const shashmap = require('shashmap');
 const path     = require('path');
+const sqlite   = require('sqlite');
 
 
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Storage Constructor
+ * @param {*} app
+ */
 function Storage(app) {
 
   if (!(this instanceof Storage)) {
     return new Storage(app);
   }
 
-  this.app  = app || {};
-
-  this.db = null;
-
-  this.data_directory             = path.join(__dirname, '../data/');
-
-  this.saving_blocks              = 0;
-  this.currently_reindexing       = 0;
-
-  // syncing peers
-  this.send_blocks_queue_limit    = 5;
-
-  // loadBlocksFromDisk
-  this.reindexing_chunk           = 0;
-  this.reindexing_timer           = null;
-  this.reindexing_speed           = 2000; // 0.5 seconds (add blocks)
+  this.app                = app || {};
+  this.directory          = path.join(__dirname, '../data/');
+  this.db                 = null;
 
   return this;
+
 }
 module.exports = Storage;
 
 
-////////////////
-// initialize //
-////////////////
-//
-// opens existing database or creates a new one. we
-// default our database to be as fast as possible at
-// the cost of tolerance, because we can always
-// reload from blocks on disk if necessary.
-//
-Storage.prototype.initialize = function initialize() {
-
-  if (this.app.BROWSER == 0) {
-
-    //////////////
-    // database //
-    //////////////
-    var sqlite3 = require('sqlite3').verbose();
-    this.db = new sqlite3.Database(this.data_directory + 'database.sq3');
-    //this.db = new sqlite3.Database(':memory:');
-    this.createDatabaseTables();
-
-    // pragma temp store -- temp objects in memory (2) (default = 0)
-    this.execDatabase("PRAGMA temp_store = 2", {}, function (){});
-
-    // controls pagesize. default is 4096
-    this.execDatabase("PRAGMA page_size = 32768", {}, function (){});
-
-    // increase cache size (default is 1024)
-    this.execDatabase("PRAGMA cache_size = 512000", {}, function (){});
-
-    // radically faster db writes at cost of corruption on power failure
-    this.execDatabase("PRAGMA synchronous = OFF", {}, function (){});
-
-    // locking mode means only one connection (nodsjs) but increases speed (default: NORMAL)
-    this.execDatabase("PRAGMA locking_mode = EXCLUSIVE", {}, function (){});
-
-    // depreciated by small tweak
-    this.execDatabase("PRAGMA count_changes = false", {}, function (){});
-
-    // no rollbacks and db corruption on power failure
-    this.execDatabase("PRAGMA journal_mode = OFF", {}, function (){});
-
-  }
+/**
+ * Initialize the database and load the options file
+ */
+Storage.prototype.initialize = async function initialize() {
 
   //
   // load options file
   //
   this.loadOptions();
+
+  //
+  // save the file
+  //
+  this.saveOptions();
+
+  //
+  // only servers will have sqlite3 installed
+  //
+  if (this.app.BROWSER == 0) {
+
+    // database
+    try {
+
+      this.db = await sqlite.open(this.directory + 'database.sq3');
+
+      await this.createDatabaseTables();
+
+      await Promise.all([
+        // pragma temp store -- temp objects in memory (2) (default = 0)
+        this.db.run("PRAGMA temp_store = 2"),
+
+        // controls pagesize. default is 4096
+        this.db.run("PRAGMA page_size = 32768"),
+
+        // increase cache size (default is 1024)
+        this.db.run("PRAGMA cache_size = 512000"),
+
+        // radically faster db writes at cost of corruption on power failure
+        this.db.run("PRAGMA synchronous = OFF"),
+
+        // locking mode means only one connection (nodsjs) but increases speed (default: NORMAL)
+        this.db.run("PRAGMA locking_mode = EXCLUSIVE"),
+
+        // depreciated by small tweak
+        this.db.run("PRAGMA count_changes = false"),
+
+        // no rollbacks and db corruption on power failure
+        this.db.run("PRAGMA journal_mode = OFF"),
+      ]);
+    } catch(err) {
+      console.log(err);
+    }
+  }
+
+  return;
 }
 
-
-
-
-
-
-
-//////////////////////////
-// createDatabaseTables //
-//////////////////////////
-//
-// used in wallet module to check slip values
-//
-Storage.prototype.checkSlipValue = function checkSlipValue(utxi) {
-  var hashmap_slip = this.returnHashmapIndex(utxi.bid, utxi.tid, utxi.sid, utxi.add, utxi.amt, utxi.bhash);
-  return shashmap.slip_value(hashmap_slip);
-}
-//////////////////////////
-// createDatabaseTables //
-//////////////////////////
-//
-// run at initialization, this creates the database
-// tables needed if they do not exist.
-//
-Storage.prototype.createDatabaseTables = function createDatabaseTables() {
+/**
+ * Create DB Tables
+ */
+Storage.prototype.createDatabaseTables = async function createDatabaseTables() {
 
   if (this.app.BROWSER == 1) { return; }
 
-  var storage_self = this;
+  try {
+    await this.db.run("\
+      CREATE TABLE IF NOT EXISTS blocks (\
+        id INTEGER, \
+        reindexed INTEGER, \
+        block_id INTEGER, \
+        golden_ticket INTEGER, \
+        min_tx_id INTEGER, \
+        max_tx_id INTEGER, \
+        block_json_id INTEGER, \
+        hash TEXT, \
+        conf INTEGER, \
+        longest_chain INTEGER, \
+        UNIQUE (block_id, hash), \
+        PRIMARY KEY(id ASC) \
+      )");
 
-  this.execDatabase("\
-    CREATE TABLE IF NOT EXISTS blocks (\
-      id INTEGER, \
-      reindexed INTEGER, \
-      block_id INTEGER, \
-      golden_ticket INTEGER, \
-      min_tx_id INTEGER, \
-      max_tx_id INTEGER, \
-      block_json_id INTEGER, \
-      hash TEXT, \
-      conf INTEGER, \
-      longest_chain INTEGER, \
-      UNIQUE (block_id, hash), \
-      PRIMARY KEY(id ASC) \
-    )",
-    {},
-    function() {
-      storage_self.app.storage.execDatabase("CREATE INDEX blocks_idx ON blocks (block_id, longest_chain)", {}, function() {});
-      storage_self.app.storage.execDatabase("CREATE INDEX blocks_idx2 ON blocks (reindexed)", {}, function() {});
-      storage_self.app.storage.execDatabase("CREATE INDEX blocks_idx3 ON blocks (hash)", {}, function() {});
-    }
-  );
+    await Promise.all([
+      this.db.run("CREATE INDEX IF NOT EXISTS blocks_idx ON blocks (block_id, longest_chain)"),
+      this.db.run("CREATE INDEX IF NOT EXISTS blocks_idx2 ON blocks (reindexed)"),
+      this.db.run("CREATE INDEX IF NOT EXISTS blocks_idx3 ON blocks (hash)")
+    ]);
+  } catch(err) {
+    console.log(err);
+  }
 }
 
 
-//////////////////
-// deleteBlocks //
-//////////////////
-//
-// delete the non-slip data associated with blocks
-// such as the local files as well as any information
-// in our database
-//
-// @params {integer} lowest_block_id to keep
-//
-Storage.prototype.deleteBlocks = function deleteBlocks(block_id) {
+/**
+ * Executes an SQL command like INSERT, UPDATE, etc.
+ *
+ * @param {string} sql command
+ * @param {*} parameters
+ */
+Storage.prototype.execDatabase = async function execDatabase(sql, params, mycallback=null) {
 
-  // browser apps dump old data
   if (this.app.BROWSER == 1) { return; }
 
-  var storage_self = this;
+  try {
+    let res = await this.db.run(sql, params)
+    if (mycallback == null) { return; } 
+    mycallback(null, res);
+  } catch (err) {
+    if (mycallback == null) { return; }
+    mycallback(err);
+    this.app.logger.logError("Error thrown in execDatabase", {message:"", stack: err});
+  }
+}
 
-  let sql = "SELECT * FROM blocks WHERE block_id < $block_id";
-  let params = { $block_id: block_id }
+/**
+ * Saves a block to database and disk and shashmap
+ *
+ * @param {saito.block} blk block
+ * @param {int} lc longest chain
+ */
+Storage.prototype.saveBlock = async function saveBlock(blk=null, lc=0) {
 
-  storage_self.queryDatabaseArray(sql, params, function (err, rows) {
-    let sql7 = "DELETE FROM blocks WHERE block_id < $block_id";
-    storage_self.db.run(sql7, { $block_id: block_id });
+  if (this.app.BROWSER == 1 || blk == null) { return; }
+  if (!blk.is_valid) { return; }
 
-    if (err) {
-      this.app.logger.logError("Error thrown in deleteBlocks", err);
-    }
-  });
+  ///////////////////////
+  // slips to shashmap //
+  ///////////////////////
+  //
+  // insert the "to" slips so that future blocks can manipulate them
+  //
+  for (let b = 0; b < blk.transactions.length; b++) {
+    for (let bb = 0; bb < blk.transactions[b].transaction.to.length; bb++) {
+      if (blk.transactions[b].transaction.to[bb].amt > 0) {
 
+        //
+        // TODO - if we insert the information here, do we need to 
+        // do that in the wallet class? restructure to avoid needing
+        // to do this twice.
+        //
+        blk.transactions[b].transaction.to[bb].bid = blk.block.id;
+        blk.transactions[b].transaction.to[bb].bhash = blk.returnHash();
+        blk.transactions[b].transaction.to[bb].tid = blk.transactions[b].transaction.id;
 
-  // defragment database periodically
-  if (Math.random() < 0.005) {
-    // LOGGING
-    console.log(" ... defragmenting block database ... ");
-    this.app.logger.logInfo(" ... defragmenting block database ... ");
-
-    this.db.run("VACUUM", {}, function(err) {
-      if (err) {
-        this.app.logger.logError("Error thrown in deleteBlocks", err);
+        var slip_map_index = blk.transactions[b].transaction.to[bb].returnIndex();
+        shashmap.insert_slip(slip_map_index, -1);
       }
+    }
+  }
+
+
+  ///////////////////////
+  // block to database //
+  ///////////////////////
+  //
+  // this is > -1 if we are reading the block
+  // off disk and restoring our database, in
+  // which case we want to use our prior IDs
+  // to maintain consistency with the saved
+  // blocks
+  //
+  var sql = "";
+  var params = "";
+  if (blk.save_db_id > -1) {
+    sql = `INSERT INTO blocks (id, block_id, golden_ticket, reindexed, block_json_id, hash, conf, longest_chain, min_tx_id, max_tx_id) VALUES ($dbid, $block_id, $golden_ticket, 1, $block_json_id, $hash, 0, $lc, $mintxid, $maxtxid)`;
+    params =  {
+      $dbid: blk.saveDatabaseId,
+      $block_id: blk.block.id,
+      $golden_ticket: blk.containsGoldenTicket(),
+      $block_json_id : 0,
+      $hash: blk.returnHash(),
+      $lc: lc,
+      $mintxid: blk.returnMinTxId(),
+      $maxtxid: blk.returnMaxTxId()
+    }
+  } else {
+    sql = `INSERT INTO blocks (block_id, golden_ticket, reindexed, block_json_id, hash, conf, longest_chain, min_tx_id, max_tx_id) VALUES ($block_id, $golden_ticket, 1, $block_json_id, $hash, 0, $lc, $mintxid, $maxtxid)`;
+    params = {
+      $block_id: blk.block.id,
+      $golden_ticket: blk.containsGoldenTicket(),
+      $block_json_id : 0,
+      $hash: blk.returnHash(),
+      $lc: lc,
+      $mintxid: blk.returnMinTxId(),
+      $maxtxid: blk.returnMaxTxId()
+    }
+  };
+
+
+  ///////////////////
+  // block to disk //
+  ///////////////////
+  try {
+    var res = await this.db.run(sql, params);
+    blk.filename = `${blk.block.id}-${res.lastID}.blk`;
+    var tmp_filepath = `${this.directory}blocks/${blk.filename}`;
+
+    if (!fs.existsSync(tmp_filepath)) {
+      fs.writeFileSync(tmp_filepath, JSON.stringify(blk.block, null, 4), 'UTF-8');
+    }
+  } catch (err) {
+  }
+
+  return true;
+
+}
+
+
+
+
+/**
+ *
+ * delete the non-slip data associated with blocks
+ * such as the local files as well as any information
+ * in our database
+ *
+ * @params {integer} lowest_block_id to keep
+ **/
+Storage.prototype.deleteBlock = async function deleteBlock(block_id, block_hash, lc) {
+
+  if (this.app.BROWSER == 1) { return; }
+
+  var blk = await this.loadSingleBlockFromDiskById(block_id);
+  if (blk == null) {
+  } else {
+
+    //
+    // delete txs (not every block has them)
+    //
+    if (blk.transactions != undefined) {
+      for (let b = 0; b < blk.transactions.length; b++) {
+        for (let bb = 0; bb < blk.transactions[b].transaction.to.length; bb++) {
+
+          blk.transactions[b].transaction.to[bb].bid   = block_id;
+          blk.transactions[b].transaction.to[bb].bhash = block_hash;
+          blk.transactions[b].transaction.to[bb].tid   = blk.transactions[b].transaction.id;
+
+	  console.log("delete slip: " + blk.transactions[b].transaction.to[bb].returnIndex());
+          shashmap.delete_slip(blk.transactions[b].transaction.to[bb].returnIndex());
+
+        }
+      }
+    }
+
+    //
+    // deleting file
+    //
+    let block_filename = this.directory + "blocks/" + blk.filename;
+    fs.unlink(block_filename, function(err) {
+      if (err) {
+        this.app.logger.logError("Error thrown in deleteBlock", {message:"", stack: err});
+      }
+    });
+
+  }
+
+
+  //////////////
+  // database //
+  //////////////
+  let sql = "DELETE FROM blocks WHERE block_id < $block_id";
+  let params = { $block_id : block_id };
+  this.db.run(sql, params, function(err) {});
+
+  if (Math.random() < 0.005) {
+    this.app.logger.logInfo(" ... defragmenting block database ... ");
+    this.db.run("VACUUM", {}, function(err) {
+      if (err) { this.app.logger.logError("Error thrown in deleteBlocks", {message: "", stack: err}); }
     });
   }
 
 }
 
 
-//////////////////////
-// deleteBlockSlips //
-//////////////////////
-//
-// clears the slips in our Google Dense Hashmap
-//
-// @params {string} block hash
-//
-Storage.prototype.purgeBlockStorage = function purgeBlockStorage(block_hash) {
 
-  var storage_self = this;
-
-  this.openBlockByHash(block_hash, function(storage_self, blk) {
-
-    if (blk == null) {} else {
-
-      //
-      // outer index implicity checks if any txs exists as
-      // not every block has them (i.e. blk1)
-      //
-      if (blk.transactions != undefined) {
-        for (let b = 0; b < blk.transactions.length; b++) {
-          for (let bb = 0; bb < blk.transactions[b].transaction.to.length; bb++) {
-            let slip_map_index = storage_self.returnHashmapIndex(blk.block.id, blk.transactions[b].transaction.id, blk.transactions[b].transaction.to[bb].sid, blk.transactions[b].transaction.to[bb].add, blk.transactions[b].transaction.to[bb].amt, block_hash);
-            shashmap.delete_slip(slip_map_index);
-          }
-        }
-      }
-
-      //
-      // deleting the block here ensures that we only remove it once we have
-      // successfully purged all slips
-      //
-      let block_filename = __dirname + "/../data/blocks/" + blk.filename;
-      fs.unlink(block_filename, function(err) {
-        if (err) {
-          this.app.logger.logError("Error thrown in purgeBlockStorage", err);
-        }
-      });
-
-    }
-
-  });
-
-}
-
-
-//////////////////
-// execDatabase //
-//////////////////
-//
-// executes an SQL command like INSERT, UPDATE, etc.
-//
-// @params {string} sql command
-// @params {{"param1":"value1"}} parameters
-// @params {callback} function to call with any results
-//
-Storage.prototype.execDatabase = function execDatabase(sql, params, callback=null) {
-  var storage_self = this;
-  
-  if (this.app.BROWSER == 1) { return; }
-  this.db.run(sql, params, function (err, row) {
-    if (callback != null) {
-      callback(err, row);
-    }
-    if (err) {
-      storage_self.app.logger.logError("Error thrown in execDatabase", err);
-    }
-  });
-}
-
-
-/////////////////
-// isSlipSpent //
-/////////////////
-Storage.prototype.isSlipSpent = function isSlipSpent(slip, current_bid) {
-  if (slip == null) { return; }
-  var slip_map_index = this.returnHashmapIndex(slip.bid, slip.tid, slip.sid, slip.add, slip.amt, slip.bhash);
-  return shashmap.validate_slip_spent(slip_map_index, current_bid);
-}
-
-
-////////////////////////
-// loadBlocksFromDisk //
-////////////////////////
-//
-// This function is called by teh Blockchain class when it 
-// initializes. It looks to see if we have any blocks saved
-// to disk and -- if so -- force-adds them to the blockchain.
-//
-// This is done in chunks in order to avoid exhausting all of
-// our memory. Logically, we should have no more than two 
-// blocks getting processed at a time -- one working its way
-// through the addBlockToBlockchain process in the blockchain
-// class and another sitting queued up in the mempool.
-//
-// @params {integer} how many blocks to index
-//
-Storage.prototype.loadBlocksFromDisk = function loadBlocksFromDisk(mylimit=0) {
+/**
+ * This function is called by the Blockchain class when it
+ * initializes. It looks to see if we have any blocks saved
+ * to disk and -- if so -- force-adds them to the blockchain.
+ *
+ * This is done in chunks in order to avoid exhausting all of
+ * our memory. Logically, we should have no more than two
+ * blocks getting processed at a time -- one working its way
+ * through the addBlockToBlockchain process in the blockchain
+ * class and another sitting queued up in the mempool.
+ *
+ * @param {integer} mylimit how many blocks to index
+ */
+Storage.prototype.loadBlocksFromDisk = async function loadBlocksFromDisk(mylimit=0) {
 
   if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return; }
-
-  var storage_self = this;
-      storage_self.currently_reindexing = 1;
 
   //
   // sort files by creation date, and then name
   // if two files have the same creation date
   //
-  let dir   = storage_self.data_directory + "blocks/";
+  let dir   = this.directory + "blocks/";
+
   //
-  // if this takes a long time, our server can 
+  // if this takes a long time, our server can
   // just refuse to sync the initial connection
   // as when it starts to connect, currently_reindexing
   // will be set at 1
@@ -13322,7 +10371,7 @@ Storage.prototype.loadBlocksFromDisk = function loadBlocksFromDisk(mylimit=0) {
   // "empty" file only
   //
   if (files.length == 1) {
-    storage_self.currently_reindexing = 0;
+    this.reindexing_active = false;
     return;
   }
 
@@ -13332,134 +10381,261 @@ Storage.prototype.loadBlocksFromDisk = function loadBlocksFromDisk(mylimit=0) {
     // if exact same creation time... string compare on names to fetch lower ID
     if (compres == 0) {
       return parseInt(a) - parseInt(b);
-    }
-    return compres;
+  }
+      return compres;
   });
 
-  let current_block = 0;
+  // let current_block = 0;
+  for (let i = 1, n = files.length; i < n; i++) {
+    try {
 
-  //
-  // our timer periodically checks to see if we
-  // can process another file off disk and onto
-  // the blockchain
-  //
-  storage_self.reindexing_timer = setInterval(function() {
+      let fileID = files[i]
+      let blk = this.openBlockByFilename(fileID);
 
-    //
-    // only move forward when we are allowed to
-    // process some new blocks.
-    //
-    if (storage_self.reindexing_chunk == 1) { return; }
-    if (storage_self.app.mempool.blocks.length < 1) {
-
-      //
-      // the "empty" file is needed by git to create the
-      // blocks directory in the first place, so we hard-
-      // code a special case for it.
-      //
-      if (files[current_block] == "empty") { current_block++; }
-
-      //
-      // end if we have nothing left to do
-      //
-      if (current_block > files.length-1 || files.length == 0) {
-
-        //
-        // now that we have synced, fetch blockchain
-        //
-        storage_self.app.network.fetchBlockchain();
-        storage_self.currently_reindexing = 0;
-        clearInterval(storage_self.reindexing_timer);
-        return;
+      if (blk == null) {
+        console.log("Error loading block from disk: missing block: " +fileID);
+        this.app.logger.logError(`Error loading block from disk: missing block: ${fileID}`,
+          { message: "", stack: "" });
+        process.exit();
       }
 
       //
-      // we track this to know when we have finished
-      // re-indexing a chunk of data
+      // setting these fields allows our blockchain
+      // class to take shortcuts and ensures that when
+      // we add a block to the database it will be with
+      // the right info.
       //
-      storage_self.reindexing_chunk = 1;
+      blk.save_bid = fileID.substr(0, fileID.indexOf("-"));
+      blk.save_db_id = fileID.substr(fileID.indexOf("-") + 1, fileID.indexOf(".")-fileID.indexOf("-")-1);
+      blk.prevalidated = 1;       // force-add to index
+                                  // cannot be set through json
+                                  // prevents spamming network
 
-      try {
-        storage_self.openBlockByFilename(files[current_block], function(storage_self, blk) {
+      // LOGGING INFO
+      //this.app.logger.logInfo(`REPOPULATING: adding block to mempool w/ id: ${blk.block.id} -- ${blk.returnHash()}`)
+      await this.app.blockchain.addBlockToBlockchain(blk);
+      console.log("RUNNING AFTER ADD BLOCK TO BLOCKCHAIN in LOAD BLOCKS FROM DISK")
+      // this.reindexing_chunk = false;
 
-          if (blk == null) {
-            console.log("Error loading block from disk: missing block: " +files[current_block]);
-            storage_self.app.logger.logError(`Error loading block from disk: missing block: ${files[current_block]}`,
-              { message: "", error: "" });
-            process.exit();
-          }
-
-          let thisBlockId = files[current_block].substr(0, files[current_block].indexOf("-"));
-          let thisDatabaseId = files[current_block].substr(files[current_block].indexOf("-") + 1, files[current_block].indexOf(".")-files[current_block].indexOf("-")-1);
-
-          //
-          // setting these fields allows our blockchain
-          // class to take shortcuts and ensures that when
-          // we add a block to the database it will be with
-          // the right info.
-          //
-          blk.prevalidated   = 1; 		// force-add to index
-                                      // cannot be set through json
-                                      // prevents spamming network
-          blk.saveBlockId    = thisBlockId; 	// block_id
-          blk.saveDatabaseId = thisDatabaseId;  // id
-
-          // LOGGING INFO
-          storage_self.app.logger.logInfo(`REPOPULATING: adding block to mempool w/ id: ${blk.returnId()} -- ${blk.returnHash()}`)
-          console.log(`REPOPULATING: adding block to mempool w/ id: ${blk.returnId()} -- ${blk.returnHash()}`);
-          storage_self.app.mempool.addBlock(blk);
-          storage_self.app.mempool.processBlocks();
-          current_block++;
-          storage_self.reindexing_chunk = 0;
-
-        });
       } catch (err) {
-        storage_self.app.logger.logError("Error thrown in loadBlocksFromDisk, setInterval", err);
-      }
+        console.log(err);
+        //this.app.logger.logError("Error thrown in loadBlocksFromDisk, setInterval", err);
     }
-  });
+  }
+
+  return;
+}
+
+Storage.prototype.loadSingleBlockFromDiskWithCallback = async function loadSingleBlockFromDiskWithCallback(hash, mycallback) {
+  let blk = await this.loadSingleBlockFromDisk(hash);
+  mycallback(blk);
+}
+Storage.prototype.loadSingleBlockFromDisk = async function loadSingleBlockFromDisk(hash) {
+  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return; }
+
+  var sql = `SELECT id, block_id FROM blocks WHERE hash=$hash`;
+  var params = {
+    $hash: hash
+  }
+  try {
+    var row = await this.db.get(sql, params)
+
+    if (row == undefined){ return null; }
+
+    let fileID = `${row.block_id}-${row.id}.blk`;
+    let blk = this.openBlockByFilename(fileID);
+
+    if (blk == null) {
+      console.log("Error loading block from disk: missing block: " +fileID);
+      this.app.logger.logError(`Error loading block from disk: missing block: ${fileID}`,
+        { message: "", stack: "" });
+      process.exit();
+    }
+
+    //
+    // setting these fields allows our blockchain
+    // class to take shortcuts and ensures that when
+    // we add a block to the database it will be with
+    // the right info.
+    //
+    blk.save_bid = fileID.substr(0, fileID.indexOf("-"));
+    blk.save_db_id = fileID.substr(fileID.indexOf("-") + 1, fileID.indexOf(".")-fileID.indexOf("-")-1);
+    blk.prevalidated = 1;       // force-add to index
+                                // cannot be set through json
+                                // prevents spamming network
+    return blk;
+
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+
+}
+
+/**
+ * Load block from disk by Id
+ * @param {integer} block_id block id
+ */
+Storage.prototype.loadSingleBlockFromDiskByIdWithCallback = async function loadSingleBlockFromDiskByIdWithCallback(block_id, mycallback) {
+  let blk = await this.loadSingleBlockFromDiskById(block_id);
+  mycallback(blk);
+}
+Storage.prototype.loadSingleBlockFromDiskById = async function loadSingleBlockFromDiskById(block_id) {
+  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return; }
+
+  var sql = `SELECT id FROM blocks WHERE block_id=$block_id AND longest_chain = 1`;
+  var params = {
+    $block_id: block_id
+  }
+
+  try {
+
+    let row = await this.db.get(sql, params);
+    if (row == undefined) { return null; }
+
+    let fileID = `${block_id}-${row.id}.blk`;
+    let blk = this.openBlockByFilename(fileID);
+
+    if (blk == null) {
+      console.log("Error loading block from disk: missing block: " +fileID);
+      this.app.logger.logError(`Error loading block from disk: missing block: ${fileID}`,
+        { message: "", stack: "" });
+      process.exit();
+    }
+
+    //
+    // setting these fields allows our blockchain
+    // class to take shortcuts and ensures that when
+    // we add a block to the database it will be with
+    // the right info.
+    //
+    blk.save_bid = fileID.substr(0, fileID.indexOf("-"));
+    blk.save_db_id = fileID.substr(fileID.indexOf("-") + 1, fileID.indexOf(".")-fileID.indexOf("-")-1);
+    blk.prevalidated = 1;       // force-add to index
+                                // cannot be set through json
+                                // prevents spamming network
+
+    return blk;
+  } catch(err) {
+    console.log(err);
+    return null;
+  }
+}
+
+
+/**
+ * if a block exists with name, open it from disk and
+ * returns the block data
+ *
+ * @param {string} block filename
+*/
+Storage.prototype.openBlockByFilename = function openBlockByFilename(filename) {
+
+  let block_filename = `${this.directory}blocks/${filename}`;
+
+  try {
+  //
+  // readFileSync leads to issues loading from
+  // disk. for some reason the only file is not
+  // opened and we never hit the function inside
+  //
+  if (fs.existsSync(block_filename)) {
+    let data = fs.readFileSync(block_filename, 'utf8');
+    var blk = new saito.block(this.app, data);
+    blk.filename = filename;
+
+    if (!blk.is_valid) { return null; }
+
+    return blk;
+  } else {
+    this.app.logger.logInfo(`cannot open: ${block_filename} as it does not exist on disk`);
+    return null;
+  }
+  } catch (err) {
+    console.log("Error reading block from disk");
+    this.app.logger.logError("Error reading block from disk", {message: "", stack: err})
+  }
+}
+
+
+/**
+ * This is called when we want to validate that a transaction's 
+ * inputs have not been spent. It goes through all of the inputs
+ * and checks them.
+ *
+ * @param {array} slip_array an array of slips to validate
+ * @returns {boolean} are the slips in the transaction valid?
+ */
+Storage.prototype.validateTransactionInputs = function validateTransactionInputs(slip_array, bid) {
+
+  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return false; }
+
+  for (let i = 0; i < slip_array.length; i++) {
+    if (this.validateTransactionInput(slip_array[i], bid) == false) { return false; }
+  }
+
+  return true;
 }
 
 
 
-/////////////////
-// loadPptions //
-/////////////////
-//
-// load options file
-//
-Storage.prototype.loadOptions = function loadOptions() {
+/**
+ * This is called when we want to validate that a single slip is 
+ * valid. It takes the slip as the argument.
+ *
+ * @param {array} slip to validate
+ * @returns {boolean} is the slip valid
+ */
+Storage.prototype.validateTransactionInput = function validateTransactionInput(slip, bid) {
 
-  var storage_self = this;
+  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return true; }
 
-  /////////////
-  // servers //
-  /////////////
+  if (slip.amt > 0) {
+    if (shashmap.validate_slip(slip.returnIndex(), bid) == 0) { return false; }
+  }
+
+  return true;
+}
+
+
+
+/**
+ * Load the options file
+ */
+Storage.prototype.loadOptions = async function loadOptions() {
+
+  //
+  // servers
+  //
   if (this.app.BROWSER == 0) {
 
-    try {
-      this.app.options = JSON.parse(
-        fs.readFileSync(__dirname + '/../options', 'utf8', (err, data) => {
-          if (err) {
-            console.log("Error Reading Options File");
-            this.app.logger.logError("Error Reading Options File", err);
-	          process.exit();
-          }
-        })
-      );
-    } catch (err) {
-      console.log("Error Reading Options File");
-      storage_self.app.logger.logError("Error Reading Options File", err);
-      process.exit();
-    }
+    if (fs.existsSync(__dirname + '/../options')) {
 
+      //
+      // open options file
+      //
+      try {
+        let optionsfile = fs.readFileSync(__dirname + '/../options', 'utf8');
+        this.app.options = JSON.parse(optionsfile);
+      } catch (err) {
+        this.app.logger.logError("Error Reading Options File", {message:"", stack: err});
+        process.exit();
+      }
+
+    } else {
+
+      //
+      // default options file
+      //
+      this.app.options = JSON.parse('{"server":{"host":"localhost","port":12101}}');
+
+    }
   //////////////
   // browsers //
   //////////////
   } else {
 
     let data = null;
-
 
     ///////////////////////////////
     // fetch from Chrome Storage //
@@ -13469,12 +10645,12 @@ Storage.prototype.loadOptions = function loadOptions() {
     // our data from the Chrome backend
     // storage. (start.js)
     //
-    if (this.app.CHROME == 1) {
-      if (this.app.options == null) { this.app.options = {}; }
-      return;
-    }
+    //if (this.app.CHROME == 1) {
+    //  if (this.app.options == null) { this.app.options = {}; }
+    //  return;
+    //}
 
-
+    console.log("BROWSER: always fetch clean options file");
 
     ////////////////////////////
     // read from localStorage //
@@ -13488,366 +10664,109 @@ Storage.prototype.loadOptions = function loadOptions() {
     // or fetch from server //
     //////////////////////////
     if (data == null) {
+
+      //
+      // jquery
+      //
       $.ajax({
-        url: '/client.options',
+        url: '/options',
         dataType: 'json',
         async: false,
-        success: function(data) {
-          storage_self.app.options = data;
+        success: (data) => {
+          this.app.options = data;
+          console.log("LOADING: " + JSON.stringify(this.app.options));
         },
         error: function(XMLHttpRequest, textStatus, errorThrown) {
-          storage_self.app.logger.logError("Reading client.options from server failed", errorThrown)
+          console.log("ERROR loading options file from server");
         }
       });
     }
   }
+
 }
 
+/**
+ * Reorganizes the block table in the database
+ * @param {int} block_id
+ * @param {string} block_hash
+ * @param {int} lc
+ */
+Storage.prototype.onChainReorganization = async function onChainReorganization(block_id, block_hash, lc) {
 
-///////////////////////////
-// onChainReorganization //
-///////////////////////////
-//
-// update our database when we reorganize the chain.
-//
-// n.b. this does not update Google Dense Hashmaps
-//
-// @params {integer} block_id
-// @params {string} block hash
-// @params {boolean} is longest chain?
-//
-Storage.prototype.onChainReorganization = function onChainReorganization(block_id, block_hash, lc) {
+  if (this.app.BROWSER == 0) {
+    // update database with longest chain information
+    let sql = "UPDATE blocks SET longest_chain = $lc WHERE hash = $block_hash";
+    let params = { $lc : lc , $block_hash : block_hash };
+    await this.db.run(sql, params).then(()=>{}).catch( err => console.log(err));
+  }
 
-  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return; }
-
-  var storage_self = this;
-
-  storage_self.app.blockchain.lc_hashmap[block_hash] = lc;
-
-  let sql = "UPDATE blocks SET longest_chain = $lc WHERE block_id = $block_id AND hash = $block_hash";
-  this.db.run(sql, {
-    $block_id: block_id,
-    $block_hash: block_hash,
-    $lc: lc
-  }, function(err) {
-    storage_self.app.logger.logError("db.run in onChainReorganization failed", err)
-  });
 }
 
+/**
+ * Save the options file
+ */
+Storage.prototype.saveOptions = function saveOptions() {
 
-/////////////////////
-// openBlockByHash //
-/////////////////////
-//
-// if a block exists with this hash, open it from disk
-// and submit the block object to the callback, which
-// provides a reference to this storage_self and the
-// block object.
-//
-// @params {string} block hash
-// @params {callback}(storage_self, block)
-//
-Storage.prototype.openBlockByHash = function openBlockByHash(block_hash, mycallback) {
+  if (this.app.options == null) { this.app.options = {}; }
 
-  var storage_self = this;
+  // if (this.app.CHROME == 1) {
+  //   chrome.storage.local.set({'options': JSON.stringify(this.app.options)});
+  //   return;
+  // }
 
-  let sql    = "SELECT * FROM blocks WHERE hash = $block_hash";
-  let params = { $block_hash : block_hash };
-
-  this.db.all(sql, params, function (err, rows) {
-    if (rows.length > 0) {
-
-      let block_json_id   = rows[0].block_json_id;
-      let block_id        = rows[0].block_id;
-      let block_db_id     = rows[0].id;
-      let blkjson         = "";
-      let block_filename  = rows[0].block_id + "-" + rows[0].id + ".blk";
-      storage_self.openBlockByFilename(block_filename, mycallback);
-
-    } else {
-
-      //
-      // failure
-      //
-      mycallback(storage_self, null);
-
+  //
+  // servers
+  //
+  if (this.app.BROWSER == 0) {
+    try {
+      fs.writeFileSync(`${__dirname}/../options`, JSON.stringify(this.app.options), null, 4);
+    } catch (err) {
+      this.app.logger.logError("Error thrown in storage.saveOptions", {message: "", stack: err});
+      console.log(err);
+      return;
     }
 
-    if (err) {
-      this.app.logger.logError("Error in openBlockByHash", err)
+  //
+  // browsers
+  //
+  } else {
+    if (typeof(Storage) !== "undefined") {
+      localStorage.setItem("options", JSON.stringify(this.app.options));
     }
-  });
-}
-
-
-/////////////////////////
-// openBlockByFilename //
-/////////////////////////
-//
-// if a block exists with name, open it from disk and
-// submit the block object to the callback, which
-// provides a reference to this storage_self and the
-// block object.
-//
-// @params {string} block filename
-// @params {callback}(storage_self, block)
-//
-Storage.prototype.openBlockByFilename = function openBlockByFilename(filename, mycallback) {
-
-  var storage_self = this;
-
-  let block_filename  = filename;
-  let block_filename2 = storage_self.data_directory + "blocks/" + filename;
-
-  try {
-    //
-    // readFileSync leads to issues loading from
-    // disk. for some reason the only file is not
-    // opened and we never hit the function inside
-    //
-    if (fs.existsSync(block_filename2)) {
-      fs.readFile(block_filename2, 'utf8', (err, data) => {
-        var blk = new saito.block(storage_self.app, data);
-        if (blk.is_valid == 0) { mycallback(storage_self, null); }
-        mycallback(storage_self, blk);
-      });
-    } else {
-      console.log("cannot open: " + block_filename2 + " as it does not exist on disk");
-      mycallback(storage_self, null);
-    }
-  } catch (err) {
-    console.log("Error reading block from disk");
-    storage_self.app.logger.logError("Error reading block from disk", err)
   }
 }
 
 
-///////////////////
-// queryDatabase //
-///////////////////
-//
-// executes an SQL command like SELECT
-//
-// @params {string} sql command
-// @params {{"param1":"value1"}} parameters
-// @params {callback} function to call with any results
-//
-Storage.prototype.queryDatabase   = function queryDatabase(sql, params, callback) {
-  if (this.app.BROWSER == 1) { return; }
-  this.db.get(sql, params, function (err, row) {
-    callback(err, row);
 
-    if (err) {
-      storage_self.app.logger.logError("Error from queryDatabase", err)
-    }
-  });
-}
-
-
-////////////////////////
-// queryDatabaseArray //
-////////////////////////
-//
-// executes an SQL command like SELECT with multiple rows
-//
-// @params {string} sql command
-// @params {{"param1":"value1"}} parameters
-// @params {callback} function to call with any results
-//
-Storage.prototype.queryDatabaseArray = function queryDatabaseArray(sql, params, callback) {
-  if (this.app.BROWSER == 1) { return; }
-  this.db.all(sql, params, function (err, rows) {
-    callback(err, rows);
-
-    if (err) {
-      storage_self.app.logger.logError("Error from queryDatabaseArray", err);
-    }
-  });
-}
-
-
-//////////////////
-// resetOptions //
-//////////////////
-//
-// resets options file
-//
+/**
+ * Reset the options file
+ */
 Storage.prototype.resetOptions = function resetOptions() {
 
-  var storage_self = this;
+  // var storage_self = this;
 
   //
   // prevents caching
   //
   let tmpdate = new Date().getTime();
-  let loadurl = '/client.options?x='+tmpdate;
+  let loadurl = `/options?x=${tmpdate}`;
 
   $.ajax({
     url: loadurl,
     dataType: 'json',
     async: false,
-    success: function(data) {
-      storage_self.app.options = data;
-      storage_self.saveOptions();
+    success: (data) => {
+      this.app.options = data;
+      this.saveOptions();
     },
-    error: function(XMLHttpRequest, textStatus, errorThrown) {
-      storage_self.app.logger.logError("Reading client.options from server failed", errorThrown);
-    }
-  });
-}
-
-
-////////////////////////
-// returnHashmapIndex //
-////////////////////////
-//
-// returns unique index string for Google Dense Hashmap
-//
-// @params {integer} block_id
-// @params {integer} transaction_id
-// @params {integer} slip_id
-// @params {string} address
-// @params {decimal} amount
-// @params {string} block hash
-//
-Storage.prototype.returnHashmapIndex = function returnHashmapIndex(bid, tid, sid, add, amt, block_hash) {
-  return bid.toString() + tid.toString() + sid.toString() + block_hash + amt;
-}
-
-
-///////////////
-// saveBlock //
-///////////////
-//
-// save new block data to database and disk and hashmap
-//
-Storage.prototype.saveBlock = function saveBlock(blk, lc = 0) {
-
-  if (this.app.BROWSER == 1) { return; }
-  if (blk == null) { return; }
-  if (blk.is_valid == 0) { return; }
-
-  var storage_self = this;
-  this.saving_blocks     = 1;
-
-  ///////////
-  // slips //
-  ///////////
-  //
-  // insert the "to" slips so that future blocks can manipulate them
-  //
-  for (let b = 0; b < blk.transactions.length; b++) {
-    for (let bb = 0; bb < blk.transactions[b].transaction.to.length; bb++) {
-      if (blk.transactions[b].transaction.to[bb].amt > 0) {
-        var slip_map_index = storage_self.returnHashmapIndex(blk.block.id, blk.transactions[b].transaction.id, blk.transactions[b].transaction.to[bb].sid, blk.transactions[b].transaction.to[bb].add, blk.transactions[b].transaction.to[bb].amt, blk.returnHash());
-        shashmap.insert_slip(slip_map_index, -1);
-      }
-    }
-  }
-
-
-  ///////////////////////////////
-  // figure our min/max tx_ids //
-  ///////////////////////////////
-  let mintxid = 0;
-  let maxtxid = 0;
-
-  if (blk.transactions.length > 0) {
-    let mintx = JSON.parse(blk.block.transactions[0]);
-    let maxtx = JSON.parse(blk.block.transactions[blk.block.transactions.length-1]);
-    maxtxid = maxtx.id;
-    mintxid = mintx.id;
-  }
-
-
-  //////////////////////
-  // save to database //
-  //////////////////////
-  var sql2 = "INSERT INTO blocks (block_id, golden_ticket, reindexed, block_json_id, hash, conf, longest_chain, min_tx_id, max_tx_id) VALUES ($block_id, $golden_ticket, 1, $block_json_id, $hash, 0, $lc, $mintxid, $maxtxid)";
-  var params2 = {
-    $block_id: blk.block.id,
-    $golden_ticket: blk.containsGoldenTicket(),
-    $block_json_id : 0,
-    $hash: blk.returnHash(),
-    $lc: lc,
-    $mintxid: mintxid,
-    $maxtxid: maxtxid
-  };
-
-  //
-  // this is > -1 if we are reading the block
-  // off disk and restoring our database, in
-  // which case we want to use our prior IDs
-  // to maintain consistency with the saved
-  // blocks
-  //
-  if (blk.saveDatabaseId > -1) {
-    sql2 = "INSERT INTO blocks (id, block_id, golden_ticket, reindexed, block_json_id, hash, conf, longest_chain, min_tx_id, max_tx_id) VALUES ($dbid, $block_id, $golden_ticket, 1, $block_json_id, $hash, 0, $lc, $mintxid, $maxtxid)";
-    params2 =  {
-      $dbid: blk.saveDatabaseId,
-      $block_id: blk.block.id,
-      $golden_ticket: blk.containsGoldenTicket(),
-      $block_json_id : 0,
-      $hash: blk.returnHash(),
-      $lc: lc,
-      $mintxid: mintxid,
-      $maxtxid: maxtxid
-    }
-  }
-
-  storage_self.db.run(sql2, params2, function(err) {
-
-    if (err) {
-console.log(err);
-      storage_self.app.logger.logError("Error thrown in storage.saveBlock", err);
-    }
-
-    if (this.lastID != undefined) {
-
-      //////////////////
-      // save to disk //
-      //////////////////
-      var tmp_filename = blk.block.id + "-" + this.lastID + ".blk";
-      var tmp_filepath = storage_self.data_directory + "blocks/" + tmp_filename;
-
-      // write file if it does not exist
-      if ( ! fs.existsSync(tmp_filepath)) {
-        //
-        // compresses segregated addresses, which
-        // removes addresses to separate part of
-        // block and puts a reference in the address
-        // space allowing it to be reconstituted
-        //
-        // useful compression technique as many
-        // transaction paths will have duplicate
-        // address info
-        //
-        //blk.compressSegAdd();
-
-        fs.writeFileSync(tmp_filepath, JSON.stringify(blk.block), 'UTF-8');
-
-        //
-        // set filename before we permit continuing
-        //
-        blk.filename = tmp_filename;
-        storage_self.saving_blocks     = 0;
-      } else {
-        blk.filename = tmp_filename;
-      }
-
-    } else {
-
-      ///////////////////
-      // already saved //
-      ///////////////////
-      storage_self.saving_blocks = 0;
-      return -1;
-
+    error: (XMLHttpRequest, textStatus, errorThrown) => {
+      this.app.logger.logError("Reading client.options from server failed", {message: "", stack: errorThrown});
     }
   });
 
-  return 1;
 }
+
+
 
 
 ///////////////////////
@@ -13872,923 +10791,93 @@ Storage.prototype.saveClientOptions = function saveClientOptions() {
   // block_id is and send them information on where our
   // server is located so that they can sync to it.
   //
-  var t                  = {};
-      t.archives             = [];
+  var t                      = {};
       t.keys                 = [];
       t.peers                = [];
       t.dns                  = [];
       t.blockchain           = {};
-      t.blockchain.lastblock = this.app.blockchain.returnLatestBlockId();
       t.peers.push(this.app.server.server.endpoint);
 
-  // console.log("this.app.server in storage.js", this.app.server);
-  // if (this.app.server.endpoint != null) {
-  //   t.endpoint = this.app.server.endpoint;
-  // }
-
-
   //
-  // TESTING
+  // write file
   //
-  // tell all clients they can use our archiving service
-  //
-  //var arc = {"host":"localhost","port":12101,"publickey":"", "active":"inactive"};
-  //    arc.publickey = this.app.wallet.returnPublicKey();
-  //    arc.active = "active";
-  //t.archives.push(arc);
-
-
-  //
-  // if we are serving any DNS domains, we add these to our
-  // client.options file as well so that our connected users
-  // have the convenience of a DNS service.
-  //
-  if (this.app.options.dns != null) {
-    //
-    // TODO
-    //
-    // this only handles one
-    let regmod = this.app.modules.returnModule("Registry");
-    for (let x = 0; x < this.app.options.dns.length; x++) {
-      if (regmod != null) {
-        if (this.app.options.dns[x].domain = regmod.domain) {
-          if (this.app.options.dns[x].publickey == "") { this.app.options.dns[x].publickey = this.app.wallet.returnPublicKey(); }
-        }
-      }
-    }
-    t.dns                = this.app.options.dns;
+  try {
+    fs.writeFileSync(`${__dirname}/web/client.options`, JSON.stringify(t));
+  } catch(err) {
+    console.log(err);
+    this.app.logger.logError("Error thrown in storage.saveBlock", {message: "", stack: err});
   }
 
-  //
-  // write the file
-  //
-  fs.writeFileSync("saito/web/client.options", JSON.stringify(t), function(err) {
-    if (err) {
-      storage_self.app.logger.logError("Error thrown in storage.saveBlock", err);
-      console.log(err);
-    }
-  });
+  // fs.writeFileSync("saito/web/client.options", JSON.stringify(t), (err) => {
+  //   if (err) {
+  //   console.log(err);
+  //   this.app.logger.logError("Error thrown in storage.saveBlock", {message: "", stack: err});
+  //   }
+  // });
 
 }
 
 
-//////////////////////
-// saveConfirmation //
-//////////////////////
-//
-// update database to indicate we have given this block
-// its confirmation. used when force-adding blocks to
-// the database.
-//
-// @params {string} block_hash
-// @params {integer} confirmation num
-//
-Storage.prototype.saveConfirmation = function saveConfirmation(hash, conf) {
+/**
+ * TODO: uses a callback and should be moved to await / async promise 
+ **/
+Storage.prototype.returnBlockFilenameByHash = async function returnBlockFilenameByHash(block_hash, mycallback) {
 
+  let sql    = "SELECT id, block_id FROM blocks WHERE hash = $block_hash";
+  let params = { $block_hash : block_hash };
+
+  try {
+    let row = await this.db.get(sql, params)
+    if (row == undefined){ return null; }
+    let filename = `${row.block_id}-${row.id}.blk`;
+    mycallback(filename);
+  } catch (err) {
+    console.log("ERROR getting block filename in storage: " + err);
+    mycallback(null);
+  }
+
+}
+
+
+
+
+
+/**
+ * Query database
+ **/
+Storage.prototype.queryDatabase = async function queryDatabase(sql, params, callback) {
   if (this.app.BROWSER == 1) { return; }
-
-  let sql = "UPDATE blocks SET conf = $conf WHERE hash = $hash";
-  this.db.run(sql, {
-    $conf: conf,
-    $hash: hash
-  });
+  var row = await this.db.get(sql, params)
+  var err = {};
+  if (row == undefined) { return null; }
+  callback(null, row);
 }
-
-
-/////////////////
-// saveOptions //
-/////////////////
-//
-// save options file
-//
-Storage.prototype.saveOptions = function saveOptions() {
-
-  var storage_self = this;
-
-  if (storage_self.app.options == null) { storage_self.app.options = {}; }
-
-  if (storage_self.app.CHROME == 1) {
-    chrome.storage.local.set({'options': JSON.stringify(storage_self.app.options)});
-    return;
-  }
-
-  if (this.app.BROWSER == 0) {
-    fs.writeFileSync("options", JSON.stringify(storage_self.app.options), function(err) {
-      if (err) {
-        storage_self.app.logger.logError("Error thrown in storage.saveOptions", err);
-        console.log(err);
-        return;
-      }
-    });
-  } else {
-    if (typeof(Storage) !== "undefined") {
-      localStorage.setItem("options", JSON.stringify(storage_self.app.options));
-    }
-  }
-}
-
-
-////////////////////
-// sendBlockchain //
-////////////////////
-//
-// this handles the process of sending chunks of the blockchain
-// to a peer. We provide the peer and take care of managing the
-// peer information ourselves depending on how data-syncing goes.
-//
-// TODO
-//
-// move this logic to the peer class
-//
-// @params {integer} block_id to start syncing from
-// @parans {string} "full" or "lite"
-// @params {saito.peer} peer to send stuff to
-//
-Storage.prototype.sendBlockchain = function sendBlockchain(start_bid, synctype, peer) {
-
-  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return; }
-
-  var storage_self = this;
-
-  peer.sync_sending_bid    = start_bid;
-  peer.sync_latest_bid     = this.app.blockchain.returnLatestBlockId();
-  peer.sync_sending_db_bid = 0;
-  peer.sync_sending        = 1;
-
-  //
-  // we start a timer, using the speed set in the
-  // sync class. This allows a crude sort of rate-
-  // limiting so that we don't crash the remote
-  // node or kill ourselves with memory exhausting.
-  //
-  peer.sync_timer = setInterval(function() {
-
-    if (peer.isConnected() != 1) {
-      clearInterval(peer.sync_timer);
-      peer.sync_sending = 0;
-      peer.sync_sending_chunk = 0;
-      return false;
-    }
-
-    if (peer.message_queue.length >= storage_self.send_blocks_queue_limit) { return; }
-    if (peer.sync_sending_chunk == 1) { return; }
-
-    peer.sync_sending_chunk = 1;
-
-    var sql    = "SELECT count(*) AS count FROM blocks WHERE block_id >= $block_id AND id > $db_id ORDER BY block_id, id ASC";
-    var params = { $block_id : peer.sync_sending_bid , $db_id : peer.sync_sending_db_bid };
-
-    storage_self.db.get(sql, params, function (err, rowz) {
-      if (err) {
-        storage_self.app.logger.logError("Error thrown in storage.saveBlock", err);
-      }
-
-      if (rowz != null) {
-        var count = rowz.count;
-        if (count > 0) {
-          if (peer.message_queue.length < storage_self.send_blocks_queue_limit) {
-            storage_self.sendBlockchainChunk(peer);
-          }
-        } else {
-          clearInterval(peer.sync_timer);
-          peer.sync_sending = 0;
-          peer.sync_sending_chunk = 0;
-        }
-      } else {
-        clearInterval(peer.sync_timer);
-        peer.sync_sending_chunk = 0;
-        peer.sync_sending = 0;
-      }
-    });
-  }, peer.sync_timer_speed);
-
-}
-
-
-/////////////////////////
-// sendBlockchainChunk //
-/////////////////////////
-//
-// we handle network capacity issues by running this on a timer
-// which pumps out a block every so often.
-//
-// TODO
-//
-// move this logic to the peer class
-//
-// add some kind of callback so that we only send the next block
-// when the previous one has been received in full.
-//
-// @parans {saito.peer} peer to send stuff to
-//
-Storage.prototype.sendBlockchainChunk = function sendBlockchainChunk(peer) {
-
-  var storage_self = this;
-
-  // send limit = this.send_block_queue_limit
-  let sql    = "SELECT * FROM blocks WHERE blocks.block_id >= $block_id AND blocks.id >= $db_id ORDER BY block_id, id ASC LIMIT $db_limit";
-  let params = { $block_id : peer.sync_sending_bid , $db_id : peer.sync_sending_db_bid , $db_limit : storage_self.send_blocks_queue_limit };
-
-  this.app.storage.queryDatabaseArray(sql, params, function (err, rows) {
-    if (rows == null) {
-      peer.sync_sending = 0;
-      peer.sync_sending_chunk = 0;
-      clearInterval(peer.sync_timer);
-      return;
-    }
-
-    for (let r = 0; r < rows.length; r++) {
-
-      peer.sync_sending_db_bid = rows[r].id;
-      peer.sync_sending_bid    = rows[r].block_id;
-
-      let block_filename = rows[r].block_id + "-" + rows[r].id + ".blk";
-
-      try {
-        storage_self.openBlockByFilename(block_filename, function(storage_self, tmpblk) {
-        // 0 means "queue it"
-        if (tmpblk != null) {
-          peer.sendBlock("block", tmpblk, 0);
-        }
-          peer.sync_sending_chunk = 0;
-        });
-      } catch (err) {
-        console.log("Error reading block from disk");
-        peer.sync_sending_chunk = 0;
-        peer.sync_sending = 0;
-        console.log("Error Reading Block File");
-
-        storage_self.app.logger.logError("Error reading block from disk", {message: "", error: ""});
-        storage_self.app.logger.logError("Error Reading Block File", {message: "", error: ""});
-      }
-    }
-    if (peer.isConnected() != 1) {
-      peer.sync_sending = 0;
-      peer.sync_sending_chunk = 0;
-      clearInterval(peer.sync_timer);
-      return;
-    }
-  });
+Storage.prototype.queryDatabaseArray = async function queryDatabaseArray(sql, params, callback) {
+  if (this.app.BROWSER == 1) { return; }
+  var rows = await this.db.all(sql, params)
+  var err = {};
+  if (rows == undefined) { return null; }
+  callback(null, rows);
 }
 
 
 
-
-//////////////////////
-// spendBlockInputs //
-//////////////////////
-//
-// update Google Dense Hashmap to spend inputs in blok
-//
-// n.b.: you should have already validated they are spendable
-// in validateBlockInputs
-//
-// @param {saito.block} block
-//
-Storage.prototype.spendBlockInputs = function spendBlockInputs(newblock) {
-
-  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return; }
-
-  var storage_self = this;
-
-  for (let b = 0; b < newblock.transactions.length; b++) {
-    for (let bb = 0; bb < newblock.transactions[b].transaction.from.length; bb++) {
-      if (newblock.transactions[b].transaction.from[bb].amt > 0) {
-        let slip_map_index = storage_self.returnHashmapIndex(newblock.transactions[b].transaction.from[bb].bid, newblock.transactions[b].transaction.from[bb].tid, newblock.transactions[b].transaction.from[bb].sid, newblock.transactions[b].transaction.from[bb].add, newblock.transactions[b].transaction.from[bb].amt, newblock.transactions[b].transaction.from[bb].bhash);
-        shashmap.insert_slip(slip_map_index, newblock.block.id);
-      }
-    }
-  }
-  return 1;
-}
-
-
-////////////////////////
-// unspendBlockInputs //
-////////////////////////
-//
-// when unwinding a chain, we need to ensure all of the
-// transaction inputs are restored to an unspent state so
-// that the new chain will validate if it spends them on
-// its alternate chain.
-//
-// this unspends the inputs associated with the submitted
-// block
-//
-// @params {saito.block} block
-//
-Storage.prototype.unspendBlockInputs = function unspendBlockInputs(blk) {
-  for (let x = 0; x < blk.transactions.length; x++) {
-    for (let y = 0; y < blk.transactions[x].transaction.from.length; y++) {
-      let utxi  = blk.transactions[x].transaction.from[y];
-      if (utxi.amt > 0) {
-        let slip_map_index = this.returnHashmapIndex(utxi.bid, utxi.tid, utxi.sid, utxi.add, utxi.amt, utxi.bhash);
-        shashmap.insert_slip(slip_map_index, -1);
-      }
-    }
-  }
-  return 1;
-}
-
-
-/////////////////
-// unwindChain //
-/////////////////
-//
-// this rolls back the old Longest Chain and resets all of the slips
-// that were SPENT to a fresh state so that our competing chain will
-// have them available when it tries to roll out (and validate) its
-// proposed longest chain.
-//
-// once we have unwound the entire longest chain, we call the windChain
-// function which takes responsibility for rolling out, validating and
-// possibly restoring the oldest chain if there are problems.
-//
-// @params {saito.block} newest block
-// @params {interger} newest block index in blockchain.index
-// @params {integer} block index of last-common-ancestor blockchain.index
-// @params {array} array of block indexes for new blocks becoming longest chain
-// @params {array} array of block hashes for new blocks becoming longest chain
-// @params {array} array of block_ids for new blocks becoming longest chain
-// @params {array} array of block indexes for existing blocks losing longest chain
-// @params {array} array of block hashes for existing blocks losing longest chain
-// @params {array} array of block_ids for existing blocks losing longest chain
-// @params {integer} is newest block longest chain (should be 1)
-// @params {string} "force" if block is loaded from disk
-// @params {integer} position in above old_block_* arrays of this block
-// @params {integer} 1 if we are unwinding a bad new chain
-//
-Storage.prototype.unwindChain = function unwindChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, current_unwind_index, resetting_flag) {
-
-  var storage_self = this;
-
-  console.log(" ... unwind old chain");
-  storage_self.app.logger.logInfo(" ... unwind old chain");
-
-  var storage_self = this;
-
-  if (old_block_hashes.length > 0) {
-    //
-    // unspend the slips in this block. We know that
-    // the block has been saved to disk so we just open
-    // block by hash.
-    //
-    storage_self.app.blockchain.returnBlockByHash(old_block_hashes[current_unwind_index], function(blk) {
-
-      if (blk == null) {
-        console.log("We cannot find a block on disk that should exist in unwindChain");
-        storage_self.app.logger.logError("We cannot find a block on disk that should exist in unwindChain",
-          { message: "", err: "" });
-	      process.exit();
-      }
-
-      storage_self.app.storage.onChainReorganization(blk.block.id, blk.returnHash(), 0);
-      storage_self.app.wallet.onChainReorganization(blk.block.id, blk.returnHash(), 0);
-      storage_self.app.modules.onChainReorganization(blk.block.id, blk.returnHash(), 0);
-      storage_self.app.blockchain.index.lc[old_block_idxs[current_unwind_index]] = 0;
-
-      //
-      // if we are the node that produced this block, we catch any transactions
-      // that were added to it. we want to add these transactions back into our
-      // mempool once the chain has been rewritten if their inputs are still
-      // valid.
-      //
-      if (storage_self.app.wallet.returnPublicKey() == blk.block.miner) {
-
-	      //
-        // a block that we created is getting undone, so we push all of the
-	      // transactions into a special queue that exists in our mempool for
-	      // us to check once we have finished re-writing the chain.
-        //
-        if (blk.transactions != null) {
-          for (let i = 0; i < blk.transactions.length; i++) {
-            storage_self.app.mempool.recoverTransaction(blk.transactions[i]);
-          }
-        }
-
-      }
-
-
-      storage_self.unspendBlockInputs(blk);
-
-      //
-      // we either move on to our next block, or we hit
-      // the end of the chain of blocks to unspend and
-      // move on to wind the proposed new chain
-      //
-      if (current_unwind_index == 0) {
-        storage_self.windChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, 0, resetting_flag);
-      } else {
-        storage_self.unwindChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, current_unwind_index-1, resetting_flag);
-      }
-
-    });
-
-  } else {
-    storage_self.windChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, 0, resetting_flag);
-  }
-}
-
-
-/////////////////////////
-// validateBlockInputs //
-/////////////////////////
-//
-// are all inputs in a block valid?
-//
-// @params {saito.block} block
-// @returns {boolean} is valid
-//
-Storage.prototype.validateBlockInputs = function validateBlockInputs(newblock, prevblk, prevblk_permitted_null=0) {
-
-  var storage_self = this;
-
-  console.log(" ... validate block inputs and other stuff");
-  storage_self.app.logger.logInfo(" ... validate block inputs and other stuff");
-
-  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { return 1; }
-
-  var storage_self = this;
-  let spent_inputs = [];
-
-  /////////////////////////////////////////
-  // check against double-input spending //
-  /////////////////////////////////////////
-  var tmpgtfound = 0;
-  var tmpftfound = 0;
-  for (var ti = 0; ti < newblock.transactions.length; ti++) {
-    let tx = newblock.transactions[ti];
-    for (var ti2 = 0; ti2 < tx.transaction.from.length; ti2++) {
-      let tmpbid = tx.transaction.from[ti2].bid;
-      let tmptid = tx.transaction.from[ti2].tid;
-      let tmpsid = tx.transaction.from[ti2].sid;
-
-      // we may have multiple transactions claiming 0/0/0
-      // these will be golden ticket and fee ticket tx
-      let tmpgt  = tx.transaction.from[ti2].gt;
-      let tmpft  = tx.transaction.from[ti2].ft;
-      let tmprb  = 0; if (tx.transaction.rb == 1) { tmprb = 1; }
-
-      // only 1 ft-tagged slip in the FROM
-      if (tmpft == 1) {
-        if (tmpftfound == 1) {
-          // LOG INFO
-          storage_self.app.logger.logError("Block invalid: multiple fee capture transactions in block",
-            {message: "", err: ""});
-          console.log("Block invalid: multiple fee capture transactions in block");
-          return 0;
-        } else {
-          tmpftfound = 1;
-        }
-      }
-
-      if (tmprb == 0) {
-
-        // we can have multiple golden ticket-tagged sources in the block, but the BID/SID/TID will differ
-        let as_indexer = "a"+tmpbid+"-"+tmptid+"-"+tmpsid+"-"+tmpgt;
-        if (spent_inputs[as_indexer] == 1) {
-          // LOG INFO
-          this.app.logger.logError("Block invalid: multiple transactions spend same input: "+tmpbid+"/"+tmptid+"/"+tmpsid+"/"+tmpgt,
-            {message: "", err: ""});
-          console.log("Block invalid: multiple transactions spend same input: "+tmpbid+"/"+tmptid+"/"+tmpsid+"/"+tmpgt);
-          return 0;
-        }
-        spent_inputs[as_indexer] = 1;
-
-      }
-    }
-  }
-  spent_inputs = null;
-
-
-  //////////////////////
-  // validate locally //
-  //////////////////////
-  //
-  // this is a different validation function than used to check
-  // transactions we add to our mempool.
-  //
-  // the reason for this is that mempool transactions are not in our
-  // hashmap (no block hash, etc.) and if we generated them locally
-  // as part of Golden Tickets they will not have BID or BHASH set.
-  //
-  // in this case we can assume that all blocks have BID and BHASH
-  // information.
-  //
-  for (let b = 0; b < newblock.transactions.length; b++) {
-    for (let bb = 0; bb < newblock.transactions[b].transaction.from.length; bb++) {
-      if (newblock.transactions[b].transaction.from[bb].amt > 0) {
-        let utxi = newblock.transactions[b].transaction.from[bb];
-        let slip_map_index = storage_self.returnHashmapIndex(utxi.bid, utxi.tid, utxi.sid, utxi.add, utxi.amt, utxi.bhash);
-
-        //
-        // if we fail to validate the slip, we will permit it if
-        // we do not have a full genesis period worth of blocks
-        // as while this may lead us onto a poisoned chain, there
-        // is no way to be sure until we have a full genesis block
-        //
-        // if this becomes a problem in practice, then we need to
-        // maintain block hash records stretching back to the genesis
-        // block, which will be unfortunate but allow a workaround
-        // in the event of real issues here.
-        //
-        if (shashmap.validate_slip(slip_map_index, newblock.block.id) == 0) {
-
-	  //
-	  // if this transaction is rebroadcast, we accept it as we check
-	  // for the validity of rebroadcast transactions during our 
-	  // initial check of block validity (i.e. there cannot be 
-	  // extra.
-	  //
-	  if (newblock.transactions[b].transaction.rb == 1) {} else {
-
-            if (newblock.transactions[b].transaction.from[bb].bid < storage_self.app.blockchain.blk_limit) {
-
-              //
-              // we cannot be sure that we should be rejecting this block
-              // unless we have a full genesis period, as only with a full
-              // genesis period of blocks can we be sure that the inputs
-              // are coming from a valid chain.
-              //
-              // the solution to the problem posed by this is to confirm
-              // that the fork_id for the chain is correct once it has
-              // been downloaded, or start the sync from a known-good
-              // block provided by a trusted source (i.e. software provider)
-              //
-
-              // LOG INFO
-              storage_self.app.logger.logError("Validation Failure, but acceptable as we do not have a full genesis period yet",
-                {message: "", err: ""});
-              console.log("Validation Failure, but acceptable as we do not have a full genesis period yet");
-
-            } else {
-
-              //
-              // while we are debugging, we stop execution here for
-              // the purpose of assisting with debugging. Once we are
-              // ready for production we can shift this to just return
-              // 0 and it will trigger a rewinding / resetting of the
-              // chain to a formerly good position.
-
-              // LOG INFO
-              console.log("FAILED TO VALIDATE SLIP: " + slip_map_index);
-              console.log(JSON.stringify(newblock.transactions[b].transaction.from[bb], null, 4));
-              console.log("MY GBID: " + storage_self.app.blockchain.blk_limit);
-
-              storage_self.app.logger.logInfo(`FAILED TO VALIDATE SLIP: ${slip_map_index}`);
-              storage_self.app.logger.logInfo(JSON.stringify(newblock.transactions[b].transaction.from[bb], null, 4));
-              storage_self.app.logger.logInfo(`MY GBID: ${storage_self.app.blockchain.blk_limit}`);
-
-              return 0;
-
-            }
-          }
-        }
-      }
-    }
-  }
-
-
-  //
-  // now handle prevblock issues like monetary policy, etc.
-  //
-  if (prevblk == null) {
-    if (storage_self.app.blockchain.index.length > 0 && prevblk_permitted_null == 0) {
-      return 0;
-    } else {
-      return 1;
-    }
-  } else {
-
-    //
-    // golden ticket
-    //
-    if (! newblock.validateGoldenTicket(prevblk) ) {
-      console.log("Block does not validate -- Golden Ticket Wrong!!!");
-      storage_self.app.logger.logError("Block does not validate -- Golden Ticket Wrong!!!",
-        {message:"", error:""});
-      return 0;
-    }
-
-    //
-    // burn fee and fee step
-    //
-    var newbf = newblock.calculateBurnFee(prevblk.returnBurnFee(), prevblk.returnFeeStep());
-    if (newbf[0] != newblock.block.burn_fee) {
-      console.log("Block invalid: burn fee miscalculated: "+newbf[0]+" versus "+newblock.block.burn_fee);
-      storage_self.app.logger.logError("Block invalid: burn fee miscalculated: "+newbf[0]+" versus "+newblock.block.burn_fee,
-        {message:"", error:""});
-      return;
-    }
-    if (newbf[1] != newblock.block.fee_step) {
-      console.log("Block invalid: fee step miscalculated: "+newbf[1]+" versus "+newblock.block.fee_step);
-      storage_self.app.logger.logError("Block invalid: fee step miscalculated: "+newbf[1]+" versus "+newblock.block.fee_step,
-        {message:"", error:""});
-      return 0;
-    }
-
-  }
-
-  // block w/o transactions also valid
-  return 1;
-}
-
-
-//////////////////////////
-// validateLongestChain //
-//////////////////////////
-//
-// This is called at the end of addBlockToBlockchain in the
-// blockchain class. It starts the process of unrolling the
-// existing chain and rolling out the new longest chain,
-// validating the transaction slips to confirm that hte new
-// chain is valid.
-//
-// If there is a problem validating the new proposed longest
-// chain, the software must unroll any new blocks it has
-// added and re-roll out the existing chain.
-//
-// @params {saito.block} newest block
-// @params {interger} newest block index in blockchain.index
-// @params {integer} block index of last-common-ancestor blockchain.index
-// @params {array} array of block indexes for new blocks becoming longest chain
-// @params {array} array of block hashes for new blocks becoming longest chain
-// @params {array} array of block_ids for new blocks becoming longest chain
-// @params {array} array of block indexes for existing blocks losing longest chain
-// @params {array} array of block hashes for existing blocks losing longest chain
-// @params {array} array of block_ids for existing blocks losing longest chain
-// @params {integer} is newest block longest chain (should be 1)
-// @params {string} "force" if block is loaded from disk
-//
-Storage.prototype.validateLongestChain = function validateLongestChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd) {
-
-  var storage_self = this;
-
-  console.log("validating longest chain");
-
-  //
-  // lite-client validation goes here. We really only care about the integrity of
-  // the transactions we are monitoring, so we do not check the whole chain. In the
-  // future we should do merkle-root checks and put them here. As long as the
-  // general block data has been OK we just assume the transaction slips are OK since
-  // we cannot verify them.
-  //
-  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) {
-
-    //
-    // we have to trust that the transaction slips are valid as we are not
-    // a full-node. In the future this can be replaced with merkle roots
-    // etc. so that we can at least confirm our own transactions are valid
-    //
-    for (let x = 0; x < old_block_ids.length; x++) {
-      storage_self.app.storage.onChainReorganization(old_block_ids[x], old_block_hashes[x], 0);
-      storage_self.app.wallet.onChainReorganization(old_block_ids[x], old_block_hashes[x], 0);
-      storage_self.app.modules.onChainReorganization(old_block_ids[x], old_block_hashes[x], 0);
-      storage_self.app.blockchain.index.lc[old_block_idxs[x]] = 0;
-    }
-
-    //
-    // -1 as we handle the current block in addBlockToBlockchainPartTwo
-    //
-    for (let x = 0; x < new_block_ids.length-1; x++) {
-      storage_self.app.storage.onChainReorganization(new_block_ids[x], new_block_hashes[x], 1);
-      storage_self.app.wallet.onChainReorganization(new_block_ids[x], new_block_hashes[x], 1);
-      storage_self.app.modules.onChainReorganization(new_block_ids[x], new_block_hashes[x], 1);
-      storage_self.app.blockchain.index.lc[new_block_idxs[x]] = 1;
-    }
-
-    storage_self.app.blockchain.addBlockToBlockchainPartTwo(newblock, pos, i_am_the_longest_chain, forceAdd);
-    return;
-
-  }
-
-  //
-  // unwind or wind
-  //
-  if (old_block_hashes.length > 0) {
-    storage_self.unwindChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, old_block_hashes.length-1, 0);
-  } else {
-    storage_self.windChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, 0, 0);
-  }
-}
-
-
-/////////////////////////////////////////
-// validateTransactionInputsForMempool //
-/////////////////////////////////////////
-//
-// This is called by the mempool when it receives a transaction
-// over the network. We validate that the inputs are valid before
-// we add it to our mempool so that we don't end up producing an
-// invalid block.
-//
-// @params {saito.transaction} transaction to check
-// @params {callback} callback on success
-//
-Storage.prototype.validateTransactionInputsForMempool = function validateTransactionInputsForMempool(tx, mycallback) {
-
-  if (this.app.BROWSER == 1 || this.app.SPVMODE == 1) { mycallback(this.app, tx); return; }
-
-  var storage_self = this;
-  let utxiarray = tx.transaction.from;
-  let gtnum = 0;
-  let map_found = 0;
-
-  for (let via = 0; via < utxiarray.length; via++) {
-
-    let utxi  = utxiarray[via];
-
-     ////////////////////////
-     // validate 0-payment //
-     ////////////////////////
-     if (utxi.amt == 0) {
-        map_found++;
-     } else {
-
-       if (utxi.amt == 0 && utxi.bid == 0 && utxi.tid == 0 && utxi.sid == 0 && (utxi.gt == 1 || utxi.ft == 1)) { gtnum++; } else {
-
-         //////////////////////
-         // validate hashmap //
-         //////////////////////
-         let slip_map_index = this.returnHashmapIndex(utxi.bid, utxi.tid, utxi.sid, utxi.add, utxi.amt, utxi.bhash);
-         if (shashmap.validate_slip(slip_map_index, storage_self.app.blockchain.returnLatestBlockId()) == 1) {
-           map_found++;
-         }
-       }
-     }
-   }
-
-  if (gtnum == utxiarray.length) { mycallback(this.app, tx); return; }
-  if (gtnum+map_found >= utxiarray.length) { mycallback(this.app, tx); return; }
+Storage.prototype.updateShashmap = function updateShashmap(slip_map_index, bid) {
+  shashmap.insert_slip(slip_map_index, bid);
   return;
 }
 
 
-///////////////
-// windChain //
-///////////////
-//
-// this rolls out the new longest chain and validates that the
-// transaction inputs are all from spendable addresses.
-//
-// if we run into problems rolling out the new chain, we unroll it
-// and roll the old chain back out again, remembering to set the
-// resetting_flag to 1 so that we can report back that the chain
-// reorganization attempt failed once we are done.
-//
-// once all of the new blocks are rolled out, we send control back
-// to the blockchain class to finish either rolling out the new
-// block or to reset the chain condition so that it is ready to
-// process the next block.
-//
-// addBlockToBlockchainPartTwo --> on success
-// addBlockToBlockchainFailure --> on failure
-//
-// @params {saito.block} newest block
-// @params {interger} newest block index in blockchain.index
-// @params {integer} block index of last-common-ancestor blockchain.index
-// @params {array} array of block indexes for new blocks becoming longest chain
-// @params {array} array of block hashes for new blocks becoming longest chain
-// @params {array} array of block_ids for new blocks becoming longest chain
-// @params {array} array of block indexes for existing blocks losing longest chain
-// @params {array} array of block hashes for existing blocks losing longest chain
-// @params {array} array of block_ids for existing blocks losing longest chain
-// @params {integer} is newest block longest chain (should be 1)
-// @params {string} "force" if block is loaded from disk
-// @params {integer} position in above old_block_* arrays of this block
-// @params {integer} 1 if we are unwinding a bad new chain
-//
-Storage.prototype.windChain = function windChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, current_wind_index, resetting_flag) {
-
-  var storage_self = this;
-
-  let this_block_hash = new_block_hashes[current_wind_index];
-
-  //
-  // we have not saved the latest block to disk yet, so
-  // there's no need to go through the delay of opening
-  // files from disk and needing a callback.
-  //
-  if (this_block_hash == newblock.returnHash()) {
-
-    storage_self.app.blockchain.returnBlockByHash(newblock.block.prevhash, function(prevblk) {
-
-      if (storage_self.validateBlockInputs(newblock, prevblk) == 1) {
-
-        //
-        // we do not handle onChainReorganization for everything
-        // here as we do for older blocks. the reason for this is
-        // that the block is not yet saved to disk.
-        //
-        // we handle the latest block differently here as this
-        // avoids our saving to disk blocks that do not validate
-        // and stuffing out hard drive and database with spam
-        //
-        storage_self.spendBlockInputs(newblock);
-        storage_self.app.blockchain.addBlockToBlockchainPartTwo(newblock, pos, i_am_the_longest_chain, forceAdd);
-
-      } else {
-
-        if (current_wind_index == 0) {
-
-          // this is the first block we have tried to add
-          // and so we can just roll out the older chain
-          // again as it is known good.
-          //
-          // note that old and new hashes are swapped
-          // and the old chain is set as null because
-          // we won't move back to it. we also set the
-          // resetting_flag to 1 so we know to fork
-          // into addBlockToBlockchainFailure.
-          //
-          if (old_block_hashes.length > 0) {
-            storage_self.windChain(newblock, pos, shared_ancestor_index_pos, old_block_idxs, old_block_hashes, old_block_ids, null, null, null, i_am_the_longest_chain, forceAdd, 0, 1);
-          } else {
-            storage_self.app.blockchain.addBlockToBlockchainFailure(newblock, pos, i_am_the_longest_chain, forceAdd);
-          }
-        } else {
-
-    	    //
-          // we need to unwind some of our previously
-          // added blocks from the new chain. so we
-          // swap our hashes to wind/unwind.
-	        //
-          var chain_to_unwind_hashes = new_block_hashes.splice(current_wind_index);
-          var chain_to_unwind_idxs   = new_block_idxs.splice(current_wind_index);
-          var chain_to_unwind_ids    = new_block_ids.splice(current_wind_index);
-
-	        //
-          // unwind NEW and wind OLD
-          //
-          // note that we are setting the resetting_flag to 1
-          //
-          storage_self.unwindChain(newblock, pos, shared_ancestor_index_pos, old_block_idxs, old_block_hashes, old_block_ids, chain_to_unwind_idxs, chain_to_unwind_hashes, chain_to_unwind_ids, i_am_the_longest_chain, forceAdd, chain_to_unwind_hashes.length, 1);
-
-        }
-      }
-    });
-
-
-  //
-  // this is not the latest block, so we need to
-  // fetch it from disk, and then do exactly the
-  // same thing as above, essentially.
-  //
-  } else {
-
-    storage_self.app.blockchain.returnBlockByHash(new_block_hashes[current_wind_index], function(blk) {
-      storage_self.app.blockchain.returnBlockByHash(blk.block.prevhash, function(prevblk) {
-
-        if (blk == null) {
-          console.log("Cannot open block that should exist in windChain");
-          storage_self.app.logger.logError("Cannot open block that should exist in windChain",
-            { message: "", error: "" });
-          process.exit();
-        }
-
-        if (storage_self.validateBlockInputs(blk, prevblk) == 1) {
-
-          storage_self.app.storage.onChainReorganization(blk.block.id, blk.returnHash(), 1);
-          storage_self.app.wallet.onChainReorganization(blk.block.id, blk.returnHash(), 1);
-          storage_self.app.modules.onChainReorganization(blk.block.id, blk.returnHash(), 1);
-          storage_self.app.blockchain.index.lc[new_block_idxs[current_wind_index]] = 1;
-
-          storage_self.spendBlockInputs(blk);
-
-          if (current_wind_index == new_block_idxs.length-1) {
-            if (resetting_flag == 0) {
-              storage_self.app.blockchain.addBlockToBlockchainPartTwo(newblock, pos, i_am_the_longest_chain, forceAdd);
-            } else {
-              storage_self.app.blockchain.addBlockToBlockchainFailure(newblock, pos, i_am_the_longest_chain, forceAdd);
-            }
-          } else {
-            storage_self.windChain(newblock, pos, shared_ancestor_index_pos, new_block_idxs, new_block_hashes, new_block_ids, old_block_idxs, old_block_hashes, old_block_ids, i_am_the_longest_chain, forceAdd, current_wind_index+1, resetting_flag);
-            return;
-          }
-
-          storage_self.app.blockchain.addBlockToBlockchainPartTwo(newblock, pos, i_am_the_longest_chain, forceAdd);
-
-        } else {
-
-          if (current_wind_index == 0) {
-            storage_self.windChain(newblock, pos, shared_ancestor_index_pos, old_block_idxs, old_block_hashes, old_block_ids, null, null, null, i_am_the_longest_chain, forceAdd, 0, 1);
-          } else {
-            var chain_to_unwind_hashes = new_block_hashes.splice(current_wind_index);
-            var chain_to_unwind_idxs   = new_block_idxs.splice(current_wind_index);
-            var chain_to_unwind_ids    = new_block_ids.splice(current_wind_index);
-            storage_self.unwindChain(newblock, pos, shared_ancestor_index_pos, old_block_idxs, old_block_hashes, old_block_ids, chain_to_unwind_idxs, chain_to_unwind_hashes, chain_to_unwind_ids, i_am_the_longest_chain, forceAdd, chain_to_unwind_hashes.length, 1);
-          }
-        }
-      });
-    });
-  }
-
-}
-
 }).call(this,require('_process'),"/saito")
-},{"../saito":12,"_process":328,"fs":113,"path":319,"shashmap":113,"sqlite3":113}],32:[function(require,module,exports){
-const saito         = require('../saito');
+},{"../saito":8,"_process":326,"fs-extra":110,"path":317,"shashmap":110,"sqlite":379}],29:[function(require,module,exports){
+const Big = require('big.js');
+const saito    = require('../saito');
 
+
+/**
+ * Transaction Constructor
+ * @param {*} txjson
+ */
 function Transaction(txjson="") {
 
   if (!(this instanceof Transaction)) {
@@ -14803,45 +10892,77 @@ function Transaction(txjson="") {
   this.transaction.from          = [];
   this.transaction.to            = [];
   this.transaction.ts            = "";
-  this.transaction.sig           = ""; 
+  this.transaction.sig           = "";  // sig of tx
+  this.transaction.msig          = "";  // sig of msg
   this.transaction.ver           = 1.0;
   this.transaction.path          = [];
-  this.transaction.gt            = null;
-  this.transaction.ft            = null;
+  this.transaction.type          = 0; // 0 = normal
+                                      // 1 = golden ticket
+                                      // 2 = fee transaction
+                                      // 3 = rebroadcasting
   this.transaction.msg           = {};
-  this.transaction.msig          = "";
   this.transaction.ps            = 0;
-  this.transaction.rb            = 0;  // 0  = do not rebroadcast
-				       // 1+ = num of current broadcast
-				       // -1 = rebroadcast as VIP token
-				       // -2 = rebroadcast as GoldenChunk
 
-  ///////////////////
-  // non-consensus //
-  ///////////////////
-  this.size			 = 0;  // size in bytes
-  this.dmsg             	 = ""; // decrypted msg
-  this.ufee                      = -1; // usable fee
-  this.fee                       = -1; // total fee
-  this.is_valid			 = 1;  // is valid tx
-  this.trapdoor                  = "00000000000000000000000000000000000000000000";
 
-  /////////////////
-  // import json //
-  /////////////////
+  this.fees_total                = "";
+  this.fees_usable               = "";
+  this.fees_publickey            = "";
+
+  this.dmsg			 = "";
+  this.size                      = 0;
+  this.is_valid                  = true;
+
+
   if (txjson != "") {
     try {
-      this.transaction = JSON.parse(txjson.toString("utf8"));
-      if (this.transaction.from == null) { this.transaction.from = []; }
-      if (this.transaction.to == null)   { this.transaction.to = []; }
+
+      let txobj = JSON.parse(txjson.toString("utf8"));
+
+      //
+      // both txjson as well as tx.transaction json
+      //
+      if (txobj.transaction == undefined)      { let t = txobj; txobj={}; txobj.transaction = t; }
+      if (txobj.transaction.id != undefined)   { this.transaction.id   = txobj.transaction.id; }
+      if (txobj.transaction.ts != undefined)   { this.transaction.ts   = txobj.transaction.ts; }
+      if (txobj.transaction.from != undefined) { this.transaction.from = txobj.transaction.from; }
+      if (txobj.transaction.to != undefined)   { this.transaction.to   = txobj.transaction.to; }
+      if (txobj.transaction.sig != undefined)  { this.transaction.sig  = txobj.transaction.sig; }
+      if (txobj.transaction.msig != undefined) { this.transaction.msig = txobj.transaction.msig; }
+      if (txobj.transaction.ver != undefined)  { this.transaction.ver  = txobj.transaction.ver; }
+      if (txobj.transaction.path != undefined) { this.transaction.path = txobj.transaction.path; }
+      if (txobj.transaction.type != undefined) { this.transaction.type = txobj.transaction.type; }
+      if (txobj.transaction.msg != undefined)  { this.transaction.msg  = txobj.transaction.msg; }
+      if (txobj.transaction.ps != undefined)   { this.transaction.ps   = txobj.transaction.ps; }
+
       for (var txi = 0; txi < this.transaction.from.length; txi++) {
-        this.transaction.from[txi] = new saito.slip(this.transaction.from[txi].add, this.transaction.from[txi].amt, this.transaction.from[txi].gt, this.transaction.from[txi].bid, this.transaction.from[txi].tid, this.transaction.from[txi].sid, this.transaction.from[txi].bhash, this.transaction.from[txi].lc, this.transaction.from[txi].ft, this.transaction.from[txi].rn);
+        this.transaction.from[txi] = new saito.slip(
+          this.transaction.from[txi].add,
+          this.transaction.from[txi].amt,
+          this.transaction.from[txi].type,
+          this.transaction.from[txi].bid,
+          this.transaction.from[txi].tid,
+          this.transaction.from[txi].sid,
+          this.transaction.from[txi].bhash,
+          this.transaction.from[txi].lc,
+          this.transaction.from[txi].rn
+        );
       }
       for (var txi = 0; txi < this.transaction.to.length; txi++) {
-        this.transaction.to[txi] = new saito.slip(this.transaction.to[txi].add, this.transaction.to[txi].amt, this.transaction.to[txi].gt, this.transaction.to[txi].bid, this.transaction.to[txi].tid, this.transaction.to[txi].sid, this.transaction.to[txi].bhash, this.transaction.to[txi].lc, this.transaction.to[txi].ft, this.transaction.to[txi].rn);
+        this.transaction.to[txi] = new saito.slip(
+          this.transaction.to[txi].add,
+          this.transaction.to[txi].amt,
+          this.transaction.to[txi].type,
+          this.transaction.to[txi].bid,
+          this.transaction.to[txi].tid,
+          this.transaction.to[txi].sid,
+          this.transaction.to[txi].bhash,
+          this.transaction.to[txi].lc,
+          this.transaction.to[txi].rn
+        );
       }
     } catch (err) {
-      this.is_valid = 0;
+      console.log(err);
+      this.is_valid = false;
     }
   }
 
@@ -14851,242 +10972,51 @@ function Transaction(txjson="") {
 module.exports = Transaction;
 
 
-
-Transaction.prototype.addFrom = function addFrom(fromAddress, fromAmount) {
-  this.from.push(new saito.slip(fromAddress, fromAmount));
-}
-Transaction.prototype.addTo = function addTo(toAddress, toAmount) {
-  this.to.push(new saito.slip(toAddress, toAmount));
-}
-Transaction.prototype.decryptMessage = function decryptMessage(app) {
-  // try-catch avoids errors decrypting non-encrypted content
-  try {
-    var x = app.keys.decryptMessage(this.transaction.from[0].add, this.transaction.msg);
-    this.dmsg = x;
-  } catch (e) {}
-  return;
-}
-
-// validate
-Transaction.prototype.validateRebroadcastTransaction = function validateRebroadcastTransaction(slip_id, avg_fee=2) {
-
-  var fee = avg_fee;
-
-  // check fee is appropriate
-  if (this.transaction.rb >= 0) {
-
-    for (i = 1; i < this.transaction.rb; i++) {
-      fee = fee*2;
-    }
-
-    if (this.transaction.to.length < 2) {
-      console.log("ERROR: rebroadcast transaction does not have fee transaction");
-      return 0;
-    }
-    if (this.transaction.to[1].amt < fee) { 
-      console.log("ERROR: rebroadcast transaction fee inadequate");
-      return 0;
-    }
-    if (this.transaction.to[1].add != this.trapdoor) { 
-      console.log("ERROR: rebroadcast transaction fee not trapdoor address");
-      return 0;
-    }
-
-  }
-
-  return 1;
-
-}
-
-// accepts the old tx and creates one that will validate
-Transaction.prototype.generateRebroadcastTransaction = function generateRebroadcastTransaction(slip_id, avg_fee=2) {
-
-  if (this.transaction.to.length == 0) { 
-    console.log("THERE ARE NO TO ADDRESSES IN THIS TX");
-    return null; 
-  }
-
-  var newtx = new saito.transaction();
-  newtx.transaction.sig = this.transaction.sig;
-  newtx.transaction.msg = {};
-
-  var fee = avg_fee;
-
-  // normal transaction rebroadcasts
-  if (this.transaction.rb >= 0) {
-    newtx.transaction.rb = this.transaction.rb+1;
-    for (i = 1; i < newtx.transaction.rb; i++) {
-      fee = fee*2;
-    }
-  }
-
-  
-  if (this.transaction.rb == -1) {
-    // secure tokens for early supporters
-    newtx.transaction.rb = this.transaction.rb;
-    fee = 0;
-  }
-
-  //
-  // 2 SAITO PER BLOCK
-  //
-  if (this.transaction.rb == -2) {
-    newtx.transaction.rb = this.transaction.rb;
-    fee = 2;
-  }
-
-  var amt = this.transaction.to[slip_id].amt - fee;
-
-  //
-  // TODO
-  // 
-  if (amt < 0) { fee = this.transaction.to[slip_id].amt; amt = 0; }
-
-console.log("AMOUNT: " + amt + " / " + fee);
-
-
-  if (this.transaction.msg.tx != undefined) {
-    newtx.transaction.msg.tx = this.transaction.msg.tx;
-  } else {
-    newtx.transaction.msg.tx = JSON.stringify(this.transaction);
-  }
-
-  // create TO and FROM slips
-  var from = new saito.slip(this.transaction.to[slip_id].add, this.transaction.to[slip_id].amt);
-  var to   = new saito.slip(this.transaction.to[slip_id].add, amt);
-  var fee  = new saito.slip(this.trapdoor, fee);
-
-  newtx.transaction.from.push(from);
-  newtx.transaction.to.push(to);
-  newtx.transaction.to.push(fee);   // this ensures fee falls into money supply
-
-console.log(JSON.stringify(newtx));
-
-  return newtx;
-
-}
-Transaction.prototype.involvesPublicKey = function involvesPublicKey(publickey) {
-  if (this.returnSlipsFrom(publickey).length > 0 || this.returnSlipsTo(publickey).length > 0 ) { return 1; }
-  return 0;
-}
-Transaction.prototype.isGoldenTicket = function isGoldenTicket() {
-  if (this.transaction.gt != null) { return 1; }
-  return 0;
-}
-Transaction.prototype.isFeeTransaction = function isFeeTransaction() {
-  if (this.transaction.ft != 1) { return 0; }
-  return 1;
-}
+/**
+ * Checks if any from fields in the slips contains a publickey and returns a boolean
+ * @param {string} senderPublicKey
+ * @return {boolean} does the publickey exist in from?
+ */
 Transaction.prototype.isFrom = function isFrom(senderPublicKey) {
-  if (this.returnSlipsFrom(senderPublicKey).length != 0) { return 1; }
+  if (this.returnSlipsFrom(senderPublicKey).length != 0) { return true; }
+  return false;
+}
+
+
+/**
+ * Checks if any from fields in the slips contains a publickey and returns a boolean
+ *
+ * @return {boolean} is this transaction a golden ticket solution?
+ */
+Transaction.prototype.isGoldenTicket = function isGoldenTicket() {
+  if (this.transaction.type == 1) { return 1; }
   return 0;
 }
+
+/**
+ * Checks if any to fields in the slips contains a publickey and returns a boolean
+ * @param {string} senderPublicKey
+ * @return {boolean} does the publickey exist in to?
+ */
 Transaction.prototype.isTo = function isTo(receiverPublicKey) {
-  if (this.returnSlipsTo(receiverPublicKey).length != 0) { return 1; }
+  if (this.returnSlipsTo(receiverPublicKey).length != 0) { return true; }
+  return false;
+}
+
+/**
+ * does this transaction reference this publickey?
+**/
+Transaction.prototype.involvesPublicKey = function involvesPublicKey(publickey) {
+  if (this.returnSlipsToAndFrom(publickey).length > 0) { return 1; }
   return 0;
 }
-Transaction.prototype.isAutomaticallyRebroadcast = function isAutomaticallyRebroadcast(deadblk, newblk) {
-  if (this.transaction.to.length == 0) { return 0; }
-  if (this.transaction.rb < 0)         { return 1; }
-  if (this.transaction.to[0].amt > 10) { return 1; }
-  return 0;
-}
-Transaction.prototype.returnAmountTo = function returnAmountTo(toAddress) {
-  var x = 0.0;
-  if (this.transaction.to != null) {
-    for (var v = 0; v < this.transaction.to.length; v++) {
-      if (this.transaction.to[v].add == toAddress) {
-        if (this.transaction.to[v].amt > 0) { x = parseFloat(x) + parseFloat(this.transaction.to[v].amt); }
-      }
-    }
-  }
-  return x;
-}
-Transaction.prototype.returnFeeUsable = function returnFeeUsable() {
 
-  if (this.ufee == -1 || this.ufee == null) {
 
-    var inputs = 0.0;
-    if (this.transaction.from != null) {
-      for (var v = 0; v < this.transaction.from.length; v++) {
-        inputs = parseFloat(inputs) + parseFloat(this.transaction.from[v].amt);
-      }
-    }
-
-    var outputs = 0.0;
-    for (var v = 0; v < this.transaction.to.length; v++) {
-      // only count outputs on non-gt transactions
-      if (this.transaction.to[v].gt != 1) {
-        outputs = parseFloat(outputs) + parseFloat(this.transaction.to[v].amt);
-      }
-    }
-
-    this.fee = (inputs - outputs);
-    this.ufee = this.fee;
-
-    var pathlength = this.returnPathLength();
-
-    for (var x = 1; x < pathlength; x++) {
-      this.ufee = this.fee/2;
-      this.ufee.toFixed(8);
-    }
-
-    return this.ufee;
-  } else {
-    return this.ufee;
-  }
-}
-Transaction.prototype.returnFeeTotal = function returnFeeTotal() {
-
-  if (this.fee == -1 || this.fee == null) {
-
-    var inputs = 0.0;
-    for (var v = 0; v < this.transaction.from.length; v++) {
-      inputs = parseFloat(inputs) + parseFloat(this.transaction.from[v].amt);
-    }
-
-    var outputs = 0.0;
-    for (var v = 0; v < this.transaction.to.length; v++) {
-      // only count outputs on non-gt transactions
-      if (this.transaction.to[v].gt != 1) {
-        outputs = parseFloat(outputs) + parseFloat(this.transaction.to[v].amt);
-      }
-    }
-
-    this.fee = (inputs - outputs);
-  }
-
-  return this.fee;
-}
-Transaction.prototype.returnId = function returnId() {
-  return this.transaction.id;
-}
-Transaction.prototype.returnMessage = function returnMessage() {
-  if (this.dmsg != "") { return this.dmsg; }
-  return this.transaction.msg;
-}
-Transaction.prototype.returnMessageSignatureSource = function returnMessageSignatureSource() {
-  return JSON.stringify(this.transaction.msg);
-}
-Transaction.prototype.returnSignatureSource = function returnSignatureSource() {
-  return JSON.stringify(this.transaction.from) + 
-         JSON.stringify(this.transaction.to) + 
-         this.transaction.ts +
-         this.transaction.ps +
-         this.transaction.rb +
-         JSON.stringify(this.transaction.gt) +
-         JSON.stringify(this.transaction.ft) +
-         JSON.stringify(this.transaction.msig);
-}
-Transaction.prototype.returnSlipsTo = function returnSlipsTo(toAddress) {
-  var x = [];
-  if (this.transaction.to != null) {
-    for (var v = 0; v < this.transaction.to.length; v++) {
-      if (this.transaction.to[v].add == toAddress) { x.push(this.transaction.to[v]); }
-    }
-  }
-  return x;
-}
+/**
+ * Returns slips with publickey in from fields
+ * @param {string} fromAddress
+ * @return {saito.slips} slips_from
+ */
 Transaction.prototype.returnSlipsFrom = function returnSlipsFrom(fromAddress) {
   var x = [];
   if (this.transaction.from != null) {
@@ -15096,12 +11026,221 @@ Transaction.prototype.returnSlipsFrom = function returnSlipsFrom(fromAddress) {
   }
   return x;
 }
-Transaction.prototype.returnTransactionJson = function returnTransactionJson() {
-  return JSON.stringify(this.returnTransaction());
+
+
+
+/**
+ * Returns slips with publickey in from and to fields
+ * @param {string} fromAddress
+ * @return {saito.slips} object with two arrays => slips_to, slips_from
+ */
+Transaction.prototype.returnSlipsToAndFrom = function returnSlipsToAndFrom(theAddress) {
+  var x = {};
+  x.from = [];
+  x.to = [];
+  if (this.transaction.from != null) {
+    for (var v = 0; v < this.transaction.from.length; v++) {
+      if (this.transaction.from[v].add == theAddress) { x.from.push(this.transaction.from[v]); }
+    }
+  }
+  if (this.transaction.to != null) {
+    for (var v = 0; v < this.transaction.to.length; v++) {
+      if (this.transaction.to[v].add == theAddress) { x.to.push(this.transaction.to[v]); }
+    }
+  }
+  return x;
 }
-Transaction.prototype.returnTransaction = function returnTransaction() {
-  return this.transaction;
+
+/**
+ * Returns slips with publickey in to fields
+ * @param {string} toAddress
+ * @return {saito.slips} slips_to
+ */
+Transaction.prototype.returnSlipsTo = function returnSlipsTo(toAddress) {
+  var x = [];
+  if (this.transaction.to != null) {
+    for (var v = 0; v < this.transaction.to.length; v++) {
+      if (this.transaction.to[v].add == toAddress) { x.push(this.transaction.to[v]); }
+    }
+  }
+  return x;
 }
+
+
+/**
+ * decrypt the message
+ **/
+Transaction.prototype.decryptMessage = function decryptMessage(app) {
+  // try-catch avoids errors decrypting non-encrypted content
+  try {
+    var x = app.keys.decryptMessage(this.transaction.from[0].add, this.transaction.msg);
+    this.dmsg = x;
+  } catch (e) {}
+  return;
+}
+
+
+/**
+ * Returns the message attached to the transaction
+**/
+Transaction.prototype.returnMessage = function returnMessage() {
+  if (this.dmsg != "") { return this.dmsg; }
+  return this.transaction.msg;
+}
+
+/**
+ * Returns the source text signed to create this.transaction.msig
+ */
+Transaction.prototype.returnMessageSignatureSource = function returnMessageSignatureSource() {
+  return JSON.stringify(this.transaction.msg);
+}
+
+
+/**
+ * Returns the source text signed to create this.transaction.sig
+ */
+Transaction.prototype.returnSignatureSource = function returnSignatureSource() {
+  return JSON.stringify(this.transaction.from)
+         + JSON.stringify(this.transaction.to)
+         + this.transaction.ts
+         + this.transaction.ps
+         + this.transaction.type
+         + JSON.stringify(this.transaction.msig)
+}
+
+
+/**
+ * Returns total fees
+ * @param {app} application
+ * @param {string} creator publickey
+ * @returns {string} usable transaction fees
+ */
+Transaction.prototype.returnFeesTotal = function returnFeesTotal(app, publickey="") {
+  if (this.fees_publickey != publickey || this.fees_total == "") { this.calculateFees(app, publickey); }
+  return this.fees_total;
+}
+
+/**
+ * Returns usable fees
+ * @param {app} application
+ * @param {string} creator publickey
+ * @returns {string} usable transaction fees
+ */
+Transaction.prototype.returnFeesUsable = function returnFeesUsable(app, publickey="") {
+  if (this.fees_publickey != publickey || this.fees_usable == "") { this.calculateFees(app, publickey); }
+  return this.fees_usable;
+}
+Transaction.prototype.returnFees = function returnFees() {
+  if (this.fees_publickey != publickey || this.fees_usable == "") { this.calculateFees(app, publickey); }
+  return this.fees_usable;
+}
+/**
+ * calculates the usable and total transaction fees available from the
+ * perspective of the creator publickey (provided as the second argument)
+ * @param {app} application
+ * @param {string} creator publickey
+ */
+Transaction.prototype.calculateFees = function calculateFees(app, publickey="") {
+
+  //
+  // keep track of which key these were calculated against
+  // so that we can refresh the figures if a different key
+  // is submitted in the future, and do not just return
+  // the wrong figure out of habit.
+  //
+  this.fees_publickey == publickey;
+
+  //
+  // publickey should be block creator, or default to me
+  //
+  if (publickey == "") {
+    publickey = app.wallet.returnPublicKey();
+  }
+
+  //
+  // calculate total fees
+  //
+  var inputs = Big(0.0);
+  if (this.transaction.from != null) {
+    for (var v = 0; v < this.transaction.from.length; v++) {
+      //if (this.transaction.from[0].type == 0) {
+        inputs = inputs.plus(Big(this.transaction.from[v].amt));
+      //}
+    }
+  }
+
+  var outputs = Big(0.0);
+  for (var v = 0; v < this.transaction.to.length; v++) {
+    // only count outputs on non-gt transactions
+    if (this.transaction.to[v].type == 0) {
+      outputs = outputs.plus(Big(this.transaction.to[v].amt));
+    }
+  }
+
+  let tx_fees = inputs.minus(outputs);
+  this.fees_total = tx_fees.toFixed(8);
+
+
+  //
+  // calculate usable fees
+  //
+  if (this.transaction.path.length == 0) {
+    // only valid if creator is originator
+    if (publickey != this.transaction.from[0].add) {
+      this.fees_usable = "0";
+      return;
+    }
+  } else {
+    // check publickey is last recipient
+    if (publickey != "") {
+      if (this.transaction.path[this.transaction.path.length-1].to != publickey) {
+        this.fees_usable = "0";
+        return;
+      }
+    }
+  }
+
+  //
+  // check path integrity
+  //
+  let from_node = this.transaction.from[0].add;
+
+  for (let i = 0; i < this.transaction.path.length; i++) {
+
+    if (this.transaction.path[i].from != from_node) {
+      // path invalid
+      this.fees_usable = "0";
+      return;
+    }
+
+    let msg_to_check = this.transaction.path[i].to;
+    let sig_to_check = this.transaction.path[i].sig;
+
+    if (!app.crypto.verifyMessage(msg_to_check, sig_to_check, from_node)) {
+      // path invalid
+      console.log("ERROR: transaction has invalid path signatures");
+      this.fees_usable = "0";
+      return;
+    }
+
+    from_node = this.transaction.path[i].to;
+  }
+
+
+  //
+  // adjust usable fee for pathlength
+  //
+  var pathlength = this.returnPathLength();
+  for (var x = 1; x < pathlength; x++) {
+    tx_fees = tx_fees.div(2);
+  }
+
+  this.fees_usable = tx_fees.toFixed(8);
+  return;
+
+}
+
+
 Transaction.prototype.returnPathLength = function returnPathLength() {
   return this.transaction.path.length;
 }
@@ -15110,153 +11249,182 @@ Transaction.prototype.returnSender = function returnSender() {
     return this.transaction.from[0].add;
   }
 }
-Transaction.prototype.signMessage = function signMessage(message) {
-  return saito.crypt().signMessage(message, this.app.wallet.returnPrivateKey());
-}
-Transaction.prototype.signTransaction = function signTransaction() {
-  this.transaction.msig   = this.signMessage(this.transaction.msg);
-  this.transaction.sig  = this.signMessage(this.returnSignatureSource());
-}
-Transaction.prototype.validate = function validate(app, paysplit_vote=0, block_id=0, avg_fee=2) {
 
-  ////////////////////
-  // validate votes //
-  ////////////////////
-  if (paysplit_vote == 1) {
-    if (this.transaction.ps != 1 && this.transaction.gt != null) {
-      console.log("transaction paysplit vote differs from block paysplit vote");
-      app.mempool.removeTransaction(this);
-      return 0;
-    }
+
+/**
+ * validate that a transaction is valid given the consensus rules
+ * of the blockchain. Note that this function can be called in two
+ * different contents:
+ *
+ * 1. when adding transaction to mempool
+ * 2. when confirming block is valid
+ *
+ * In the first case, we expect the block provided to the function
+ * to be null. In the latter case, we expect to have the actual
+ * block.
+ *
+ * @returns {boolean} true_if_validates
+ **/
+Transaction.prototype.validate = function validate(app, blk=null) {
+
+  //
+  // set defaults
+  //
+  let block_id = app.blockchain.returnLatestBlockId();
+  let block_paysplit_vote = 0;
+  let avg_fee = 2;
+
+
+  if (blk != null) { block_id = blk.block.id; }
+
+
+  ////////////////////////////
+  // confirm inputs unspent //
+  ////////////////////////////
+  if (!app.storage.validateTransactionInputs(this.transaction.from, app.blockchain.returnLatestBlockId())) {
+    console.log("Transaction Invalid: checking inputs in validate function");
+    return false;
   }
-  if (paysplit_vote == -1) {
-    if (this.transaction.ps != -1 && this.transaction.gt != null) {
-      console.log("transaction paysplit vote differs from block paysplit vote");
-      app.mempool.removeTransaction(this);
-      return 0;
-    }
-  }
-
-
-  //////////////////////////////
-  // rebroadcast transactions //
-  //////////////////////////////
-  if (this.transaction.rb > 0 || this.transaction.rb < 0) {
-    if (this.validateRebroadcastTransaction(avg_fee) == 0) { return 0; }
-  }
-
-
-
-  ///////////////////////////
-  // within genesis period //
-  ///////////////////////////
-  var acceptable_lower_block_limit = block_id-app.blockchain.returnGenesisPeriod();
-  for (var tidx = 0; tidx < this.transaction.from.length; tidx++) {
-    if (this.transaction.from[tidx].bid < acceptable_lower_block_limit && this.transaction.ft != 1 && this.transaction.from[tidx].gt != 1) {
-      console.log("transaction outdated: tries to spend input from block "+this.transaction.from[tidx].bid);
-      console.log(this.transaction.from[tidx]); 
-      app.mempool.removeTransaction(this);
-      return 0;
-    }
-  }
-
 
   /////////////////////////////////
   // min one sender and receiver //
   /////////////////////////////////
-  if (this.transaction.from.length < 1) { 
+  if (this.transaction.from.length < 1) {
     console.log("no from address in transaction");
-    app.mempool.removeTransaction(this);
-    return 0;
+    return false;
   }
-  if (this.transaction.to.length < 1) { 
+  if (this.transaction.to.length < 1) {
     console.log("no to address in transaction");
-    app.mempool.removeTransaction(this);
-    return 0;
+    return false;
   }
 
 
 
-if (this.transaction.msg == "golden ticket") {
-  console.log("SIGSRC: " + this.returnSignatureSource());
-}
-
+  //////////////////////////
+  // no negative payments //
+  //////////////////////////
+  for (let i = 0; i < this.transaction.from.length; i++) {
+    if (Big(this.transaction.from[i].amt).lt(0)) { return 0; }
+  }
+  for (let i = 0; i < this.transaction.to.length; i++) {
+    if (Big(this.transaction.to[i].amt).lt(0)) { return 0; }
+  }
 
 
   ///////////////////////////
   // validate tx signature //
   ///////////////////////////
-  if (!saito.crypt().verifyMessage(this.returnSignatureSource(),this.transaction.sig,this.returnSender())) {
+  if (!app.crypto.verifyMessage(this.returnSignatureSource(), this.transaction.sig, this.returnSender())) {
 
+    //
     // maybe this is a rebroadcast tx
-    if (this.transaction.rb == 1) {
+    //
+    // if it is it will not validate, so we have to check to see if we can
+    // make it validate through our rebroadcasting rules.
+    //
 
-      var oldtx = new saito.transaction(this.transaction.msg.tx);
-
-      // restore to original signed condition
-      for (let i = 0; i < oldtx.transaction.to.length; i++) {
-        oldtx.transaction.to[i].bid = 0;
-        oldtx.transaction.to[i].tid = 0;
-        oldtx.transaction.to[i].sid = i;
-        oldtx.transaction.to[i].bhash = "";
-      }
-
-      if (!saito.crypt().verifyMessage(oldtx.returnSignatureSource(), oldtx.transaction.sig, oldtx.returnSender())) {
-        console.log("transaction signature in original rebroadcast tx does not verify");
-        app.mempool.removeTransaction(this);
-        return 0;
-      }
-
-    } else {
-      console.log("transaction signature does not verify");
-      app.mempool.removeTransaction(this);
-      return 0;
-    }
+    console.log("transaction invalid: signature does not verify");
+    return false;
 
   }
 
   ////////////////////////////
   // validate msg signature //
   ////////////////////////////
-  if (!saito.crypt().verifyMessage(this.returnMessageSignatureSource(),this.transaction.msig,this.returnSender())) {
+  if (!app.crypto.verifyMessage(this.returnMessageSignatureSource(),this.transaction.msig,this.returnSender())) {
 
+    //
+    // if this fails it may be a rebroadcast tx
+    //
     // maybe this is a rebroadcast tx
-    if (this.transaction.rb == 1) {
+    //
+    console.log("transaction message signature does not verify");
+    return false;
+  }
 
-      var oldtx = new saito.transaction(this.transaction.msg.tx);
+  //
+  // NOTE
+  //
+  // at this point we have done all of the validation that would happen
+  // if we were provided a transaction without a block. From this point
+  // on our checks are for things that require consistency between the
+  // transaction and the block / blockchain containing it.
+  //
+  // return 1 because there is no block provided, so if we have hit this
+  // point the transaction has passed our superficial validation tests
+  //
+  if (blk == null) { return 1; }
 
-      // restore to original signed condition
-      for (let i = 0; i < oldtx.transaction.to.length; i++) {
-        oldtx.transaction.to[i].bid = 0;
-        oldtx.transaction.to[i].tid = 0;
-        oldtx.transaction.to[i].sid = i;
-        oldtx.transaction.to[i].bhash = "";
-      }
+  //
+  // update variables
+  //
+  block_paysplit_vote = blk.block.vote;
+  block_id = blk.block.id;
+  avg_fee = 2;
 
-      if (!saito.crypt().verifyMessage(oldtx.returnMessageSignatureSource(), oldtx.transaction.msig, oldtx.returnSender())) {
-        console.log("transaction message signature does not verify");
-        app.mempool.removeTransaction(this);
-        return 0;
-      }
 
-    } else {
-      console.log("transaction message signature does not verify");
+  ////////////////////
+  // validate votes //
+  ////////////////////
+  if (block_paysplit_vote == 1) {
+    if (this.transaction.ps != 1 && this.transaction.type == 0) {
+      console.log("transaction paysplit vote differs from block paysplit vote");
+      return false;
+    }
+  }
+  if (block_paysplit_vote == -1) {
+    if (this.transaction.ps != -1 && this.transaction.type == 0) {
+      console.log("transaction paysplit vote differs from block paysplit vote");
       app.mempool.removeTransaction(this);
-      return 0;
+      return false;
     }
   }
 
-  return 1;
+
+  ///////////////////////////
+  // within genesis period //
+  ///////////////////////////
+  let acceptable_lower_block_limit = block_id - app.blockchain.returnGenesisPeriod();
+  for (let tidx = 0; tidx < this.transaction.from.length; tidx++) {
+    if (this.transaction.from[tidx].bid < acceptable_lower_block_limit && this.transaction.type == 0) {
+      if (Big(this.transaction.from[tidx].amt).gt(0)) {
+        console.log("transaction outdated: tries to spend input from block "+this.transaction.from[tidx].bid);
+        console.log(this.transaction.from[tidx]);
+        app.mempool.removeTransaction(this);
+        return false;
+      }
+    }
+  }
+
+  return true;
+
+}
+/**
+ * Returns true if we should rebroadcast this tx according to the
+ * consensus criteria.
+ *
+ * @returns {boolean} should we automatically rebroadcast?
+ **/
+Transaction.prototype.isAutomaticallyRebroadcast = function isAutomaticallyRebroadcast() {
+  // fee-capture and golden tickets never rebroadcast
+  if (this.transaction.type == 1) { return false; }
+  if (this.transaction.type == 2) { return false; }
+
+  // otherwise check value
+  return false;
 
 }
 
 
-},{"../saito":12}],33:[function(require,module,exports){
+
+
+},{"../saito":8,"big.js":75}],30:[function(require,module,exports){
 'use strict';
 
-const saito = require('../saito');
-
-
+/**
+ * Voter Constructor
+ * @param {*} app
+ */
 function Voter(app) {
 
   if (!(this instanceof Voter)) {
@@ -15265,11 +11433,13 @@ function Voter(app) {
 
   this.app                      = app || {};
 
-  this.voter                    = {};
-  this.voter.vote_on_difficulty = 0;
-  this.voter.target_difficulty  = 2;
-  this.voter.vote_on_paysplit   = 0;
-  this.voter.target_paysplit    = 0.5;
+  this.vote                    = {};
+  this.vote.difficulty         = true;
+  this.vote.paysplit           = true;
+
+  this.target                  = {};
+  this.target.difficulty       = 2;
+  this.target.paysplit         = 0.5;
 
   return this;
 
@@ -15277,58 +11447,78 @@ function Voter(app) {
 module.exports = Voter;
 
 
-Voter.prototype.initialize = function initialize() {
-  if (this.app.options.voter != null) {
-    this.voter.vote_on_difficulty = this.app.options.voter.vote_on_difficulty;
-    this.voter.target_difficulty  = this.app.options.voter.target_difficulty;
-    this.voter.vote_on_paysplit   = this.app.options.voter.vote_on_paysplit;
-    this.voter.target_paysplit    = this.app.options.voter.target_paysplit;
-  }
-}
-Voter.prototype.prefers = function prefers(block_a, block_b) {
-  if (block_a.block.paysplit > this.voter.target_paysplit) {
-      if (block_a.block.paysplit_vote == -1 && block_b.block.paysplit_vote > -1) { return 1; }
-      if (block_a.block.paysplit_vote == 0  && block_b.block.paysplit_vote > 0)  { return 1; }
+/**
+ * Initialize the voter class
+ */
+Voter.prototype.initialize = function initialize() {}
+
+
+/**
+ * Returns true if we prefer block A to block B given our voting preferences
+ * @param {block} a
+ * @param {block} b
+ * @returns {boolean} do we prefer a to b?
+ */
+Voter.prototype.prefersBlock = function prefersBlock(a, b) {
+  if(a == null) { return false; }
+  if(b == null) { return true; }
+
+  if (a.block.paysplit > this.target.paysplit) {
+      if (a.block.vote == -1 && b.block.vote > -1) { return true; }
+      if (a.block.vote == 0  && b.block.vote > 0)  { return true; }
   } else {
-    if (block_a.block.paysplit == this.voter.target_paysplit) {} else {
-      if (block_a.block.paysplit_vote == 1 && block_b.block.paysplit_vote < 1)  { return 1; }
-      if (block_a.block.paysplit_vote == 0  && block_b.block.paysplit_vote < 0) { return 1; }
+    if (a.block.paysplit == this.target.paysplit) {
+      if (a.block.vote == 0) { return true; }
+    } else {
+      if (a.block.vote == 1 && b.block.vote < 1)  { return true; }
+      if (a.block.vote == 0  && b.block.vote < 0) { return true; }
     }
+  }
+  return false;
+}
+
+
+/**
+ * Returns our preferred difficulty vote
+ * @param {float} difficulty
+ * @returns {int} preferred vote
+ */
+Voter.prototype.returnDifficultyVote = function returnDifficultyVote(difficulty) {
+  if (this.vote.difficulty) {
+    if (difficulty < this.target.difficulty) { return 1; }
+    if (difficulty > this.target.difficulty) { return -1; }
+    return 0;
   }
   return 0;
 }
-Voter.prototype.returnDifficultyVote = function returnDifficultyVote(difficulty) {
-  if (this.voter.vote_on_difficulty == 1) {
-    if (difficulty < target_difficulty) { return 1; }
-    if (difficulty > target_difficulty) { return -1; }
-    return 0;
-  } else {
-    return 0;
-  }
-}
+
+
+/**
+ * Returns our preferred paysplit vote
+ * @params {decimal} paysplit
+ * @returns {int} preferred vote
+ */
 Voter.prototype.returnPaysplitVote   = function returnPaysplitVote(paysplit) {
-  if (this.voter.vote_on_paysplit == 1) {
-    if (paysplit < target_paysplit) { return 1; }
-    if (paysplit > target_paysplit) { return -1; }
-    return 0;
-  } else {
-    return 0;
+  if (this.vote.paysplit) {
+    if (paysplit < this.target.paysplit) { return 1; }
+    if (paysplit > this.target.paysplit) { return -1; }
   }
+  return 0;
 }
 
 
 
 
-},{"../saito":12}],34:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 'use strict';
 
 const saito = require('../saito');
+const Big      = require('big.js');
 
-
-
-/////////////////
-// Constructor //
-/////////////////
+/**
+ * Mempool Constructor
+ * @param {*} app
+ */
 function Wallet(app) {
 
   if (!(this instanceof Wallet)) {
@@ -15337,104 +11527,37 @@ function Wallet(app) {
 
   this.app     = app || {};
 
-  //////////////////
-  // options vars //
-  //////////////////
-  this.wallet                     = {};
-  this.wallet.balance             = parseFloat(0.0);
-  this.wallet.privateKey          = "";
-  this.wallet.publicKey           = "";
-  this.wallet.identifier          = "";
-  this.wallet.utxi                = [];
-  this.wallet.utxo                = [];
-  this.wallet.default_fee         = 2;
-  this.wallet.version             = 1.96;
+  // options vars
+  this.wallet                       = {};
+  this.wallet.balance               = "0.0";
+  this.wallet.privatekey            = "";
+  this.wallet.publickey             = "";
+  this.wallet.identifier            = "";
+  this.wallet.inputs                = [];
+  this.wallet.outputs               = [];
+  this.wallet.spends                = [];
+  this.wallet.default_fee           = 2;
+  this.wallet.version               = 2.05;
 
+  this.inputs_hmap                  = [];
+  this.inputs_hmap_counter 	    = 0;
+  this.inputs_hmap_counter_limit    = 10000;
+  this.outputs_hmap                 = [];
+  this.outputs_hmap_counter 	    = 0;
+  this.outputs_hmap_counter_limit   = 10000;
 
-  ///////////////
-  // fast mode //
-  ///////////////
-  //
-  // designed for speed tests on a single computer sending and
-  // receiving transactions on a non-forking chain using spammer
-  // module.
-  //
-  this.store_utxo                 = 0; // 1 = store utxo
-  this.speed_test		  = 0; // trust all inputs
-
-
-  /////////////
-  // hashmap //
-  /////////////
-  //
-  // Bitcoin refers generally to all slips as UTXO. In Saito 
-  // we distinguish between UTXI (slips we have yet to spent
-  // which are valid to spend) and UTXO (slips we have spent
-  // which may or may not be valid for others to spend).
-  //
-  // We make this distinction mostly for ease for reference 
-  // here in the wallet class.
-  //
-  // These hashmaps are used to speed up the process of 
-  // checking whether inputs/outputs already exist. It is
-  // possible for them to be inaccurate in that UTXI may 
-  // be reported as existing which are already spent, but 
-  // since we use them to check for duplicate inserts when
-  // syncing the chain this is not a problem.
-  //
-  this.utxi_hashmap               = [];
-  this.utxo_hashmap               = [];
-  this.utxi_hashmap_counter 	  = 0;
-  this.utxi_hashmap_counter_limit = 10000;
-
-
-  /////////////////////////
-  // UTXO storage limits //
-  /////////////////////////
-  //
-  // we do not store all UTXO in perpetuity, as that would
-  // cause our options file to expand out of control. And 
-  // storing large amounts of UTXO makes it slower to add 
-  // incoming UTXI and outgoing UTXO.
-  //
-  // these variables specify how many UTXO we keep in our
-  // wallet before purging them. If there is a chain re-
-  // organization and we have already discarded our UTXO
-  // then the funds are lost.
-  //
-  this.utxo_storage_counter      = 0;
-  this.utxo_storage_limit        = 1000; // keep only the last 1000 spent slips
-  this.utxo_purged_bid           = 0;
-
-
-  /////////////////
-  // spent slips //
-  /////////////////
-  //
-  // this tracks the UTXI that we have already spent this
-  // block so that we do not attempt to use the same UTXI 
-  // slip twice. It is reset after every block.
-  //
-  this.spent_slips               = [];
-  this.spent_slips_idx           = 0;
-
-  return this;
+  this.is_testing                   = false;
 
 }
 module.exports = Wallet;
 
+/**
+ * Initialize Wallet
+ */
+Wallet.prototype.initialize = function initialize(app) {
 
-////////////////
-// Initialize //
-////////////////
-//
-// when we initialize the wallet we fetch our wallet info
-// from our options file or generate a new wallet if this
-// does not exist.
-//
-Wallet.prototype.initialize = function initialize() {
 
-  if (this.wallet.privateKey == "") {
+  if (this.wallet.privatekey == "") {
 
     ///////////////////
     // wallet exists //
@@ -15445,42 +11568,46 @@ Wallet.prototype.initialize = function initialize() {
       // reset if out-of-date //
       //////////////////////////
       //
-      // we keep our public and private keys, but reset the 
+      // we keep our public and private keys, but reset the
       // UTXI and UTXO data and force a clean reset of the
       // blockchain tracking information
       //
       if (this.app.options.wallet.version != this.wallet.version) {
 
-	if (this.app.BROWSER == 1) {
+        if (this.app.BROWSER == 1) {
 
           this.app.options.wallet.version = this.wallet.version;
 
-          let tmpprivkey = this.app.options.wallet.privateKey;
-          let tmppubkey = this.app.options.wallet.publicKey;
+          let tmpprivkey = this.app.options.wallet.privatekey;
+          let tmppubkey = this.app.options.wallet.publickey;
           let tmpid = this.app.options.wallet.identifier;
 
-	  // specify before reset to avoid archives reset problem
-          this.wallet.publicKey = tmppubkey;
-          this.wallet.privateKey = tmpprivkey;
+          // specify before reset to avoid archives reset problem
+          this.wallet.publickey = tmppubkey;
+          this.wallet.privatekey = tmpprivkey;
           this.wallet.identifier = tmpid;
 
           // reset and save
           this.app.storage.resetOptions();
           this.app.storage.saveOptions();
 
-	  // re-specify after reset
-          this.wallet.publicKey = tmppubkey;
-          this.wallet.privateKey = tmpprivkey;
+          // re-specify after reset
+          this.wallet.publickey = tmppubkey;
+          this.wallet.privatekey = tmpprivkey;
           this.wallet.identifier = tmpid;
 
-	  this.app.options.wallet = this.wallet;
-	  this.saveWallet();
+          this.app.options.wallet = this.wallet;
+          this.saveWallet();
 
+          //
+          // TODO: reimplement resetting archives
+          //
           this.app.archives.resetArchives();
 
           // reset blockchain
-  	  this.app.options.blockchain.latest_block_id = "";
-  	  this.app.options.blockchain.latest_block_hash = "";
+          this.app.options.blockchain.last_bid = "";
+          this.app.options.blockchain.last_hash = "";
+          this.app.options.blockchain.last_ts = "";
 
           alert("Saito Upgrade: Wallet Reset");
 
@@ -15492,350 +11619,143 @@ Wallet.prototype.initialize = function initialize() {
     //////////////////////////
     // wallet doesn't exist //
     //////////////////////////
-    if (this.wallet.privateKey == "") {
-      this.generateKeys();
+    if (this.wallet.privatekey == "") {
+      // generate random keys
+      this.wallet.privatekey            = this.app.crypto.generateKeys();
+      this.wallet.publickey             = this.app.crypto.returnPublicKey(this.wallet.privatekey);
     }
   }
+
 
   //////////////////
   // import slips //
   //////////////////
   if (this.app.options.wallet != null) {
-    if (this.app.options.wallet.utxi != null) {
-      for (let i = 0; i < this.app.options.wallet.utxi.length; i++) {
-        this.wallet.utxi[i] = new saito.slip(
-	  this.app.options.wallet.utxi[i].add,
-	  this.app.options.wallet.utxi[i].amt,
-	  this.app.options.wallet.utxi[i].gt,
-	  this.app.options.wallet.utxi[i].bid,
-	  this.app.options.wallet.utxi[i].tid,
-	  this.app.options.wallet.utxi[i].sid,
-	  this.app.options.wallet.utxi[i].bhash,
-	  this.app.options.wallet.utxi[i].lc,
-	  this.app.options.wallet.utxi[i].ft,
-	  this.app.options.wallet.utxi[i].rn
-	);
-	this.spent_slips[i] = 0;
+    if (this.app.options.wallet.inputs != null) {
+      for (let i = 0; i < this.app.options.wallet.inputs.length; i++) {
+        this.wallet.inputs[i] = new saito.slip(
+          this.app.options.wallet.inputs[i].add,
+          this.app.options.wallet.inputs[i].amt,
+          this.app.options.wallet.inputs[i].type,
+          this.app.options.wallet.inputs[i].bid,
+          this.app.options.wallet.inputs[i].tid,
+          this.app.options.wallet.inputs[i].sid,
+          this.app.options.wallet.inputs[i].bhash,
+          this.app.options.wallet.inputs[i].lc,
+          this.app.options.wallet.inputs[i].rn
+        );
+        this.wallet.spends.push(0);
 
-	////////////////////
-	// update hashmap //
-	////////////////////
-        let hmi = this.returnHashmapIndex(this.wallet.utxi[i]);
-        this.utxi_hashmap[hmi] = 1;
-        this.utxi_hashmap_counter++;
+        ////////////////////
+        // update hashmap //
+        ////////////////////
+        let hmi = this.wallet.inputs[i].returnIndex();
+        this.inputs_hmap[hmi] = 1;
+        this.inputs_hmap_counter++;
 
       }
     }
-    this.spent_slips_idx = 0;
-    if (this.app.options.wallet.utxo != null) {
-      for (let i = 0; i < this.app.options.wallet.utxo.length; i++) {
-        this.wallet.utxo[i] = new saito.slip(
-	  this.app.options.wallet.utxo[i].add,
-	  this.app.options.wallet.utxo[i].amt,
-	  this.app.options.wallet.utxo[i].gt,
-	  this.app.options.wallet.utxo[i].bid,
-	  this.app.options.wallet.utxo[i].tid,
-	  this.app.options.wallet.utxo[i].sid,
-	  this.app.options.wallet.utxo[i].bhash,
-	  this.app.options.wallet.utxo[i].lc,
-	  this.app.options.wallet.utxo[i].ft,
-	  this.app.options.wallet.utxo[i].rn
-	);
+    if (this.app.options.wallet.outputs != null) {
+      for (let i = 0; i < this.app.options.wallet.outputs.length; i++) {
+        this.wallet.outputs[i] = new saito.slip(
+          this.app.options.wallet.outputs[i].add,
+          this.app.options.wallet.outputs[i].amt,
+          this.app.options.wallet.outputs[i].type,
+          this.app.options.wallet.outputs[i].bid,
+          this.app.options.wallet.outputs[i].tid,
+          this.app.options.wallet.outputs[i].sid,
+          this.app.options.wallet.outputs[i].bhash,
+          this.app.options.wallet.outputs[i].lc,
+          this.app.options.wallet.outputs[i].rn
+        );
 
-	////////////////////
-	// update hashmap //
-	////////////////////
-        let hmi = this.returnHashmapIndex(this.wallet.utxo[i]);
-        this.utxo_hashmap[hmi] = 1;
-        this.utxo_hashmap_counter++;
+
+        ////////////////////
+        // update hashmap //
+        ////////////////////
+        let hmi = this.wallet.outputs[i].returnIndex();
+        this.outputs_hmap[hmi] = 1;
+        this.outputs_hmap_counter++;
 
       }
+    }
+    if (this.app.options.wallet.spends != null) {
+      this.wallet.spends = this.app.options.wallet.spends;
     }
   }
 
+
+  //
+  // re-implement
+  //
   this.purgeExpiredSlips();
   this.updateBalance();
   this.saveWallet();
 
-console.log(this.wallet.utxi);
-
 }
 
 
 
+/**
+ * counts up the amount of SAITO tokens we have in our wallet
+ * and returns that. If this function is provided with a decimal
+ * indicating the limit, we stop and report the total value of
+ * the UTXI slips we have sufficient to cover that limit.
+ *
+ * @param  {decimal} amount of tokens needed
+ * @returns {decimal} value of tokens in wallet
+ **/
+Wallet.prototype.returnAvailableInputs = function returnAvailableInputs(limit=0) {
 
+  var value   = Big(0.0);
 
+  this.purgeExpiredSlips();
+  // lowest acceptable block_id for security (+1 because is next block, +1 for safeguard)
+  var lowest_block = this.app.blockchain.returnLatestBlockId() - this.app.blockchain.returnGenesisPeriod();
+      lowest_block = lowest_block+2;
 
-
-
-
-
-
-
-
-
-
-/////////////
-// addUTXI //
-/////////////
-//
-// adds a UTXI slip to our wallet.
-//
-// @param {saito.slip} UTXI slip
-//
-Wallet.prototype.addUTXI = function addUTXI(x) {
-
-  //////////////
-  // add slip //
-  //////////////
-  //  
-  // we keep our UTXI array sorted according to block_id
-  // so that we can (1) spend the earliest slips first, 
-  // and (2) simplify deleting expired slips
-  //
-  let pos = this.wallet.utxi.length;
-  while (pos > 0 && this.wallet.utxi[pos-1].bid > x.bid) { pos--; }
-  if (pos == -1) { pos = 0; }
-
-  this.wallet.utxi.splice(pos, 0, x);
-  this.spent_slips.splice(pos, 0, 0);
-
-  let hmi = this.returnHashmapIndex(x);
-  this.utxi_hashmap[hmi] = 1;
-  this.utxi_hashmap_counter++;
-
-  
-  ////////////////////////
-  // regenerate hashmap //
-  ////////////////////////
-  //
-  // we want to periodically re-generate our hashmaps
-  // that help us check if UTXI and UTXO are already
-  // in our wallet for memory-management reasons and 
-  // to maintain reasonable accuracy.
-  //
-  if (this.utxi_hashmap_counter > this.utxi_hashmap_counter_limit) {
-    this.utxi_hashmap = [];
-    this.utxo_hashmap = [];
-    for (let i = 0; i < this.wallet.utxi.length; i++) {
-      let hmi = this.returnHashmapIndex(this.wallet.utxi[i]);
-      this.utxi_hashmap[hmi] = 1;
-    }
-    for (let i = 0; i < this.wallet.utxo.length; i++) {
-      let hmi = this.returnHashmapIndex(this.wallet.utxo[i]);
-      this.utxo_hashmap[hmi] = 1;
+  // calculate value
+  for (let i = 0; i < this.wallet.inputs.length; i++) {
+    if (this.wallet.spends[i] == 0) {
+      if (this.wallet.inputs[i].lc == 1 && this.wallet.inputs[i].bid >= lowest_block) {
+        value = value.plus(Big(this.wallet.inputs[i].amt));
+        if (value.gte(limit) && limit != 0) {
+          return value.toFixed(8);
+        }
+      }
     }
   }
-  return;
+  return value.toFixed(8);
+
 }
 
 
-/////////////
-// addUTXO //
-/////////////
-//
-// adds a UTXO slip to our wallet.
-//
-// @param {saito.slip} UTXO slip
-//
-Wallet.prototype.addUTXO = function addUTXO(x) {
- 
-  if (this.store_utxo == 0) { return; }
 
-  //////////////
-  // add slip //
-  //////////////
-  //
-  // we don't bother storing UTXO outputs in any specific
-  // order as we more rarely need to search through them
-  //
-  this.wallet.utxo.push(x);
+/**
+ * create a transaction with the appropriate slips given
+ * the desired fee and payment to associate with the
+ * transaction, and a change address to receive any
+ * surplus tokens.
+ *
+ * @param {string} recipient publickey
+ * @param {decimal} payment amount
+ * @param {decimal} fee to send with tx
+ *
+ * @returns {saito.transaction} if successful
+ * @returns {null} if inadequate inputs
+ **/
+Wallet.prototype.createUnsignedTransaction = function createUnsignedTransaction(publickey, amt = 0.0, fee = 0.0) {
 
-  let hmi = this.returnHashmapIndex(x);
-  this.utxo_hashmap[hmi] = 1;
-  this.utxo_storage_counter++;
+  var tx           = new saito.transaction();
+  var total_fees   = Big(amt).plus(Big(fee));
+  var wallet_avail = Big(this.returnBalance());
 
-
-  ////////////////////
-  // purge old utxo //
-  ////////////////////
-  //
-  // delete excessive UTXO inputs to prevent options file expanding
-  // uncontrollably. the downside is the potential for funds loss
-  // with chain-reorganizations
-  //
-  if (this.utxo_storage_counter >= this.utxo_storage_limit) {
-    console.log("Deleting Excessive UTXOs from heavy-spend wallet...");
-    this.wallet.utxo.splice(0, this.wallet.utxo.length-this.utxo_storage_limit);
-    this.utxo_storage_counter = 0;
-  }
-  return;
-}
-
-
-//////////////////////
-// calculateBalance //
-//////////////////////
-//
-// sums the total value of SAITO tokens in valid UTXI
-// stored in this wallet.
-//
-// @returns (string) balance_of_wallet
-//
-Wallet.prototype.calculateBalance = function calculateBalance() {
-  let b = 0.0;
-  let minid = this.app.blockchain.returnLatestBlockId() - this.app.blockchain.returnGenesisPeriod() + 1;
-  for (let x = 0; x < this.wallet.utxi.length; x++) {
-    let s = this.wallet.utxi[x];
-    if (s.lc == 1 && s.bid >= minid) {
-      b = parseFloat(parseFloat(b) + parseFloat(s.amt)).toFixed(8);
-    }
-  }
-  return b;
-}
-
-
-///////////////////////////////
-// addRecipientToTransaction //
-///////////////////////////////
-//
-// sums the total value of SAITO tokens in valid UTXI
-// stored in this wallet.
-//
-// @param {saito.transaction} transaction
-// @param {publickey} address
-// @returns {saito.transaction}
-//
-Wallet.prototype.addRecipientToTransaction = function addRecipientToTransaction(tx, to) {
-  tx.transaction.to.push(new saito.slip(to, 0.0));
-  tx = this.signTransaction(tx);
-  return tx;
-}
-
-
-//////////////////
-// containsUTXI //
-//////////////////
-//
-// does our wallet contain a UTXI slip?
-//
-// @param {saito.slip} slip
-// @returns {boolean}
-//
-Wallet.prototype.containsUtxi = function containsUtxi(s) {
-
-  let hmi = this.returnHashmapIndex(s);
-  if (this.utxi_hashmap[hmi] == 1) { 
-    return 1; 
+  if (total_fees.gt(wallet_avail)) {
+    return null;
   }
 
-  return 0;
-}
-
-
-//////////////////
-// containsUTXO //
-//////////////////
-//
-// does our wallet contain a UTXO slip?
-//
-// @param {saito.slip} slip
-// @returns {boolean}
-//
-Wallet.prototype.containsUtxo = function containsUtxo(s) {
-  if (this.store_utxo == 0) { return 0; }
-
-  let hmi = this.returnHashmapIndex(s);
-  if (this.utxo_hashmap[hmi] == 1) { return 1; }
-
-  return 0;
-}
-
-
-///////////////////////////////////////////
-// createSignedTransactionWithForeignKey //
-///////////////////////////////////////////
-//
-// create and sign a transaction using the information 
-// submitted as arguments to this function. this is needed
-// by modules that need to rebroadcast transactions that 
-// are not technically stored in the Saito wallet.
-//
-// @param {string} recipient publickey
-// @param {decimal} amount of slip value to send (remainder is fee)
-// @param {string} publickey of utxi recipient
-// @param {decimal} value of slip
-// @param {integer} block_id of slip
-// @param {integer} transaction_id of slip
-// @param {integer} slip_id of slip
-// @param {string} block_hash of block containing slip
-// @param {string} publickey of utxi recipient
-// @param {string} privatekey of utxi recipient
-// @param {string} msg to include in transaction
-//
-// @returns {saito.transaction}
-//
-Wallet.prototype.createSignedTransactionWithForeignKey = function createSignedTransactionWithForeignKey(to_pubkey, send_amt = 0.0, slip_add, slip_amt, slip_bid, slip_tid, slip_sid, slip_bhash, slip_pubkey, slip_privkey, tx_msg) {
-
-  var tx = new saito.transaction();
-      tx.transaction.msg = tx_msg;
-      tx.transaction.ts   = new Date().getTime();
-
-  // recreate FROM slip
-  var fslip       = new saito.slip();
-      fslip.add   = slip_add;
-      fslip.amt   = slip_amt;
-      fslip.bid   = slip_bid;
-      fslip.tid   = slip_tid;
-      fslip.sid   = slip_sid;
-      fslip.bhash = slip_bhash;
-      fslip.lc    = 1;
-      fslip.ft    = 0;
-
-  // create TO slip
-  var tslip       = new saito.slip(to_pubkey, send_amt);
-
-  tx.transaction.from.push(fslip);
-  tx.transaction.to.push(tslip);
-  tx.transaction.msg = tx_msg;
-
-  // sign transaction
-  for (let i = 0; i < tx.transaction.to.length; i++) {
-    tx.transaction.to[i].sid = i;
-  }
-  tx.transaction.msig   = this.signMessageWithForeignKey(tx.returnMessageSignatureSource(), slip_privkey);
-  tx.transaction.sig    = this.signMessageWithForeignKey(tx.returnSignatureSource(), slip_privkey);
-  return tx;
-
-}
-
-
-///////////////////////////////
-// createUnsignedTransaction //
-///////////////////////////////
-//
-// create a transaction with the appropriate slips given
-// the desired fee and payment to associate with the 
-// transaction, and a change address to receive any
-// surplus tokens.
-// 
-// @param {string} recipient publickey
-// @param {decimal} payment amount
-// @param {decimal} fee to send with tx
-//
-// @returns {saito.transaction} if successful
-// @returns {null} if inadequate inputs 
-//
-Wallet.prototype.createUnsignedTransaction = function createUnsignedTransaction(to_pubkey, amt = 0.0, fee = 0.0) {
-
-  var tx = new saito.transaction();
-
-  var total_fees = parseFloat(amt) + parseFloat(fee);
-
-  if (total_fees > this.returnBalance()) { return null; }
-
   //
-  // testing -- create fake input if total == 0, as it will not need to be confirmed
+  // zero-fee transactions have fake inputs
   //
   if (total_fees == 0.0) {
     tx.transaction.from = [];
@@ -15844,21 +11764,23 @@ Wallet.prototype.createUnsignedTransaction = function createUnsignedTransaction(
     tx.transaction.from = this.returnAdequateInputs(total_fees);
   }
   tx.transaction.ts   = new Date().getTime();
-  tx.transaction.to.push(new saito.slip(to_pubkey, amt));
+  tx.transaction.to.push(new saito.slip(publickey, amt));
+
+  // specify that this is a normal transaction
+  tx.transaction.to[tx.transaction.to.length-1].type = 0;
   if (tx.transaction.from == null) { return null; }
 
-
   // add change input
-  var total_inputs = 0.0;
-  if (fee > 0) {
-    for (let ii = 0; ii < tx.transaction.from.length; ii++) {
-      total_inputs = total_inputs + parseFloat(tx.transaction.from[ii].amt);
-    }
+  var total_inputs = Big(0.0);
+  for (let ii = 0; ii < tx.transaction.from.length; ii++) {
+    total_inputs = total_inputs.plus(Big(tx.transaction.from[ii].amt));
   }
 
-  var change_amount = total_inputs - total_fees;
-  if (change_amount > 0) {
+  var change_amount = total_inputs.minus(total_fees);
+  if (Big(change_amount).gt(0)) {
     tx.transaction.to.push(new saito.slip(this.returnPublicKey(), change_amount.toFixed(8)));
+    // specify that this is a normal transaction
+    tx.transaction.to[tx.transaction.to.length-1].type = 0;
   }
 
   return tx;
@@ -15866,54 +11788,78 @@ Wallet.prototype.createUnsignedTransaction = function createUnsignedTransaction(
 }
 
 
-/////////////////////////////////////////////
-// createUnsignedTransactionWithDefaultFee //
-/////////////////////////////////////////////
-//
-// create a transaction with the appropriate slips given
-// the desired fee and payment to associate with the 
-// transaction, and a change address to receive any
-// surplus tokens. Use the default wallet fee.
-// 
-// @param {string} recipient publickey
-// @param {decimal} fee to send with tx
-//
-// @returns {saito.transaction} if successful
-// @returns {null} if inadequate inputs 
-//
-Wallet.prototype.createUnsignedTransactionWithDefaultFee = function createUnsignedTransactionWithDefaultFee(to_pubkey, amt = 0.0) {
-  return this.createUnsignedTransaction(to_pubkey, amt, this.returnDefaultFee());
+/**
+ * create a transaction with the appropriate slips given
+ * the desired fee and payment to associate with the
+ * transaction, and a change address to receive any
+ * surplus tokens. Use the default wallet fee.
+ *
+ * @param {string} recipient publickey
+ * @param {decimal} fee to send with tx
+ *
+ * @returns {saito.transaction} if successful
+ * @returns {null} if inadequate inputs
+ **/
+Wallet.prototype.createUnsignedTransactionWithDefaultFee = function createUnsignedTransactionWithDefaultFee(publickey, amt = 0.0) {
+  return this.createUnsignedTransaction(publickey, amt, this.returnDefaultFee());
 }
 
 
-//////////////////////////
-// createFeeTransaction //
-//////////////////////////
-//
-// create a special "fee transaction / fee ticket" that 
-// can be included in a block by the node that created it
-// in order to collect the necessary fees. The node must
-// collect the funds at its own address for this tx to be
-// valid.
-//
-// @param {decimal} fee to collect
-//
-// @returns {saito.transaction} tx
-//
+
+/**
+ * signs a transaction using the wallet private key.
+ *
+ * @param {saito.transaction} tx transaction to sign
+ * @returns {saito.transaction} signed transaction
+ **/
+Wallet.prototype.signTransaction = function signTransaction(tx) {
+
+  if (tx == null) { return null; }
+
+  // ensure slip ids are properly sequential
+  for (var i = 0; i < tx.transaction.to.length; i++) {
+    tx.transaction.to[i].sid = i;
+  }
+
+  tx.transaction.msig   = this.signMessage(tx.returnMessageSignatureSource());
+  tx.transaction.sig    = this.signMessage(tx.returnSignatureSource());
+  return tx;
+}
+
+
+/**
+ * signs a msg string using the wallet private key.
+ *
+ * @param {string} msg message to sign
+ * @returns {string} public key
+ **/
+Wallet.prototype.signMessage = function signMessage(msg) {
+  return saito.crypto().signMessage(msg, this.returnPrivateKey());
+}
+
+
+/**
+ * create a special "fee transaction / fee ticket" that
+ * can be included in a block by the node that created it
+ * in order to collect the necessary fees. The node must
+ * collect the funds at its own address for this tx to be
+ * valid.
+ *
+ * @param {decimal} fee to collect
+ *
+ * @returns {saito.transaction} tx
+ **/
 Wallet.prototype.createFeeTransaction = function createFeeTransaction(my_fee) {
 
-  var fslip = new saito.slip(this.returnPublicKey(), 0.0, 0); 
-  fslip.ft = 1;
+  var fslip = new saito.slip(this.returnPublicKey(), 0.0, 0);
+  fslip.type = 1;
 
   var tx = new saito.transaction();
   tx.transaction.from.push(fslip);
 
-  var tslip = new saito.slip(this.returnPublicKey(), my_fee, 0);
+  var tslip = new saito.slip(this.returnPublicKey(), Big(my_fee).toFixed(8), 0);
   tx.transaction.to.push(tslip);
-
   tx.transaction.ts  = new Date().getTime();
-  tx.transaction.msg = "fees";
-  tx.transaction.ft  = 1;
 
   tx = this.signTransaction(tx);
 
@@ -15923,20 +11869,20 @@ Wallet.prototype.createFeeTransaction = function createFeeTransaction(my_fee) {
 
 
 
-
-/////////////////////////////
-// createGoldenTransaction //
-/////////////////////////////
+/**
+ *
+ * create a special "golden ticket transaction" that claims
+ * the reward offered by a golden ticket. this function is
+ * used by miners. the two UTXO slips are the winners of the
+ * golden ticket.
+ *
+ * @param {array} winners winnning nodes
+ * @param {object} solution golden ticket solution
+ *
+ * @returns {saito.transaction} tx
+ **/
 //
-// create a special "golden ticket transaction" that claims
-// the reward offered by a golden ticket. this function is 
-// used by miners. the two UTXO slips are the winners of the 
-// golden ticket.
-//
-// @param {array} winnning nodes
-// @param {obj}   golden ticket solution
-//
-// @returns {saito.transaction} tx
+// TODO: -- needs to create based on addresses, not on precreated slips
 //
 Wallet.prototype.createGoldenTransaction = function createGoldenTransaction(winners, solution) {
 
@@ -15956,115 +11902,430 @@ Wallet.prototype.createGoldenTransaction = function createGoldenTransaction(winn
 }
 
 
-//////////////////
-// generateKeys //
-//////////////////
-//
-// generate new public/private keypair and save wallet
-//
-Wallet.prototype.generateKeys = function generateKeys() {
-  this.wallet.privateKey = this.app.crypt.generateKeys();
-  this.wallet.publicKey  = this.app.crypt.returnPublicKey(this.wallet.privateKey);
+
+
+
+
+/**
+ * given an amount of SAITO tokens, fetches an adequate number of
+ * UTXI slips and returns them as part of an array. If there are
+ * not enough tokens in the wallet, returns null.
+ *
+ * @params  {demical} amount of tokens needed
+ * @returns {array} array of saito.slips
+ * @returns null if insufficient UTXI
+ **/
+Wallet.prototype.returnAdequateInputs = function returnAdequateInputs(amt) {
+
+  var utxiset = [];
+  var value   = Big(0.0);
+  var bigamt  = Big(amt);
+
+  var lowest_block = this.app.blockchain.returnLatestBlockId() - this.app.blockchain.returnGenesisPeriod();
+
+  // +2 is just a safeguard (+1 because is next block, +1 for safeguard)
+  lowest_block = lowest_block+2;
+
+  this.purgeExpiredSlips();
+
+  for (let i = 0; i < this.wallet.inputs.length; i++) {
+    if (this.wallet.spends[i] == 0) {
+      if (this.wallet.inputs[i].lc == 1 && this.wallet.inputs[i].bid >= lowest_block) {
+        this.wallet.spends[i] = 1;
+        utxiset.push(this.wallet.inputs[i]);
+        value = value.plus(Big(this.wallet.inputs[i].amt));
+        if (value.gt(bigamt) || value.eq(bigamt)) {
+          return utxiset;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+
+
+/**
+ * calculates the wallet balance and updates the modules
+ *
+ **/
+Wallet.prototype.updateBalance = function updateBalance() {
+  this.wallet.balance = this.calculateBalance();
+  this.app.modules.updateBalance();
+}
+
+
+/**
+ * Goes through our list of input slips and calculates the total
+ * value of the spendable SAITO slips stored in this wallet.
+ *
+ * @returns {string} balance_of_wallet
+ **/
+Wallet.prototype.calculateBalance = function calculateBalance() {
+  let b = Big(0.0);
+  let minid = this.app.blockchain.returnLatestBlockId() - this.app.blockchain.returnGenesisPeriod() + 1;
+  for (let x = 0; x < this.wallet.inputs.length; x++) {
+    let s = this.wallet.inputs[x];
+    if (s.lc == 1 && s.bid >= minid) {
+      b = b.plus(Big(s.amt));
+    }
+  }
+  return b.toFixed(8);
+}
+
+
+
+/**
+ * Returns wallet balance
+ * @returns {string} publickey (hex)
+ */
+Wallet.prototype.returnBalance = function returnBalance() {
+  return this.wallet.balance;
+}
+
+/**
+ * Returns default fee
+ * @returns {decimal} default_fee
+ */
+Wallet.prototype.returnDefaultFee = function returnDefaultFee() {
+  return this.wallet.default_fee;
+}
+
+/**
+ * saves wallet to options file
+ * @returns {string} publickey (hex)
+ */
+Wallet.prototype.saveWallet = function saveWallet() {
+  this.app.options.wallet = this.wallet;
   this.app.storage.saveOptions();
 }
 
+/**
+ * Returns wallet publickey
+ * @returns {string} publickey (hex)
+ */
+Wallet.prototype.returnPublicKey = function returnPublicKey() {
+  return this.wallet.publickey;
+}
 
-///////////////////////////
-// onChainReorganization //
-///////////////////////////
-//
-// this function is triggered whenever the blockchain 
-// undergoes a reorganization. we go through our set of
-// utxi and update our list of which ones are spendable.
-//
-// @params {integer} block_id
-// @params {integer} block_hash
-// @params {integer} am_i_the_longest_chain
-//
-Wallet.prototype.onChainReorganization = function onChainReorganization(block_id, block_hash, lc) {
-  for (let m = this.wallet.utxi.length-1; m >= 0; m--) {
-    if (this.wallet.utxi[m].bhash == block_hash) { 
-console.log("setting wallet lc to " + lc + " in chain reorg");
-      this.wallet.utxi[m].lc = lc; 
+/**
+ * Returns wallet privatekey
+ * @returns {string} privatekey (hex)
+ */
+Wallet.prototype.returnPrivateKey = function returnPrivateKey() {
+  return this.wallet.privatekey;
+}
+
+/**
+ * return the default identifier associated with a wallet, if exists.
+**/
+Wallet.prototype.returnIdentifier = function returnIdentifier() {
+  return this.wallet.identifier;
+}
+
+
+/**
+ * Purges all expired slips from the wallet
+ */
+Wallet.prototype.purgeExpiredSlips = function purgeExpiredSlips() {
+
+  /////////////////////////
+  // purge expired slips //
+  /////////////////////////
+  //
+  // we have a new longest chain, which means we may have
+  // some expired slips lingering around. purge them.
+  //
+  let gid = this.app.blockchain.returnGenesisBlockId();
+  for (let m = this.wallet.inputs.length-1; m >= 0; m--) {
+    if (this.wallet.inputs[m].bid < gid) {
+      this.wallet.inputs.splice(m, 1);
+      this.wallet.spends.splice(m, 1);
     }
   }
-  for (let m = this.wallet.utxo.length-1; m >= 0; m--) {
-    if (this.wallet.utxo[m].bhash == block_hash) { 
-      this.wallet.utxo[m].lc = lc; 
+  for (let m = this.wallet.outputs.length-1; m >= 0; m--) {
+    if (this.wallet.outputs[m].bid < gid) {
+      this.wallet.outputs.splice(m, 1);
     }
   }
 }
 
 
-/////////////////////////
-// paymentConfirmation //
-/////////////////////////
+/**
+ * This function is triggered whenever we add a new block or 
+ * undergo a chain reorganization which puts a new block at 
+ * the tip of the chain. It is also triggered whenever we 
+ * remove a block from the chain.
+ *
+ * @param {integer} block_id
+ * @param {integer} block_hash
+ * @param {integer} am_i_the_longest_chain
+ */
 //
-// this is triggered (by the blockchain object) whenever we
-// receive a block that has a transaction to or from us. we
-// check to make sure we have not already processed it, as 
-// sometimes that can happen if we are resyncing the chain, 
-// and if we have not we add it to our UTXI or UTXO stores.
+// TODO: - can we make these more efficient by referencing our hashmaps
+// instead of looping through our inputs? These were originally separate
+// functions that were individually called, but if we can make it efficient
+// it may be easier cognitively for people to just run them this way.
 //
-// note that this function needs to keep track of whether this
-// block is part of the longest chain in order to know whether
-// our wallet has received spendable money.
+// doing this may be more computationally intensive, but it will be easier
+// for developers to understand, so perhaps it is a good idea to keep all
+// of these in one place.
 //
-// @params {saito.block} new block
-// @params {saito.transaction} new transaction
-// @params {integer} am_i_the_longest_chain
-//
-Wallet.prototype.paymentConfirmation = function paymentConfirmation(blk, tx, lchain) {
+Wallet.prototype.onChainReorganization = function onChainReorganization(block_id, block_hash, lc) {
+
+  if (lc == 1) {
+
+    this.purgeExpiredSlips();
+
+
+    ////////////////////////
+    // reset spent inputs //
+    ////////////////////////
+    //
+    // this means we have a new block, which means
+    // that we can reset our SPEND array. TODO: make
+    // this more sophisticated so that we wait a certain
+    // number of blocks more than 1 before clearing the
+    // spend array.
+    //
+    for (let i = 0; i < this.wallet.inputs.length; i++) {
+      if (this.wallet.spends[i] == 1) {
+        this.wallet.spends[i] = 0;
+      } else {
+        i = this.wallet.inputs.length+2;
+      }
+    }
+
+  }
+
+
+
+  //////////////////////////
+  // reset existing slips //
+  //////////////////////////
+  //
+  // this is an edge case that may be unnecessary. if
+  // blocks receive their first block containing a payment
+  // but they already have this payment indexed, we may
+  // need to tell our wallet that all of those slips are
+  // longest chain.
+  //
+  for (let m = this.wallet.inputs.length-1; m >= 0; m--) {
+    if (this.wallet.inputs[m].bid == block_id) {
+      this.wallet.inputs[m].lc = lc;
+    }
+    else {
+      if (this.wallet.inputs[m].bid < block_id) {
+        return;
+      }
+    }
+  }
+
+}
+
+
+/**
+ * Adds input to wallet.inputs
+ * @param {saito.slip} input_slip
+ */
+Wallet.prototype.addInput = function addInput(x) {
+
+  //////////////
+  // add slip //
+  //////////////
+  //
+  // we keep our slip array sorted according to block_id
+  // so that we can (1) spend the earliest slips first,
+  // and (2) simplify deleting expired slips
+  //
+  let pos = this.wallet.inputs.length;
+  while (pos > 0 && this.wallet.inputs[pos-1].bid > x.bid) { pos--; }
+  if (pos == -1) { pos = 0; }
+
+  this.wallet.inputs.splice(pos, 0, x);
+  this.wallet.spends.splice(pos, 0, 0);
+
+  let hmi = x.returnIndex(x);
+  this.inputs_hmap[hmi] = 1;
+  this.inputs_hmap_counter++;
+
+
+  ////////////////////////
+  // regenerate hashmap //
+  ////////////////////////
+  //
+  // we want to periodically re-generate our hashmaps
+  // that help us check if inputs and outputs are already
+  // in our wallet for memory-management reasons and
+  // to maintain reasonable accuracy.
+  //
+  if (this.inputs_hmap_counter > this.inputs_hmap_counter_limit) {
+    this.inputs_hmap = [];
+    this.outputs_hmap = [];
+
+    for (let i = 0; i < this.wallet.inputs.length; i++) {
+      let hmi = this.wallet.inputs[i].returnIndex();
+      this.inputs_hmap[hmi] = 1;
+    }
+
+    for (let i = 0; i < this.wallet.outputs.length; i++) {
+      let hmi = this.wallet.outputs[i].returnIndex();
+      this.outputs_hmap[hmi] = 1;
+    }
+
+  }
+
+  return;
+}
+
+
+/**
+ *
+ * Adds a reference to a spent UTXO slip to our wallet.
+ *
+ * @param {saito.slip} output_slip
+ *
+ */
+Wallet.prototype.addOutput = function addOutput(x) {
+
+  if (this.is_testing) { return; }
+
+  //////////////
+  // add slip //
+  //////////////
+  //
+  // we don't bother storing UTXO outputs in any specific
+  // order as we more rarely need to search through them
+  //
+  this.wallet.outputs.push(x);
+
+  let hmi = x.returnIndex();
+  this.outputs_hmap[hmi] = 1;
+  this.outputs_storage_counter++;
+
+
+  ///////////////////////
+  // purge old outputs //
+  ///////////////////////
+  //
+  // delete excessive outputs to prevent options file expanding
+  // uncontrollably. the downside is the potential for funds loss
+  // with chain-reorganizations
+  //
+  if (this.output_storage_counter >= this.output_storage_limit) {
+    console.log("Deleting Excessive outputs from heavy-spend wallet...");
+    this.wallet.output.splice(0, this.wallet.output.length-this.output_storage_limit);
+    this.output_storage_counter = 0;
+  }
+  return;
+}
+
+
+/**
+ * Does our wallet contain an input slip?
+ *
+ * @param {saito.slip} slip
+ * @returns {boolean}
+ */
+Wallet.prototype.containsInput = function containsUtxi(s) {
+  let hmi = s.returnIndex();
+  if (this.inputs_hmap[hmi] == 1) { return true; }
+  return false;
+}
+
+
+/**
+ * Does our wallet contain a output slip?
+ *
+ * @param {saito.slip} slip
+ * @returns {boolean}
+ */
+Wallet.prototype.containsOutput = function containsUtxo(s) {
+  if (this.store_outputs == 0) { return false; }
+  let hmi = s.returnIndex();
+  if (this.outputs_hmap[hmi] == 1) { return true; }
+  return false;
+}
+
+
+/**
+ * This is triggered (by the blockchain object) whenever we
+ * receive a block that has a transaction to or from us. we
+ * check to make sure we have not already processed it, as
+ * sometimes that can happen if we are resyncing the chain,
+ * and if we have not we add it to our UTXI or UTXO stores.
+ *
+ * note that this function needs to keep track of whether this
+ * block is part of the longest chain in order to know whether
+ * our wallet has received spendable money.
+ *
+ * @param {saito.block} blk
+ * @param {saito.transaction} tx
+ * @param {integer} lchain
+ */
+Wallet.prototype.processPayment = function processPayment(blk, tx, to_slips, from_slips, lc) {
 
   //
   // if this is a speed test, delete all previous inputs
   // in order to avoid the software needing to iterate
   // through loops to check for duplicate inserts.
   //
-  if (this.speed_test == 1) {
-    if (this.wallet.utxi.length > 0) {
-      if (this.wallet.utxi[0].bid < blk.block.bid) {
-        this.wallet.utxi = [];
+  if (this.is_testing) {
+    if (this.wallet.inputs.length > 0) {
+      if (this.wallet.inputs[0].bid < blk.block.bid) {
+        this.wallet.inputs = [];
       }
     }
   }
 
+
   //
   // inbound payments
   //
-  if (tx.isTo(this.returnPublicKey())) {
-
-    let slips = tx.returnSlipsTo(this.returnPublicKey());
-    for (let m = 0; m < slips.length; m++) {
-
-      var s       = new saito.slip(slips[m].add, slips[m].amt, slips[m].gt);
-          s.bhash = blk.returnHash();
-          s.bid   = blk.block.id;
-          s.tid   = tx.transaction.id;
-          s.sid   = slips[m].sid;
-          s.lc    = lchain;
-	  s.ft    = slips[m].ft;
-	  s.rn    = slips[m].rn;
+  if (to_slips.length > 0) {
+    for (let m = 0; m < to_slips.length; m++) {
 
 
-      if (s.amt > 0) { 
+      if (to_slips[m].amt > 0) {
 
         //
-	// if we are testing speed inserts, just
-	// push to the back of the UTXI chain without
-	// verifying anything
-	//
-	// this should not be run in production code
-	// but lets us minimize wallet checks taking
-	// up significant time during capacity tests
-	// on other network code.
-	//
-	if (this.speed_test == 1) {
-	  this.addUTXI(s);
-	} else {
-          if (this.containsUtxi(s) == 0) {
-	    if (this.containsUtxo(s) == 0) {
-	      this.addUTXI(s);
+        // Slip(add="", amt="0", type=0, bid=0, tid=0, sid=0, bhash="", lc=1, rn=-1) {
+        //
+        // TODO: this seems to repeat work done in the saveBlock class now, where we
+        // have to provide this information prior to indexing slips. We should clean
+        // this up at some point in the future to avoid wasting the work of setting
+        // this information twice.
+        //
+        var s = new saito.slip(
+          to_slips[m].add,
+          to_slips[m].amt,
+          to_slips[m].type,
+          blk.block.id,
+          tx.transaction.id,
+          to_slips[m].sid,
+          blk.returnHash(),
+          lc,
+          to_slips[m].rn
+        );
+
+
+        //
+        // if we are testing speed inserts, just
+        // push to the back of the UTXI chain without
+        // verifying anything
+        //
+        // this should not be run in production code
+        // but lets us minimize wallet checks taking
+        // up significant time during capacity tests
+        // on other network code.
+        //
+        if (this.speed_test == 1) {
+          this.addInput(s);
+        } else {
+          if (this.containsInput(s) == 0) {
+            if (this.containsOutput(s) == 0) {
+              this.addInput(s);
             }
           }
         }
@@ -16073,33 +12334,38 @@ Wallet.prototype.paymentConfirmation = function paymentConfirmation(blk, tx, lch
   }
 
   // don't care about UTXO in speed tests
-  if (this.speed_tests == 1) { return; }
+  if (this.is_testing) { return; }
+
 
   //
   // outbound payments
   //
-  if (tx.isFrom(this.returnPublicKey()) && tx.transaction.gt == null) {
-    var slips = tx.returnSlipsFrom(this.returnPublicKey());
-    for (var m = 0; m < slips.length; m++) {
-      var s = slips[m];
-      for (var c = 0; c < this.wallet.utxi.length; c++) {
-        var qs = this.wallet.utxi[c];
+  if (from_slips.length > 0) {
+    for (var m = 0; m < from_slips.length; m++) {
+
+      var s = from_slips[m];
+
+      //
+      // TODO: optimize search based on BID
+      //
+      for (var c = 0; c < this.wallet.inputs.length; c++) {
+        var qs = this.wallet.inputs[c];
         if (
-	  s.bid   == qs.bid &&
-	  s.tid   == qs.tid &&
-	  s.sid   == qs.sid &&
-	  s.bhash == qs.bhash &&
-	  s.amt   == qs.amt &&
-	  s.add   == qs.add &&
-	  s.rn    == qs.rn
-	) {
-          if (this.containsUtxo(s) == 0) {
-	    this.addUTXO(this.wallet.utxi[c]);
+          s.bid   == qs.bid &&
+          s.tid   == qs.tid &&
+          s.sid   == qs.sid &&
+          s.bhash == qs.bhash &&
+          s.amt   == qs.amt &&
+          s.add   == qs.add &&
+          s.rn    == qs.rn
+        ) {
+          if (this.containsOutput(s) == 0) {
+            this.addOutput(this.wallet.inputs[c]);
           }
-	  this.wallet.utxi.splice(c, 1);
-	  this.spent_slips.splice(c, 1);
-	  c = this.wallet.utxi.length+2;
-	}
+          this.wallet.inputs.splice(c, 1);
+          this.wallet.spends.splice(c, 1);
+          c = this.wallet.inputs.length+2;
+        }
       }
     }
   }
@@ -16108,763 +12374,7 @@ Wallet.prototype.paymentConfirmation = function paymentConfirmation(blk, tx, lch
 
 
 
-///////////////////////
-// purgeExpiredSlips //
-///////////////////////
-//
-// remove UTXI slips from our wallet that can no longer
-// be spent because they have fallen off the transient
-// blockchain.
-//
-Wallet.prototype.purgeExpiredSlips = function purgeExpiredSlips() {
-  let gid = this.app.blockchain.returnGenesisBlockId();
-  if (gid <= this.utxo_purged_bid) { return; }
-  for (let m = this.wallet.utxi.length-1; m >= 0; m--) {
-    if (this.wallet.utxi[m].bid < gid) {
-      this.wallet.utxi.splice(m, 1);
-      this.spent_slips.splice(m, 1);
-    }
-  }
-  for (let m = this.wallet.utxo.length-1; m >= 0; m--) {
-    if (this.wallet.utxo[m].bid < gid) {
-      this.wallet.utxo.splice(m, 1);
-    }
-  }
-  this.utxo_purged_bid = gid;
-}
-
-
-
-/////////////////
-// resetWallet //
-/////////////////
-//
-// return wallet to uninitialized state
-//
-Wallet.prototype.resetWallet = function resetWallet() {
-  this.wallet.privateKey = "";
-  this.wallet.publicKey  = "";
-  this.wallet.identifier = "";
-  this.wallet.balance    = parseFloat(0.0);
-  this.wallet.utxi       = [];
-  this.wallet.utxo       = [];
-}
-
-
-//////////////////////
-// resetSpentInputs //
-//////////////////////
-//
-// this function is triggered by our blockchain object every
-// time we receive a new block. It empties the spent_slips 
-// array that keeps track of which UTXI we have already spent
-// (but that have not been confirmed).
-//
-// this is necessary to ensure we can identify unspent slips
-// when hunting for UTXI to include in new transactions.
-//
-Wallet.prototype.resetSpentInputs = function resetSpentInputs() {
-
-  for (let i = 0; i < this.wallet.utxi.length; i++) { 
-    if (this.spent_slips[i] == 1) {
-      this.spent_slips[i] = 0; 
-    } else {
-      i = this.wallet.utxi.length+2;
-    }
-  }
-  this.spent_slips_idx = 0;
-}
-
-
-///////////////////
-// returnAddress //
-///////////////////
-//
-// returns the address / publickey of the wallet
-//
-// @returns {string} publickey
-//
-Wallet.prototype.returnAddress = function returnAddress() { 
-  return this.wallet.publicKey; 
-}
-
-
-//////////////////////////
-// returnAdequateInputs //
-//////////////////////////
-//
-// given an amount of SAITO tokens, fetches an adequate number of
-// UTXI slips and returns them as part of an array. If there are
-// not enough tokens in the wallet, returns null.
-//
-// @params  {demical} amount of tokens needed
-// @returns {array} array of saito.slips
-// @returns null if insufficient UTXI
-//
-Wallet.prototype.returnAdequateInputs = function returnAdequateInputs(amt) {
-
-  var utxiset = [];
-  var value   = 0.0;
-
-  var lowest_block = this.app.blockchain.returnLatestBlockId() - this.app.blockchain.returnGenesisPeriod();
-
-      // +2 is just a safeguard (+1 because is next block, +1 for safeguard)
-      lowest_block = lowest_block+2;
-
-  this.purgeExpiredSlips();
-
-  for (let i = this.spent_slips_idx; i < this.wallet.utxi.length; i++) {
-    if (this.wallet.utxi[i].lc == 1 && this.wallet.utxi[i].bid >= lowest_block) {
-      if (this.spent_slips[i] == 0) {
-        this.spent_slips[i] = 1;
-        this.spent_slips_idx = i+1;
-        utxiset.push(this.wallet.utxi[i]);
-        value = parseFloat(this.wallet.utxi[i].amt) + value;
-        if (value >= amt) { return utxiset; }
-      }
-    }
-  }
-  return null;
-}
-
-
-///////////////////////////
-// returnAvailableInputs //
-///////////////////////////
-//
-// counts up the amount of SAITO tokens we have in our wallet
-// and returns that. If this function is provided with a decimal
-// indicating the limit, we stop and report the total value of
-// the UTXI slips we have sufficient to cover that limit.
-//
-// @params  {decimal} amount of tokens needed
-// @returns {decimal} value of tokens in wallet
-//
-Wallet.prototype.returnAvailableInputs = function returnAvailableInputs(limit=0) {
-
-  var value   = 0.0;
-
-  this.purgeExpiredSlips();
-
-  // lowest acceptable block_id for security (+1 because is next block, +1 for safeguard)
-  var lowest_block = this.app.blockchain.returnLatestBlockId() - this.app.blockchain.returnGenesisPeriod();
-      lowest_block = lowest_block+2;
-
-  // valculate value
-  for (var i = this.spent_slips_idx; i < this.wallet.utxi.length; i++) {
-    if (this.wallet.utxi[i].lc == 1 && this.wallet.utxi[i].bid >= lowest_block) {
-      if (this.spent_slips[i] == 0) {
-        value += parseFloat(this.wallet.utxi[i].amt) + parseFloat(value);
-        if (value >= limit && limit != 0) {
-	  return value;
-	}
-      }
-    }
-  }
-  return value;
-}
-
-
-///////////////////
-// returnBalance //
-///////////////////
-//
-// returns balance of wallet in spendable SAITO tokens
-//
-// @returns {string} value of tokens in wallet
-//
-Wallet.prototype.returnBalance = function returnBalance() {
-  this.wallet.balance = this.calculateBalance();
-  return parseFloat(this.wallet.balance).toFixed(8);
-}
-
-
-//////////////////////
-// returnDefaultFee //
-//////////////////////
-//
-// writes persistent wallet data to options file
-//
-Wallet.prototype.returnDefaultFee = function returnDefaultFee() {
-  return this.wallet.default_fee;
-}
-
-
-//////////////////////
-// returnIdentifier //
-//////////////////////
-//
-// returns main identifier associated with wallet publickey.
-// cannot handle multiple identifiers, and so just reports
-// the most recently registered DNS address.
-//
-// @returns {string} 
-//
-Wallet.prototype.returnIdentifier = function returnIdentifier() {
-  return this.wallet.identifier;
-}
-
-
-////////////////////////
-// returnHashmapIndex //
-////////////////////////
-//
-// returns a string that will be unique for all of the slips 
-// in our wallet. This is used in our utxi_hashmap and 
-// utxo_hashmap objects to index the slips in our wallet for 
-// quick lookup.
-//
-// @returns {string} 
-//
-Wallet.prototype.returnHashmapIndex = function returnHashmapIndex(slip) {
-  return slip.bhash + slip.bid + slip.tid + slip.sid + slip.amt;
-}
-
-
-/////////////////////
-// returnPublicKey //
-/////////////////////
-//
-// return public key associated with wallet
-//
-// @returns {string} public key
-//
-Wallet.prototype.returnPublicKey = function returnPublicKey() {
-  return this.wallet.publicKey;
-}
-
-
-/////////////////////
-// returnPrivateKey //
-/////////////////////
-//
-// return private key associated with wallet
-//
-// @returns {string} public key
-//
-Wallet.prototype.returnPrivateKey = function returnPrivateKey() {
-  return this.wallet.privateKey;
-}
-
-
-////////////////
-// saveWallet //
-////////////////
-//
-// writes persistent wallet data to options file
-//
-Wallet.prototype.saveWallet = function saveWallet() {
-  this.app.options.wallet = this.wallet;
-  this.app.storage.saveOptions();
-}
-
-
-///////////////////
-// setDefaultFee //
-///////////////////
-//
-// sets default fee and saves options file
-//
-Wallet.prototype.setDefaultFee = function setDefaultFee(dfee) {
-console.log("SETTING FEE TO: " + dfee);
-  this.wallet.default_fee = parseFloat(dfee);
-  this.app.options.wallet = this.wallet;
-  this.app.storage.saveOptions();
-}
-
-
-///////////////////////////////
-// signMessageWithForeignKey //
-///////////////////////////////
-//
-// this signs a string using the key provided. it is used together with the
-// function createSignedTransactionWithForeignKey. the signature that is
-// returned will be put in the msig field of the transcation according to 
-// the Saito transaction protocol.
-//
-// @params {string} transaction message (likely JSON)
-// @params {string} private key to use for signature
-// @returns {string} message signature
-//
-Wallet.prototype.signMessageWithForeignKey = function signMessageWithForeignKey(msg, foreign_key) {
-  return saito.crypt().signMessage(msg, foreign_key);
-}
-
-
-/////////////////
-// signMessage //
-/////////////////
-//
-// signs a msg string using the wallet private key.
-//
-// @params {string} message to sign
-// @returns {string} public key
-//
-Wallet.prototype.signMessage = function signMessage(msg) {
-  return saito.crypt().signMessage(msg, this.wallet.privateKey);
-}
-
-
-/////////////////////
-// signTransaction //
-/////////////////////
-//
-// signs a transaction using the wallet private key.
-//
-// @params {saito.transaction} transaction to sign
-// @returns {saito.transaction} signed transaction
-//
-Wallet.prototype.signTransaction = function signTransaction(tx) {
-
-  if (tx == null) { return null; }
-
-  // ensure slip ids are properly sequential
-  for (var i = 0; i < tx.transaction.to.length; i++) {
-    tx.transaction.to[i].sid = i;
-  }
-
-  tx.transaction.msig   = this.signMessage(tx.returnMessageSignatureSource());
-  tx.transaction.sig    = this.signMessage(tx.returnSignatureSource());
-  return tx;
-}
-
-
-///////////////////
-// updateBalance //
-///////////////////
-//
-// calculates wallet balance and updates modules with it
-//
-Wallet.prototype.updateBalance = function updateBalance() {
-  this.calculateBalance();
-  this.app.modules.updateBalance();
-}
-
-
-//////////////////////
-// updateIdentifier //
-//////////////////////
-//
-// updates the default identifier associated with the wallet. this
-// is the human-readable name that can be set by DNS modules. saves
-// the wallet to ensure persistence.
-//
-// @params {string} identifier
-//
-Wallet.prototype.updateIdentifier = function updateIdentifier(id) {
-  this.wallet.identifier = id;
-  this.saveWallet();
-}
-
-
-
-
-},{"../saito":12}],35:[function(require,module,exports){
-var WebTemplate = require('./template');
-var util = require('util');
-
-
-//////////////////
-// CONSTRUCTOR  //
-//////////////////
-function DesktopSettings() {
-  if (!(this instanceof DesktopSettings)) { return new DesktopSettings(); }
-  DesktopSettings.super_.call(this);
-  return this;
-}
-module.exports = DesktopSettings;
-util.inherits(DesktopSettings, WebTemplate);
-
-
-
-DesktopSettings.prototype.returnHTML = function returnHTML() {
-  return ' \
-<b>Basic Settings</b> \
-\
-<p></p> \
-\
-This is your wallet. You should backup this information: \
-\
-    <p></p> \
-\
-    <table style="margin-left: 25px;"> \
-      <tr> \
-        <td style="margin-right: 10px;font-weight:bold;">Public Key</td> \
-	<td id="lightbox_viewkeys_publickey"></td> \
-      </tr> \
-      <tr> \
-        <td style="margin-right: 10px;font-weight:bold;">Private Key</td> \
-	<td id="lightbox_viewkeys_privatekey"></td> \
-      </tr> \
-      <tr> \
-        <td style="margin-right: 10px;font-weight:bold;">Address</td> \
-	<td id="lightbox_viewkeys_identifier" style="cursor:pointer">unregistered</td> \
-      </tr> \
-    </table> \
-\
-    <p style="clear:both"></p> \
-\
-    <input type="button" id="save_wallet" class="settings_button save_wallet" value="Backup Wallet" /> \
-    <input type="button" id="save_messages" class="settings_button save_messages" value="Backup Inbox" /> \
-    <input type="button" id="import_wallet" class="settings_button import_wallet" value="Import Wallet" /> \
-    <input type="button" id="import_messages" class="settings_button import_messages" value="Import Inbox" /> \
-    <input type="button" id="reset_button" class="settings_button reset_button" value="Reset Account" /> \
-    <input type="button" id="restore_privatekey" class="settings_button restore_privatekey" value="Restore Wallet from Private Key" /> \
-    <input id="file-input" type="file" name="name" style="display:none;" /> \
-\
-    <p style="clear:both;margin-top:30px;"></p> \
-\
-    <div style="display:none" id="restore_privatekey_div"> \
-\
-      <label for="restore_privatekey_input">Your Private Key:</label> \
-\
-      <br /> \
-\
-      <input type="text" name="restore_privatekey_input" id="restore_privatekey_input" class="restore_privatekey_input" /> \
-\
-      <br /> \
-\
-      <input type="submit" id="restore_privatekey_submit" value="Import Private Key" class="restore_privatekey_submit" /> \
-\
-      <p style="clear:both;margin-top:30px;"></p> \
-\
-    </div> \
-\
-    <b>DNS Information</b> \
-\
-    <p></p> \
-\
-    You are connected to the following DNS servers. You can also sync your own directly off the blockchain: \
-\
-    <div class="dns_servers" id="dns_servers"> \
-      <table id="dns_servers_table" class="dns_servers_table" style="margin-left: 25px"> \
-        <tr> \
-          <th style="padding-right:25px;" align="left">Domain</th> \
-          <th style="padding-right:25px;" align="left">Server</th> \
-          <th style="padding-right:25px;" align="left">Public Key</th> \
-        </tr> \
-      </table> \
-    </div> \
-';
-}
-DesktopSettings.prototype.attachEvents = function attachEvents(module_self) {
-
-
-      $('#restore_privatekey').off();
-      $('#restore_privatekey').on('click', function() {
-        $('#restore_privatekey_div').toggle();
-      });
-
-
-      $('#save_wallet').off();
-      $('#save_wallet').on('click', function() {
-	content    = JSON.stringify(module_self.app.options);
-        var pom = document.createElement('a');
-            pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-            pom.setAttribute('download', "saito.wallet.json");
-	    pom.click();
-      });
-
-
-      $('#import_wallet').off();
-      $('#import_wallet').on('click', function() {
-        document.getElementById('file-input').addEventListener('change', function(e) { 
-  	  var file = e.target.files[0];
-  	  if (!file) { return; }
-	  var reader = new FileReader();
-	  reader.onload = function(e) {
-	    var contents = e.target.result;
-	    tmpoptions = JSON.parse(contents);
-	    if (tmpoptions.wallet.publicKey != null) { 
-	      module_self.app.options = JSON.parse(contents);
-	      module_self.app.storage.saveOptions();
-              $.fancybox.close();
-	      module_self.showBrowserAlert("Wallet Import Successful");
-	    } else {
-	      alert("This does not seem to be a valid wallet file");
-	    }
-	  };
-	  reader.readAsText(file);
-	}, false);
-        $('#file-input').trigger('click');
-      });
-
-
-      $('#save_messages').off();
-      $('#save_messages').on('click', function() {
-	content    = JSON.stringify(module_self.app.options);
-        var pom = document.createElement('a');
-            pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-            pom.setAttribute('download', "saito.messages.json");
-	    pom.click();
-      });
-
-
-      $('#import_messages').off();
-      $('#import_messages').on('click', function() {
-        document.getElementById('file-input').addEventListener('change', function(e) { 
-  	  var file = e.target.files[0];
-  	  if (!file) { return; }
-	  var reader = new FileReader();
-	  reader.onload = function(e) {
-	    var contents = e.target.result;
-	    module_self.app.archives.resetArchives();
-            tmpmessages = JSON.parse(contents);
-	    if (tmpmessages.messages.length != null) { 
-  	      for (xx = 0; xx < tmpmessages.length; xx++) {
-	        module_self.app.archives.saveMessage(tmpmessages[xx]);
-	      }
-            } else {
-	      alert("Error: this is not a valid inbox backup");
-	    }
-	  };
-	  reader.readAsText(file);
-	}, false);
-        $('#file-input').trigger('click');
-      });
-
-
-      $('#save_messages').off();
-      $('#save_messages').on('click', function() {
-	content    = JSON.stringify(module_self.app.archives.messages);
-        var pom = document.createElement('a');
-            pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-            pom.setAttribute('download', "saito.messages.json");
-	    pom.click();
-      });
-
-
-      $('#reset_button').off();
-      $('#reset_button').on('click', function() {
-        module_self.app.archives.resetArchives();
-        module_self.app.storage.resetOptions();
-        module_self.app.storage.saveOptions();
-	alert("Your account has been reset");
-	location.reload();
-      });
-
-
-      $('#mail_controls_settings').off();
-      $('#mail_controls_settings').on('click', function() {
-        $.fancybox({
-          href            : '#saito-desktop-settings',
-          fitToView       : false,
-          width           : '1000px',
-          height          : '600px',
-          closeBtn        : true,
-          autoSize        : false,
-          closeClick      : false,
-          openEffect      : 'none',
-          closeEffect     : 'none',
-          helpers: {
-            overlay : {
-              closeClick : false
-            }
-          },
-          keys : {
-            close : null
-          },
-	  afterShow : function() {
-
-            // customize dns settings display
-            $('#dns_servers_table tr').empty();
-            for (c = 0; c < module_self.app.dns.dns.domains.length; c++) {
-              var tmphtml = '<tr><th align="left" style="padding-right:25px;">Domain</th><th align="left" style="padding-right:25px">Host</th><th align="left">Public Key</th></tr>';
-              $('#dns_servers_table').append(tmphtml);
-              var dnsurl = "unknown";
-              for (cvs = 0; cvs < module_self.app.network.peers.length; cvs++) {
-                if (module_self.app.dns.dns.domains[c].publickey == module_self.app.network.peers[cvs].peer.publickey) {
-	          dnsurl = module_self.app.network.peers[cvs].peer.host;
-                  tmphtml = '<tr><td>'+module_self.app.dns.dns.domains[c].domain+'</td><td>'+dnsurl+'</td><td>'+module_self.app.dns.dns.domains[c].publickey+'</td></tr>';
-                  $('#dns_servers_table tr:last').after(tmphtml);
-	        }
-              }
-              if (dnsurl == "unknown") {
-                tmphtml = '<tr><td style="padding-right:14px;">'+module_self.app.dns.dns.domains[c].domain+'</td><td style="padding-right:14px;">UNKNOWN</td><td style="padding-right:14px;">PUBLIC KEY OUT-OF-DATE</td></tr>';
-                $('#dns_servers_table tr:last').after(tmphtml);
-	      }
-            };
-
-
-	    $('#restore_privatekey_submit').off();
-	    $('#restore_privatekey_submit').on('click', function() {
-
-	      var privkey = $('#restore_privatekey_input').val();
-              privkey.trim();
-		
-	      var pubkey = module_self.app.crypt.returnPublicKey(privkey);
-
-	      if (pubkey != "") {
-
-		module_self.app.dns.fetchIdFromAppropriateServer(module_self.app.wallet.returnPublicKey(), function (answer) {
-
-	          if (module_self.app.dns.isRecordValid(answer) == 0) {
-		    alert("Cannot find registered email address. Restoring public and private keys only");
-		    return;
-	          }
-
-        	  dns_response = JSON.parse(answer);
-
-        	  if (dns_response.identifier != "") {
-        	    if (dns_response.publickey != "") {
-        	      module_self.app.keys.addKey(dns_response.publickey, dns_response.identifier, 0, "Email");
-        	      module_self.app.keys.saveKeys();
-        	      module_self.app.wallet.updateIdentifier(dns_response.identifier);
-        	      module_self.app.wallet.saveWallet();
-        	    }
-        	  }
-
-		  // regardless of whether we got an identifier, save
-		  module_self.app.wallet.wallet.utxi = [];
-		  module_self.app.wallet.wallet.utxo = [];
-		  module_self.app.wallet.wallet.privateKey = privkey;
-		  module_self.app.wallet.wallet.publicKey  = pubkey;
-
-          	  module_self.app.options.blockchain.lastblock = 0;
-          	  module_self.app.storage.saveOptions();
-          	  module_self.app.wallet.saveWallet();
-
-		  alert("Your Wallet and Email Address Restored!");
-		  location.reload();
-      	        });
-
-	      }
-	    });
-
-
-
-	    // update identifier
-	    if (module_self.app.wallet.returnIdentifier() != "") {
-	      $('#lightbox_viewkeys_identifier').text(module_self.app.wallet.returnIdentifier());
-            }
-
-	  }
-        });
-      });
-
-}
-
-
-
-
-},{"./template":37,"util":395}],36:[function(require,module,exports){
-var WebTemplate = require('./template');
-var util = require('util');
-
-
-//////////////////
-// CONSTRUCTOR  //
-//////////////////
-function MobileSettings() {
-  if (!(this instanceof MobileSettings)) { return new MobileSettings(); }
-  MobileSettings.super_.call(this);
-  return this;
-}
-module.exports = MobileSettings;
-util.inherits(MobileSettings, WebTemplate);
-
-
-
-MobileSettings.prototype.returnHTML = function returnHTML() {
-  return ' \
-      <input type="button" id="save_wallet" class="settings_button save_wallet" value="Backup Wallet" /> \
-      <input type="button" id="import_wallet" class="settings_button import_wallet" value="Import Wallet" /> \
-      <input type="button" id="reset_button" class="settings_button reset_button" value="Reset Account" /> \
-  ';
-}
-MobileSettings.prototype.attachEvents = function attachEvents(module_self) {
-
-      $('#mail_controls_settings').off();
-      $('#mail_controls_settings').on('click', function() {
-	$('#settings_row').toggle();
-      });
-
-
-      $('#save_wallet').off();
-      $('#save_wallet').on('click', function() {
-	content    = JSON.stringify(module_self.app.options);
-        var pom = document.createElement('a');
-            pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-            pom.setAttribute('download', "saito.wallet.json");
-	    pom.click();
-      });
-
-
-      $('#import_wallet').off();
-      $('#import_wallet').on('click', function() {
-        document.getElementById('file-input').addEventListener('change', function(e) { 
-  	  var file = e.target.files[0];
-  	  if (!file) { return; }
-	  var reader = new FileReader();
-	  reader.onload = function(e) {
-	    var contents = e.target.result;
-	    tmpoptions = JSON.parse(contents);
-	    if (tmpoptions.wallet.publicKey != null) { 
-	      module_self.app.options = JSON.parse(contents);
-	      module_self.app.storage.saveOptions();
-              $.fancybox.close();
-	      module_self.showBrowserAlert("Wallet Import Successful");
-	    } else {
-	      alert("This does not seem to be a valid wallet file");
-	    }
-	  };
-	  reader.readAsText(file);
-	  alert("Wallet Loaded");
-	  location.reload();
-	}, false);
-        $('#file-input').trigger('click');
-      });
-
-
-      $('#save_messages').off();
-      $('#save_messages').on('click', function() {
-	content    = JSON.stringify(module_self.app.options);
-        var pom = document.createElement('a');
-            pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-            pom.setAttribute('download', "saito.messages.json");
-	    pom.click();
-      });
-
-
-      $('#reset_button').off();
-      $('#reset_button').on('click', function() {
-        module_self.app.storage.saveOptions(1); // 1 = reset to virgin state
-        module_self.app.archives.resetArchives();
-	alert("Your account has been reset");
-	location.reload();
-      });
-
-}
-
-
-
-},{"./template":37,"util":395}],37:[function(require,module,exports){
-
-function WebTemplate() {
-  if (!(this instanceof WebTemplate)) {
-    return new WebTemplate();
-  }
-  return this;
-}
-module.exports = WebTemplate
-
-
-////////////////////////////
-// Extend these Functions // 
-////////////////////////////
-
-//
-// Returns HTML
-//
-WebTemplate.prototype.returnHTML = function returnHTML() {}
-
-//
-// Attach Events
-//
-WebTemplate.prototype.attachEvents = function attachEvents() {};
-
-
-},{}],38:[function(require,module,exports){
+},{"../saito":8,"big.js":75}],32:[function(require,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {
@@ -16894,7 +12404,7 @@ function after(count, callback, err_cb) {
 
 function noop() {}
 
-},{}],39:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 /**
  * An abstraction for slicing an arraybuffer even when
  * ArrayBuffer.prototype.slice is not supported
@@ -16925,7 +12435,7 @@ module.exports = function(arraybuffer, start, end) {
   return result.buffer;
 };
 
-},{}],40:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 var asn1 = exports;
 
 asn1.bignum = require('bn.js');
@@ -16936,7 +12446,7 @@ asn1.constants = require('./asn1/constants');
 asn1.decoders = require('./asn1/decoders');
 asn1.encoders = require('./asn1/encoders');
 
-},{"./asn1/api":41,"./asn1/base":43,"./asn1/constants":47,"./asn1/decoders":49,"./asn1/encoders":52,"bn.js":81}],41:[function(require,module,exports){
+},{"./asn1/api":35,"./asn1/base":37,"./asn1/constants":41,"./asn1/decoders":43,"./asn1/encoders":46,"bn.js":78}],35:[function(require,module,exports){
 var asn1 = require('../asn1');
 var inherits = require('inherits');
 
@@ -16999,7 +12509,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"../asn1":40,"inherits":228,"vm":396}],42:[function(require,module,exports){
+},{"../asn1":34,"inherits":226,"vm":395}],36:[function(require,module,exports){
 var inherits = require('inherits');
 var Reporter = require('../base').Reporter;
 var Buffer = require('buffer').Buffer;
@@ -17117,7 +12627,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
   return out;
 };
 
-},{"../base":43,"buffer":115,"inherits":228}],43:[function(require,module,exports){
+},{"../base":37,"buffer":112,"inherits":226}],37:[function(require,module,exports){
 var base = exports;
 
 base.Reporter = require('./reporter').Reporter;
@@ -17125,7 +12635,7 @@ base.DecoderBuffer = require('./buffer').DecoderBuffer;
 base.EncoderBuffer = require('./buffer').EncoderBuffer;
 base.Node = require('./node');
 
-},{"./buffer":42,"./node":44,"./reporter":45}],44:[function(require,module,exports){
+},{"./buffer":36,"./node":38,"./reporter":39}],38:[function(require,module,exports){
 var Reporter = require('../base').Reporter;
 var EncoderBuffer = require('../base').EncoderBuffer;
 var DecoderBuffer = require('../base').DecoderBuffer;
@@ -17761,7 +13271,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
   return /^[A-Za-z0-9 '\(\)\+,\-\.\/:=\?]*$/.test(str);
 };
 
-},{"../base":43,"minimalistic-assert":287}],45:[function(require,module,exports){
+},{"../base":37,"minimalistic-assert":285}],39:[function(require,module,exports){
 var inherits = require('inherits');
 
 function Reporter(options) {
@@ -17884,7 +13394,7 @@ ReporterError.prototype.rethrow = function rethrow(msg) {
   return this;
 };
 
-},{"inherits":228}],46:[function(require,module,exports){
+},{"inherits":226}],40:[function(require,module,exports){
 var constants = require('../constants');
 
 exports.tagClass = {
@@ -17928,7 +13438,7 @@ exports.tag = {
 };
 exports.tagByName = constants._reverse(exports.tag);
 
-},{"../constants":47}],47:[function(require,module,exports){
+},{"../constants":41}],41:[function(require,module,exports){
 var constants = exports;
 
 // Helper
@@ -17949,7 +13459,7 @@ constants._reverse = function reverse(map) {
 
 constants.der = require('./der');
 
-},{"./der":46}],48:[function(require,module,exports){
+},{"./der":40}],42:[function(require,module,exports){
 var inherits = require('inherits');
 
 var asn1 = require('../../asn1');
@@ -18275,13 +13785,13 @@ function derDecodeLen(buf, primitive, fail) {
   return len;
 }
 
-},{"../../asn1":40,"inherits":228}],49:[function(require,module,exports){
+},{"../../asn1":34,"inherits":226}],43:[function(require,module,exports){
 var decoders = exports;
 
 decoders.der = require('./der');
 decoders.pem = require('./pem');
 
-},{"./der":48,"./pem":50}],50:[function(require,module,exports){
+},{"./der":42,"./pem":44}],44:[function(require,module,exports){
 var inherits = require('inherits');
 var Buffer = require('buffer').Buffer;
 
@@ -18332,7 +13842,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
   return DERDecoder.prototype.decode.call(this, input, options);
 };
 
-},{"./der":48,"buffer":115,"inherits":228}],51:[function(require,module,exports){
+},{"./der":42,"buffer":112,"inherits":226}],45:[function(require,module,exports){
 var inherits = require('inherits');
 var Buffer = require('buffer').Buffer;
 
@@ -18629,13 +14139,13 @@ function encodeTag(tag, primitive, cls, reporter) {
   return res;
 }
 
-},{"../../asn1":40,"buffer":115,"inherits":228}],52:[function(require,module,exports){
+},{"../../asn1":34,"buffer":112,"inherits":226}],46:[function(require,module,exports){
 var encoders = exports;
 
 encoders.der = require('./der');
 encoders.pem = require('./pem');
 
-},{"./der":51,"./pem":53}],53:[function(require,module,exports){
+},{"./der":45,"./pem":47}],47:[function(require,module,exports){
 var inherits = require('inherits');
 
 var DEREncoder = require('./der');
@@ -18658,7 +14168,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   return out.join('\n');
 };
 
-},{"./der":51,"inherits":228}],54:[function(require,module,exports){
+},{"./der":45,"inherits":226}],48:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -19152,7 +14662,629 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"util/":395}],55:[function(require,module,exports){
+},{"util/":51}],49:[function(require,module,exports){
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+},{}],50:[function(require,module,exports){
+module.exports = function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.readUInt8 === 'function';
+}
+},{}],51:[function(require,module,exports){
+(function (process,global){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var formatRegExp = /%[sdj%]/g;
+exports.format = function(f) {
+  if (!isString(f)) {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function(x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s': return String(args[i++]);
+      case '%d': return Number(args[i++]);
+      case '%j':
+        try {
+          return JSON.stringify(args[i++]);
+        } catch (_) {
+          return '[Circular]';
+        }
+      default:
+        return x;
+    }
+  });
+  for (var x = args[i]; i < len; x = args[++i]) {
+    if (isNull(x) || !isObject(x)) {
+      str += ' ' + x;
+    } else {
+      str += ' ' + inspect(x);
+    }
+  }
+  return str;
+};
+
+
+// Mark that a method should not be used.
+// Returns a modified function which warns once by default.
+// If --no-deprecation is set, then it is a no-op.
+exports.deprecate = function(fn, msg) {
+  // Allow for deprecating things in the process of starting up.
+  if (isUndefined(global.process)) {
+    return function() {
+      return exports.deprecate(fn, msg).apply(this, arguments);
+    };
+  }
+
+  if (process.noDeprecation === true) {
+    return fn;
+  }
+
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (process.throwDeprecation) {
+        throw new Error(msg);
+      } else if (process.traceDeprecation) {
+        console.trace(msg);
+      } else {
+        console.error(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+
+  return deprecated;
+};
+
+
+var debugs = {};
+var debugEnviron;
+exports.debuglog = function(set) {
+  if (isUndefined(debugEnviron))
+    debugEnviron = process.env.NODE_DEBUG || '';
+  set = set.toUpperCase();
+  if (!debugs[set]) {
+    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+      var pid = process.pid;
+      debugs[set] = function() {
+        var msg = exports.format.apply(exports, arguments);
+        console.error('%s %d: %s', set, pid, msg);
+      };
+    } else {
+      debugs[set] = function() {};
+    }
+  }
+  return debugs[set];
+};
+
+
+/**
+ * Echos the value of a value. Trys to print the value out
+ * in the best way possible given the different types.
+ *
+ * @param {Object} obj The object to print out.
+ * @param {Object} opts Optional options object that alters the output.
+ */
+/* legacy: obj, showHidden, depth, colors*/
+function inspect(obj, opts) {
+  // default options
+  var ctx = {
+    seen: [],
+    stylize: stylizeNoColor
+  };
+  // legacy...
+  if (arguments.length >= 3) ctx.depth = arguments[2];
+  if (arguments.length >= 4) ctx.colors = arguments[3];
+  if (isBoolean(opts)) {
+    // legacy...
+    ctx.showHidden = opts;
+  } else if (opts) {
+    // got an "options" object
+    exports._extend(ctx, opts);
+  }
+  // set default options
+  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+  if (isUndefined(ctx.depth)) ctx.depth = 2;
+  if (isUndefined(ctx.colors)) ctx.colors = false;
+  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+  if (ctx.colors) ctx.stylize = stylizeWithColor;
+  return formatValue(ctx, obj, ctx.depth);
+}
+exports.inspect = inspect;
+
+
+// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+inspect.colors = {
+  'bold' : [1, 22],
+  'italic' : [3, 23],
+  'underline' : [4, 24],
+  'inverse' : [7, 27],
+  'white' : [37, 39],
+  'grey' : [90, 39],
+  'black' : [30, 39],
+  'blue' : [34, 39],
+  'cyan' : [36, 39],
+  'green' : [32, 39],
+  'magenta' : [35, 39],
+  'red' : [31, 39],
+  'yellow' : [33, 39]
+};
+
+// Don't use 'blue' not visible on cmd.exe
+inspect.styles = {
+  'special': 'cyan',
+  'number': 'yellow',
+  'boolean': 'yellow',
+  'undefined': 'grey',
+  'null': 'bold',
+  'string': 'green',
+  'date': 'magenta',
+  // "name": intentionally not styling
+  'regexp': 'red'
+};
+
+
+function stylizeWithColor(str, styleType) {
+  var style = inspect.styles[styleType];
+
+  if (style) {
+    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+           '\u001b[' + inspect.colors[style][1] + 'm';
+  } else {
+    return str;
+  }
+}
+
+
+function stylizeNoColor(str, styleType) {
+  return str;
+}
+
+
+function arrayToHash(array) {
+  var hash = {};
+
+  array.forEach(function(val, idx) {
+    hash[val] = true;
+  });
+
+  return hash;
+}
+
+
+function formatValue(ctx, value, recurseTimes) {
+  // Provide a hook for user-specified inspect functions.
+  // Check that value is an object with an inspect function on it
+  if (ctx.customInspect &&
+      value &&
+      isFunction(value.inspect) &&
+      // Filter out the util module, it's inspect function is special
+      value.inspect !== exports.inspect &&
+      // Also filter out any prototype objects using the circular check.
+      !(value.constructor && value.constructor.prototype === value)) {
+    var ret = value.inspect(recurseTimes, ctx);
+    if (!isString(ret)) {
+      ret = formatValue(ctx, ret, recurseTimes);
+    }
+    return ret;
+  }
+
+  // Primitive types cannot have properties
+  var primitive = formatPrimitive(ctx, value);
+  if (primitive) {
+    return primitive;
+  }
+
+  // Look up the keys of the object.
+  var keys = Object.keys(value);
+  var visibleKeys = arrayToHash(keys);
+
+  if (ctx.showHidden) {
+    keys = Object.getOwnPropertyNames(value);
+  }
+
+  // IE doesn't make error fields non-enumerable
+  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+  if (isError(value)
+      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+    return formatError(value);
+  }
+
+  // Some type of object without properties can be shortcutted.
+  if (keys.length === 0) {
+    if (isFunction(value)) {
+      var name = value.name ? ': ' + value.name : '';
+      return ctx.stylize('[Function' + name + ']', 'special');
+    }
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    }
+    if (isDate(value)) {
+      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+    }
+    if (isError(value)) {
+      return formatError(value);
+    }
+  }
+
+  var base = '', array = false, braces = ['{', '}'];
+
+  // Make Array say that they are Array
+  if (isArray(value)) {
+    array = true;
+    braces = ['[', ']'];
+  }
+
+  // Make functions say that they are functions
+  if (isFunction(value)) {
+    var n = value.name ? ': ' + value.name : '';
+    base = ' [Function' + n + ']';
+  }
+
+  // Make RegExps say that they are RegExps
+  if (isRegExp(value)) {
+    base = ' ' + RegExp.prototype.toString.call(value);
+  }
+
+  // Make dates with properties first say the date
+  if (isDate(value)) {
+    base = ' ' + Date.prototype.toUTCString.call(value);
+  }
+
+  // Make error with message first say the error
+  if (isError(value)) {
+    base = ' ' + formatError(value);
+  }
+
+  if (keys.length === 0 && (!array || value.length == 0)) {
+    return braces[0] + base + braces[1];
+  }
+
+  if (recurseTimes < 0) {
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    } else {
+      return ctx.stylize('[Object]', 'special');
+    }
+  }
+
+  ctx.seen.push(value);
+
+  var output;
+  if (array) {
+    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+  } else {
+    output = keys.map(function(key) {
+      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    });
+  }
+
+  ctx.seen.pop();
+
+  return reduceToSingleString(output, base, braces);
+}
+
+
+function formatPrimitive(ctx, value) {
+  if (isUndefined(value))
+    return ctx.stylize('undefined', 'undefined');
+  if (isString(value)) {
+    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                             .replace(/'/g, "\\'")
+                                             .replace(/\\"/g, '"') + '\'';
+    return ctx.stylize(simple, 'string');
+  }
+  if (isNumber(value))
+    return ctx.stylize('' + value, 'number');
+  if (isBoolean(value))
+    return ctx.stylize('' + value, 'boolean');
+  // For some reason typeof null is "object", so special case here.
+  if (isNull(value))
+    return ctx.stylize('null', 'null');
+}
+
+
+function formatError(value) {
+  return '[' + Error.prototype.toString.call(value) + ']';
+}
+
+
+function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+  var output = [];
+  for (var i = 0, l = value.length; i < l; ++i) {
+    if (hasOwnProperty(value, String(i))) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          String(i), true));
+    } else {
+      output.push('');
+    }
+  }
+  keys.forEach(function(key) {
+    if (!key.match(/^\d+$/)) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          key, true));
+    }
+  });
+  return output;
+}
+
+
+function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+  var name, str, desc;
+  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+  if (desc.get) {
+    if (desc.set) {
+      str = ctx.stylize('[Getter/Setter]', 'special');
+    } else {
+      str = ctx.stylize('[Getter]', 'special');
+    }
+  } else {
+    if (desc.set) {
+      str = ctx.stylize('[Setter]', 'special');
+    }
+  }
+  if (!hasOwnProperty(visibleKeys, key)) {
+    name = '[' + key + ']';
+  }
+  if (!str) {
+    if (ctx.seen.indexOf(desc.value) < 0) {
+      if (isNull(recurseTimes)) {
+        str = formatValue(ctx, desc.value, null);
+      } else {
+        str = formatValue(ctx, desc.value, recurseTimes - 1);
+      }
+      if (str.indexOf('\n') > -1) {
+        if (array) {
+          str = str.split('\n').map(function(line) {
+            return '  ' + line;
+          }).join('\n').substr(2);
+        } else {
+          str = '\n' + str.split('\n').map(function(line) {
+            return '   ' + line;
+          }).join('\n');
+        }
+      }
+    } else {
+      str = ctx.stylize('[Circular]', 'special');
+    }
+  }
+  if (isUndefined(name)) {
+    if (array && key.match(/^\d+$/)) {
+      return str;
+    }
+    name = JSON.stringify('' + key);
+    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+      name = name.substr(1, name.length - 2);
+      name = ctx.stylize(name, 'name');
+    } else {
+      name = name.replace(/'/g, "\\'")
+                 .replace(/\\"/g, '"')
+                 .replace(/(^"|"$)/g, "'");
+      name = ctx.stylize(name, 'string');
+    }
+  }
+
+  return name + ': ' + str;
+}
+
+
+function reduceToSingleString(output, base, braces) {
+  var numLinesEst = 0;
+  var length = output.reduce(function(prev, cur) {
+    numLinesEst++;
+    if (cur.indexOf('\n') >= 0) numLinesEst++;
+    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+  }, 0);
+
+  if (length > 60) {
+    return braces[0] +
+           (base === '' ? '' : base + '\n ') +
+           ' ' +
+           output.join(',\n  ') +
+           ' ' +
+           braces[1];
+  }
+
+  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+}
+
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+function isArray(ar) {
+  return Array.isArray(ar);
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return isObject(re) && objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return isObject(d) && objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return isObject(e) &&
+      (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = require('./support/isBuffer');
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+
+// log is just a thin wrapper to console.log that prepends a timestamp
+exports.log = function() {
+  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+};
+
+
+/**
+ * Inherit the prototype methods from one constructor into another.
+ *
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
+ *
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
+ */
+exports.inherits = require('inherits');
+
+exports._extend = function(origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
+};
+
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./support/isBuffer":50,"_process":326,"inherits":49}],52:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19263,7 +15395,7 @@ function rethrow(error) {
     throw error;
 }
 module.exports = exports['default'];
-},{"./internal/initialParams":64,"./internal/setImmediate":69,"lodash/isObject":255}],56:[function(require,module,exports){
+},{"./internal/initialParams":61,"./internal/setImmediate":66,"lodash/isObject":253}],53:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19375,7 +15507,7 @@ var eachOfGeneric = (0, _doLimit2.default)(_eachOfLimit2.default, Infinity);
  * });
  */
 module.exports = exports['default'];
-},{"./eachOfLimit":57,"./internal/breakLoop":60,"./internal/doLimit":61,"./internal/once":66,"./internal/onlyOnce":67,"./internal/wrapAsync":72,"lodash/isArrayLike":251,"lodash/noop":259}],57:[function(require,module,exports){
+},{"./eachOfLimit":54,"./internal/breakLoop":57,"./internal/doLimit":58,"./internal/once":63,"./internal/onlyOnce":64,"./internal/wrapAsync":69,"lodash/isArrayLike":249,"lodash/noop":257}],54:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19417,7 +15549,7 @@ function eachOfLimit(coll, limit, iteratee, callback) {
   (0, _eachOfLimit3.default)(limit)(coll, (0, _wrapAsync2.default)(iteratee), callback);
 }
 module.exports = exports['default'];
-},{"./internal/eachOfLimit":62,"./internal/wrapAsync":72}],58:[function(require,module,exports){
+},{"./internal/eachOfLimit":59,"./internal/wrapAsync":69}],55:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19453,7 +15585,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  */
 exports.default = (0, _doLimit2.default)(_eachOfLimit2.default, 1);
 module.exports = exports['default'];
-},{"./eachOfLimit":57,"./internal/doLimit":61}],59:[function(require,module,exports){
+},{"./eachOfLimit":54,"./internal/doLimit":58}],56:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19536,7 +15668,7 @@ function eachLimit(coll, iteratee, callback) {
   (0, _eachOf2.default)(coll, (0, _withoutIndex2.default)((0, _wrapAsync2.default)(iteratee)), callback);
 }
 module.exports = exports['default'];
-},{"./eachOf":56,"./internal/withoutIndex":71,"./internal/wrapAsync":72}],60:[function(require,module,exports){
+},{"./eachOf":53,"./internal/withoutIndex":68,"./internal/wrapAsync":69}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19546,7 +15678,7 @@ Object.defineProperty(exports, "__esModule", {
 // See #1064, #1293
 exports.default = {};
 module.exports = exports["default"];
-},{}],61:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19559,7 +15691,7 @@ function doLimit(fn, limit) {
     };
 }
 module.exports = exports["default"];
-},{}],62:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19634,7 +15766,7 @@ function _eachOfLimit(limit) {
     };
 }
 module.exports = exports['default'];
-},{"./breakLoop":60,"./iterator":65,"./once":66,"./onlyOnce":67,"lodash/noop":259}],63:[function(require,module,exports){
+},{"./breakLoop":57,"./iterator":62,"./once":63,"./onlyOnce":64,"lodash/noop":257}],60:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19648,7 +15780,7 @@ exports.default = function (coll) {
 var iteratorSymbol = typeof Symbol === 'function' && Symbol.iterator;
 
 module.exports = exports['default'];
-},{}],64:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19670,7 +15802,7 @@ var _slice2 = _interopRequireDefault(_slice);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 module.exports = exports['default'];
-},{"./slice":70}],65:[function(require,module,exports){
+},{"./slice":67}],62:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19729,7 +15861,7 @@ function iterator(coll) {
     return iterator ? createES2015Iterator(iterator) : createObjectIterator(coll);
 }
 module.exports = exports['default'];
-},{"./getIterator":63,"lodash/isArrayLike":251,"lodash/keys":258}],66:[function(require,module,exports){
+},{"./getIterator":60,"lodash/isArrayLike":249,"lodash/keys":256}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19745,7 +15877,7 @@ function once(fn) {
     };
 }
 module.exports = exports["default"];
-},{}],67:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19761,7 +15893,7 @@ function onlyOnce(fn) {
     };
 }
 module.exports = exports["default"];
-},{}],68:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19804,8 +15936,8 @@ function _parallel(eachfn, tasks, callback) {
     });
 }
 module.exports = exports['default'];
-},{"./slice":70,"./wrapAsync":72,"lodash/isArrayLike":251,"lodash/noop":259}],69:[function(require,module,exports){
-(function (process){
+},{"./slice":67,"./wrapAsync":69,"lodash/isArrayLike":249,"lodash/noop":257}],66:[function(require,module,exports){
+(function (process,setImmediate){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19848,8 +15980,8 @@ if (hasSetImmediate) {
 }
 
 exports.default = wrap(_defer);
-}).call(this,require('_process'))
-},{"./slice":70,"_process":328}],70:[function(require,module,exports){
+}).call(this,require('_process'),require("timers").setImmediate)
+},{"./slice":67,"_process":326,"timers":383}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19866,7 +15998,7 @@ function slice(arrayLike, start) {
     return newArr;
 }
 module.exports = exports["default"];
-},{}],71:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19879,7 +16011,7 @@ function _withoutIndex(iteratee) {
     };
 }
 module.exports = exports["default"];
-},{}],72:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19905,7 +16037,7 @@ function wrapAsync(asyncFn) {
 
 exports.default = wrapAsync;
 exports.isAsync = isAsync;
-},{"../asyncify":55}],73:[function(require,module,exports){
+},{"../asyncify":52}],70:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19991,7 +16123,7 @@ function series(tasks, callback) {
   (0, _parallel2.default)(_eachOfSeries2.default, tasks, callback);
 }
 module.exports = exports['default'];
-},{"./eachOfSeries":58,"./internal/parallel":68}],74:[function(require,module,exports){
+},{"./eachOfSeries":55,"./internal/parallel":65}],71:[function(require,module,exports){
 
 /**
  * Expose `Backoff`.
@@ -20078,7 +16210,7 @@ Backoff.prototype.setJitter = function(jitter){
 };
 
 
-},{}],75:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 (function (Buffer){
 // Generated by CoffeeScript 1.8.0
 (function() {
@@ -20182,7 +16314,7 @@ Backoff.prototype.setJitter = function(jitter){
 }).call(this);
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":115}],76:[function(require,module,exports){
+},{"buffer":112}],73:[function(require,module,exports){
 /*
  * base64-arraybuffer
  * https://github.com/niklasvh/base64-arraybuffer
@@ -20251,7 +16383,7 @@ Backoff.prototype.setJitter = function(jitter){
   };
 })();
 
-},{}],77:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -20404,9 +16536,9 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],78:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 /*
- *  big.js v5.0.3
+ *  big.js v5.1.2
  *  A small, fast, easy-to-use library for arbitrary-precision decimal arithmetic.
  *  Copyright (c) 2017 Michael Mclaughlin <M8ch88l@gmail.com>
  *  https://github.com/MikeMcl/big.js/LICENCE
@@ -21345,7 +17477,7 @@ function fromByteArray (uint8) {
   }
 })(this);
 
-},{}],79:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 // Reference https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
 // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
 // NOTE: SIGHASH byte ignored AND restricted, truncate before use
@@ -21460,7 +17592,7 @@ module.exports = {
   encode: encode
 }
 
-},{"safe-buffer":355}],80:[function(require,module,exports){
+},{"safe-buffer":353}],77:[function(require,module,exports){
 (function (global){
 /**
  * Create a blob builder even when vendor prefixes exist
@@ -21560,7 +17692,7 @@ module.exports = (function() {
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],81:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -24989,7 +21121,7 @@ module.exports = (function() {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":83}],82:[function(require,module,exports){
+},{"buffer":80}],79:[function(require,module,exports){
 var r;
 
 module.exports = function rand(len) {
@@ -25056,9 +21188,9 @@ if (typeof self === 'object') {
   }
 }
 
-},{"crypto":83}],83:[function(require,module,exports){
+},{"crypto":80}],80:[function(require,module,exports){
 
-},{}],84:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 // based on the aes implimentation in triple sec
 // https://github.com/keybase/triplesec
 // which is in turn based on the one from crypto-js
@@ -25288,7 +21420,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":355}],85:[function(require,module,exports){
+},{"safe-buffer":353}],82:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -25407,7 +21539,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":84,"./ghash":89,"./incr32":90,"buffer-xor":114,"cipher-base":117,"inherits":228,"safe-buffer":355}],86:[function(require,module,exports){
+},{"./aes":81,"./ghash":86,"./incr32":87,"buffer-xor":111,"cipher-base":114,"inherits":226,"safe-buffer":353}],83:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -25422,7 +21554,7 @@ exports.createDecipher = exports.Decipher = deciphers.createDecipher
 exports.createDecipheriv = exports.Decipheriv = deciphers.createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"./decrypter":87,"./encrypter":88,"./modes/list.json":98}],87:[function(require,module,exports){
+},{"./decrypter":84,"./encrypter":85,"./modes/list.json":95}],84:[function(require,module,exports){
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
 var MODES = require('./modes')
@@ -25548,7 +21680,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":84,"./authCipher":85,"./modes":97,"./streamCipher":100,"cipher-base":117,"evp_bytestokey":204,"inherits":228,"safe-buffer":355}],88:[function(require,module,exports){
+},{"./aes":81,"./authCipher":82,"./modes":94,"./streamCipher":97,"cipher-base":114,"evp_bytestokey":201,"inherits":226,"safe-buffer":353}],85:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -25664,7 +21796,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":84,"./authCipher":85,"./modes":97,"./streamCipher":100,"cipher-base":117,"evp_bytestokey":204,"inherits":228,"safe-buffer":355}],89:[function(require,module,exports){
+},{"./aes":81,"./authCipher":82,"./modes":94,"./streamCipher":97,"cipher-base":114,"evp_bytestokey":201,"inherits":226,"safe-buffer":353}],86:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -25755,7 +21887,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":355}],90:[function(require,module,exports){
+},{"safe-buffer":353}],87:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -25772,7 +21904,7 @@ function incr32 (iv) {
 }
 module.exports = incr32
 
-},{}],91:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 var xor = require('buffer-xor')
 
 exports.encrypt = function (self, block) {
@@ -25791,7 +21923,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":114}],92:[function(require,module,exports){
+},{"buffer-xor":111}],89:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -25826,7 +21958,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":114,"safe-buffer":355}],93:[function(require,module,exports){
+},{"buffer-xor":111,"safe-buffer":353}],90:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -25870,7 +22002,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":355}],94:[function(require,module,exports){
+},{"safe-buffer":353}],91:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -25897,7 +22029,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":355}],95:[function(require,module,exports){
+},{"safe-buffer":353}],92:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -25929,7 +22061,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":90,"buffer-xor":114,"safe-buffer":355}],96:[function(require,module,exports){
+},{"../incr32":87,"buffer-xor":111,"safe-buffer":353}],93:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -25938,7 +22070,7 @@ exports.decrypt = function (self, block) {
   return self._cipher.decryptBlock(block)
 }
 
-},{}],97:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 var modeModules = {
   ECB: require('./ecb'),
   CBC: require('./cbc'),
@@ -25958,7 +22090,7 @@ for (var key in modes) {
 
 module.exports = modes
 
-},{"./cbc":91,"./cfb":92,"./cfb1":93,"./cfb8":94,"./ctr":95,"./ecb":96,"./list.json":98,"./ofb":99}],98:[function(require,module,exports){
+},{"./cbc":88,"./cfb":89,"./cfb1":90,"./cfb8":91,"./ctr":92,"./ecb":93,"./list.json":95,"./ofb":96}],95:[function(require,module,exports){
 module.exports={
   "aes-128-ecb": {
     "cipher": "AES",
@@ -26151,7 +22283,7 @@ module.exports={
   }
 }
 
-},{}],99:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 (function (Buffer){
 var xor = require('buffer-xor')
 
@@ -26171,7 +22303,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":115,"buffer-xor":114}],100:[function(require,module,exports){
+},{"buffer":112,"buffer-xor":111}],97:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -26200,7 +22332,7 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":84,"cipher-base":117,"inherits":228,"safe-buffer":355}],101:[function(require,module,exports){
+},{"./aes":81,"cipher-base":114,"inherits":226,"safe-buffer":353}],98:[function(require,module,exports){
 var DES = require('browserify-des')
 var aes = require('browserify-aes/browser')
 var aesModes = require('browserify-aes/modes')
@@ -26269,11 +22401,11 @@ exports.createDecipher = exports.Decipher = createDecipher
 exports.createDecipheriv = exports.Decipheriv = createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"browserify-aes/browser":86,"browserify-aes/modes":97,"browserify-des":102,"browserify-des/modes":103,"evp_bytestokey":204}],102:[function(require,module,exports){
-(function (Buffer){
+},{"browserify-aes/browser":83,"browserify-aes/modes":94,"browserify-des":99,"browserify-des/modes":100,"evp_bytestokey":201}],99:[function(require,module,exports){
 var CipherBase = require('cipher-base')
 var des = require('des.js')
 var inherits = require('inherits')
+var Buffer = require('safe-buffer').Buffer
 
 var modes = {
   'des-ede3-cbc': des.CBC.instantiate(des.EDE),
@@ -26298,10 +22430,16 @@ function DES (opts) {
     type = 'encrypt'
   }
   var key = opts.key
+  if (!Buffer.isBuffer(key)) {
+    key = Buffer.from(key)
+  }
   if (modeName === 'des-ede' || modeName === 'des-ede-cbc') {
     key = Buffer.concat([key, key.slice(0, 8)])
   }
   var iv = opts.iv
+  if (!Buffer.isBuffer(iv)) {
+    iv = Buffer.from(iv)
+  }
   this._des = mode.create({
     key: key,
     iv: iv,
@@ -26309,14 +22447,13 @@ function DES (opts) {
   })
 }
 DES.prototype._update = function (data) {
-  return new Buffer(this._des.update(data))
+  return Buffer.from(this._des.update(data))
 }
 DES.prototype._final = function () {
-  return new Buffer(this._des.final())
+  return Buffer.from(this._des.final())
 }
 
-}).call(this,require("buffer").Buffer)
-},{"buffer":115,"cipher-base":117,"des.js":162,"inherits":228}],103:[function(require,module,exports){
+},{"cipher-base":114,"des.js":159,"inherits":226,"safe-buffer":353}],100:[function(require,module,exports){
 exports['des-ecb'] = {
   key: 8,
   iv: 0
@@ -26342,7 +22479,7 @@ exports['des-ede'] = {
   iv: 0
 }
 
-},{}],104:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 (function (Buffer){
 var bn = require('bn.js');
 var randomBytes = require('randombytes');
@@ -26386,10 +22523,10 @@ function getr(priv) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"bn.js":81,"buffer":115,"randombytes":339}],105:[function(require,module,exports){
+},{"bn.js":78,"buffer":112,"randombytes":337}],102:[function(require,module,exports){
 module.exports = require('./browser/algorithms.json')
 
-},{"./browser/algorithms.json":106}],106:[function(require,module,exports){
+},{"./browser/algorithms.json":103}],103:[function(require,module,exports){
 module.exports={
   "sha224WithRSAEncryption": {
     "sign": "rsa",
@@ -26543,7 +22680,7 @@ module.exports={
   }
 }
 
-},{}],107:[function(require,module,exports){
+},{}],104:[function(require,module,exports){
 module.exports={
   "1.3.132.0.10": "secp256k1",
   "1.3.132.0.33": "p224",
@@ -26553,7 +22690,7 @@ module.exports={
   "1.3.132.0.35": "p521"
 }
 
-},{}],108:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 (function (Buffer){
 var createHash = require('create-hash')
 var stream = require('stream')
@@ -26648,7 +22785,7 @@ module.exports = {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./algorithms.json":106,"./sign":109,"./verify":110,"buffer":115,"create-hash":154,"inherits":228,"stream":382}],109:[function(require,module,exports){
+},{"./algorithms.json":103,"./sign":106,"./verify":107,"buffer":112,"create-hash":151,"inherits":226,"stream":381}],106:[function(require,module,exports){
 (function (Buffer){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var createHmac = require('create-hmac')
@@ -26797,7 +22934,7 @@ module.exports.getKey = getKey
 module.exports.makeKey = makeKey
 
 }).call(this,require("buffer").Buffer)
-},{"./curves.json":107,"bn.js":81,"browserify-rsa":104,"buffer":115,"create-hmac":156,"elliptic":173,"parse-asn1":316}],110:[function(require,module,exports){
+},{"./curves.json":104,"bn.js":78,"browserify-rsa":101,"buffer":112,"create-hmac":153,"elliptic":170,"parse-asn1":314}],107:[function(require,module,exports){
 (function (Buffer){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var BN = require('bn.js')
@@ -26884,7 +23021,7 @@ function checkValue (b, q) {
 module.exports = verify
 
 }).call(this,require("buffer").Buffer)
-},{"./curves.json":107,"bn.js":81,"buffer":115,"elliptic":173,"parse-asn1":316}],111:[function(require,module,exports){
+},{"./curves.json":104,"bn.js":78,"buffer":112,"elliptic":170,"parse-asn1":314}],108:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 /* eslint camelcase: "off" */
@@ -27296,7 +23433,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":328,"assert":54,"buffer":115,"pako/lib/zlib/constants":303,"pako/lib/zlib/deflate.js":305,"pako/lib/zlib/inflate.js":307,"pako/lib/zlib/zstream":311}],112:[function(require,module,exports){
+},{"_process":326,"assert":48,"buffer":112,"pako/lib/zlib/constants":301,"pako/lib/zlib/deflate.js":303,"pako/lib/zlib/inflate.js":305,"pako/lib/zlib/zstream":309}],109:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27908,9 +24045,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this,require('_process'))
-},{"./binding":111,"_process":328,"assert":54,"buffer":115,"stream":382,"util":395}],113:[function(require,module,exports){
-arguments[4][83][0].apply(exports,arguments)
-},{"dup":83}],114:[function(require,module,exports){
+},{"./binding":108,"_process":326,"assert":48,"buffer":112,"stream":381,"util":394}],110:[function(require,module,exports){
+arguments[4][80][0].apply(exports,arguments)
+},{"dup":80}],111:[function(require,module,exports){
 (function (Buffer){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -27924,7 +24061,7 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":115}],115:[function(require,module,exports){
+},{"buffer":112}],112:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -27981,26 +24118,24 @@ function typedArraySupport () {
 }
 
 Object.defineProperty(Buffer.prototype, 'parent', {
+  enumerable: true,
   get: function () {
-    if (!(this instanceof Buffer)) {
-      return undefined
-    }
+    if (!Buffer.isBuffer(this)) return undefined
     return this.buffer
   }
 })
 
 Object.defineProperty(Buffer.prototype, 'offset', {
+  enumerable: true,
   get: function () {
-    if (!(this instanceof Buffer)) {
-      return undefined
-    }
+    if (!Buffer.isBuffer(this)) return undefined
     return this.byteOffset
   }
 })
 
 function createBuffer (length) {
   if (length > K_MAX_LENGTH) {
-    throw new RangeError('Invalid typed array length')
+    throw new RangeError('The value "' + length + '" is invalid for option "size"')
   }
   // Return an augmented `Uint8Array` instance
   var buf = new Uint8Array(length)
@@ -28022,8 +24157,8 @@ function Buffer (arg, encodingOrOffset, length) {
   // Common case.
   if (typeof arg === 'number') {
     if (typeof encodingOrOffset === 'string') {
-      throw new Error(
-        'If encoding is specified then the first argument must be a string'
+      throw new TypeError(
+        'The "string" argument must be of type string. Received type number'
       )
     }
     return allocUnsafe(arg)
@@ -28032,7 +24167,7 @@ function Buffer (arg, encodingOrOffset, length) {
 }
 
 // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
-if (typeof Symbol !== 'undefined' && Symbol.species &&
+if (typeof Symbol !== 'undefined' && Symbol.species != null &&
     Buffer[Symbol.species] === Buffer) {
   Object.defineProperty(Buffer, Symbol.species, {
     value: null,
@@ -28045,19 +24180,51 @@ if (typeof Symbol !== 'undefined' && Symbol.species &&
 Buffer.poolSize = 8192 // not used by this implementation
 
 function from (value, encodingOrOffset, length) {
-  if (typeof value === 'number') {
-    throw new TypeError('"value" argument must not be a number')
-  }
-
-  if (isArrayBuffer(value) || (value && isArrayBuffer(value.buffer))) {
-    return fromArrayBuffer(value, encodingOrOffset, length)
-  }
-
   if (typeof value === 'string') {
     return fromString(value, encodingOrOffset)
   }
 
-  return fromObject(value)
+  if (ArrayBuffer.isView(value)) {
+    return fromArrayLike(value)
+  }
+
+  if (value == null) {
+    throw TypeError(
+      'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+      'or Array-like Object. Received type ' + (typeof value)
+    )
+  }
+
+  if (isInstance(value, ArrayBuffer) ||
+      (value && isInstance(value.buffer, ArrayBuffer))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'number') {
+    throw new TypeError(
+      'The "value" argument must not be of type number. Received type number'
+    )
+  }
+
+  var valueOf = value.valueOf && value.valueOf()
+  if (valueOf != null && valueOf !== value) {
+    return Buffer.from(valueOf, encodingOrOffset, length)
+  }
+
+  var b = fromObject(value)
+  if (b) return b
+
+  if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
+      typeof value[Symbol.toPrimitive] === 'function') {
+    return Buffer.from(
+      value[Symbol.toPrimitive]('string'), encodingOrOffset, length
+    )
+  }
+
+  throw new TypeError(
+    'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+    'or Array-like Object. Received type ' + (typeof value)
+  )
 }
 
 /**
@@ -28081,7 +24248,7 @@ function assertSize (size) {
   if (typeof size !== 'number') {
     throw new TypeError('"size" argument must be of type number')
   } else if (size < 0) {
-    throw new RangeError('"size" argument must not be negative')
+    throw new RangeError('The value "' + size + '" is invalid for option "size"')
   }
 }
 
@@ -28196,20 +24363,16 @@ function fromObject (obj) {
     return buf
   }
 
-  if (obj) {
-    if (ArrayBuffer.isView(obj) || 'length' in obj) {
-      if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
-        return createBuffer(0)
-      }
-      return fromArrayLike(obj)
+  if (obj.length !== undefined) {
+    if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
+      return createBuffer(0)
     }
-
-    if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
-      return fromArrayLike(obj.data)
-    }
+    return fromArrayLike(obj)
   }
 
-  throw new TypeError('The first argument must be one of type string, Buffer, ArrayBuffer, Array, or Array-like Object.')
+  if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+    return fromArrayLike(obj.data)
+  }
 }
 
 function checked (length) {
@@ -28230,12 +24393,17 @@ function SlowBuffer (length) {
 }
 
 Buffer.isBuffer = function isBuffer (b) {
-  return b != null && b._isBuffer === true
+  return b != null && b._isBuffer === true &&
+    b !== Buffer.prototype // so Buffer.isBuffer(Buffer.prototype) will be false
 }
 
 Buffer.compare = function compare (a, b) {
+  if (isInstance(a, Uint8Array)) a = Buffer.from(a, a.offset, a.byteLength)
+  if (isInstance(b, Uint8Array)) b = Buffer.from(b, b.offset, b.byteLength)
   if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
-    throw new TypeError('Arguments must be Buffers')
+    throw new TypeError(
+      'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
+    )
   }
 
   if (a === b) return 0
@@ -28296,7 +24464,7 @@ Buffer.concat = function concat (list, length) {
   var pos = 0
   for (i = 0; i < list.length; ++i) {
     var buf = list[i]
-    if (ArrayBuffer.isView(buf)) {
+    if (isInstance(buf, Uint8Array)) {
       buf = Buffer.from(buf)
     }
     if (!Buffer.isBuffer(buf)) {
@@ -28312,15 +24480,19 @@ function byteLength (string, encoding) {
   if (Buffer.isBuffer(string)) {
     return string.length
   }
-  if (ArrayBuffer.isView(string) || isArrayBuffer(string)) {
+  if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
     return string.byteLength
   }
   if (typeof string !== 'string') {
-    string = '' + string
+    throw new TypeError(
+      'The "string" argument must be one of type string, Buffer, or ArrayBuffer. ' +
+      'Received type ' + typeof string
+    )
   }
 
   var len = string.length
-  if (len === 0) return 0
+  var mustMatch = (arguments.length > 2 && arguments[2] === true)
+  if (!mustMatch && len === 0) return 0
 
   // Use a for loop to avoid recursion
   var loweredCase = false
@@ -28332,7 +24504,6 @@ function byteLength (string, encoding) {
         return len
       case 'utf8':
       case 'utf-8':
-      case undefined:
         return utf8ToBytes(string).length
       case 'ucs2':
       case 'ucs-2':
@@ -28344,7 +24515,9 @@ function byteLength (string, encoding) {
       case 'base64':
         return base64ToBytes(string).length
       default:
-        if (loweredCase) return utf8ToBytes(string).length // assume utf8
+        if (loweredCase) {
+          return mustMatch ? -1 : utf8ToBytes(string).length // assume utf8
+        }
         encoding = ('' + encoding).toLowerCase()
         loweredCase = true
     }
@@ -28491,16 +24664,20 @@ Buffer.prototype.equals = function equals (b) {
 Buffer.prototype.inspect = function inspect () {
   var str = ''
   var max = exports.INSPECT_MAX_BYTES
-  if (this.length > 0) {
-    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
-    if (this.length > max) str += ' ... '
-  }
+  str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
+  if (this.length > max) str += ' ... '
   return '<Buffer ' + str + '>'
 }
 
 Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (isInstance(target, Uint8Array)) {
+    target = Buffer.from(target, target.offset, target.byteLength)
+  }
   if (!Buffer.isBuffer(target)) {
-    throw new TypeError('Argument must be a Buffer')
+    throw new TypeError(
+      'The "target" argument must be one of type Buffer or Uint8Array. ' +
+      'Received type ' + (typeof target)
+    )
   }
 
   if (start === undefined) {
@@ -28579,7 +24756,7 @@ function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
   } else if (byteOffset < -0x80000000) {
     byteOffset = -0x80000000
   }
-  byteOffset = +byteOffset  // Coerce to Number.
+  byteOffset = +byteOffset // Coerce to Number.
   if (numberIsNaN(byteOffset)) {
     // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
     byteOffset = dir ? 0 : (buffer.length - 1)
@@ -28831,8 +25008,8 @@ function utf8Slice (buf, start, end) {
     var codePoint = null
     var bytesPerSequence = (firstByte > 0xEF) ? 4
       : (firstByte > 0xDF) ? 3
-      : (firstByte > 0xBF) ? 2
-      : 1
+        : (firstByte > 0xBF) ? 2
+          : 1
 
     if (i + bytesPerSequence <= end) {
       var secondByte, thirdByte, fourthByte, tempCodePoint
@@ -29495,7 +25672,7 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
   } else {
     var bytes = Buffer.isBuffer(val)
       ? val
-      : new Buffer(val, encoding)
+      : Buffer.from(val, encoding)
     var len = bytes.length
     if (len === 0) {
       throw new TypeError('The value "' + val +
@@ -29650,19 +25827,20 @@ function blitBuffer (src, dst, offset, length) {
   return i
 }
 
-// ArrayBuffers from another context (i.e. an iframe) do not pass the `instanceof` check
-// but they should be treated as valid. See: https://github.com/feross/buffer/issues/166
-function isArrayBuffer (obj) {
-  return obj instanceof ArrayBuffer ||
-    (obj != null && obj.constructor != null && obj.constructor.name === 'ArrayBuffer' &&
-      typeof obj.byteLength === 'number')
+// ArrayBuffer or Uint8Array objects from other contexts (i.e. iframes) do not pass
+// the `instanceof` check but they should be treated as of that type.
+// See: https://github.com/feross/buffer/issues/166
+function isInstance (obj, type) {
+  return obj instanceof type ||
+    (obj != null && obj.constructor != null && obj.constructor.name != null &&
+      obj.constructor.name === type.name)
 }
-
 function numberIsNaN (obj) {
+  // For IE11 support
   return obj !== obj // eslint-disable-line no-self-compare
 }
 
-},{"base64-js":77,"ieee754":226}],116:[function(require,module,exports){
+},{"base64-js":74,"ieee754":224}],113:[function(require,module,exports){
 (function (process){
 var libPath = process.env.COVER == 'CHUNKING' ? './lib-cov' : './lib';
 
@@ -29678,7 +25856,7 @@ module.exports = {
 // To be deprecated
 module.exports.Chunker = module.exports.SizeChunker;
 }).call(this,require('_process'))
-},{"_process":328}],117:[function(require,module,exports){
+},{"_process":326}],114:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -29779,7 +25957,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":228,"safe-buffer":355,"stream":382,"string_decoder":383}],118:[function(require,module,exports){
+},{"inherits":226,"safe-buffer":353,"stream":381,"string_decoder":382}],115:[function(require,module,exports){
 "use strict";
 
 require("./shim-object");
@@ -30223,7 +26401,7 @@ function pow2AtLeast(n) {
 }
 
 
-},{"./generic-collection":122,"./generic-order":124,"./listen/range-changes":129,"./shim-object":132}],119:[function(require,module,exports){
+},{"./generic-collection":119,"./generic-order":121,"./listen/range-changes":126,"./shim-object":129}],116:[function(require,module,exports){
 "use strict";
 
 var Shim = require("./shim");
@@ -30428,7 +26606,7 @@ Dict.prototype.toJSON = function () {
     return this.toObject();
 };
 
-},{"./generic-collection":122,"./generic-map":123,"./listen/property-changes":128,"./shim":134}],120:[function(require,module,exports){
+},{"./generic-collection":119,"./generic-map":120,"./listen/property-changes":125,"./shim":131}],117:[function(require,module,exports){
 "use strict";
 
 var Shim = require("./shim");
@@ -30487,7 +26665,7 @@ FastMap.prototype.stringify = function (item, leader) {
 }
 
 
-},{"./fast-set":121,"./generic-collection":122,"./generic-map":123,"./listen/property-changes":128,"./shim":134}],121:[function(require,module,exports){
+},{"./fast-set":118,"./generic-collection":119,"./generic-map":120,"./listen/property-changes":125,"./shim":131}],118:[function(require,module,exports){
 "use strict";
 
 var Shim = require("./shim");
@@ -30681,7 +26859,7 @@ FastSet.prototype.logNode = function (node, write) {
 };
 
 
-},{"./dict":119,"./generic-collection":122,"./generic-set":125,"./list":126,"./listen/property-changes":128,"./shim":134,"./tree-log":135}],122:[function(require,module,exports){
+},{"./dict":116,"./generic-collection":119,"./generic-set":122,"./list":123,"./listen/property-changes":125,"./shim":131,"./tree-log":132}],119:[function(require,module,exports){
 "use strict";
 
 module.exports = GenericCollection;
@@ -30965,7 +27143,7 @@ Object.defineProperty(GenericCollection.prototype,"size",GenericCollection._size
 
 require("./shim-array");
 
-},{"./shim-array":130}],123:[function(require,module,exports){
+},{"./shim-array":127}],120:[function(require,module,exports){
 "use strict";
 
 var Object = require("./shim-object");
@@ -31168,7 +27346,7 @@ Item.prototype.compare = function (that) {
 };
 
 
-},{"./listen/map-changes":127,"./listen/property-changes":128,"./shim-object":132}],124:[function(require,module,exports){
+},{"./listen/map-changes":124,"./listen/property-changes":125,"./shim-object":129}],121:[function(require,module,exports){
 
 var Object = require("./shim-object");
 
@@ -31228,7 +27406,7 @@ GenericOrder.prototype.toJSON = function () {
     return this.toArray();
 };
 
-},{"./shim-object":132}],125:[function(require,module,exports){
+},{"./shim-object":129}],122:[function(require,module,exports){
 
 module.exports = GenericSet;
 function GenericSet() {
@@ -31302,7 +27480,7 @@ GenericSet.prototype.toggle = function (value) {
 };
 
 
-},{}],126:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 "use strict";
 
 module.exports = List;
@@ -31772,7 +27950,7 @@ Node.prototype.addAfter = function (node) {
     node.prev = this;
 };
 
-},{"./generic-collection":122,"./generic-order":124,"./listen/property-changes":128,"./listen/range-changes":129,"./shim":134}],127:[function(require,module,exports){
+},{"./generic-collection":119,"./generic-order":121,"./listen/property-changes":125,"./listen/range-changes":126,"./shim":131}],124:[function(require,module,exports){
 "use strict";
 
 var WeakMap = require("weak-map");
@@ -31924,7 +28102,7 @@ MapChanges.prototype.dispatchBeforeMapChange = function (key, value) {
 };
 
 
-},{"../dict":119,"../list":126,"weak-map":397}],128:[function(require,module,exports){
+},{"../dict":116,"../list":123,"weak-map":396}],125:[function(require,module,exports){
 /*
     Based in part on observable arrays from Motorola Mobility’s Montage
     Copyright (c) 2012, Motorola Mobility LLC. All Rights Reserved.
@@ -32361,7 +28539,7 @@ PropertyChanges.makePropertyObservable = function (object, key) {
     }
 };
 
-},{"../shim":134}],129:[function(require,module,exports){
+},{"../shim":131}],126:[function(require,module,exports){
 "use strict";
 
 var WeakMap = require("weak-map");
@@ -32505,7 +28683,7 @@ RangeChanges.prototype.dispatchBeforeRangeChange = function (plus, minus, index)
 };
 
 
-},{"../dict":119,"weak-map":397}],130:[function(require,module,exports){
+},{"../dict":116,"weak-map":396}],127:[function(require,module,exports){
 "use strict";
 
 /*
@@ -32867,7 +29045,7 @@ ArrayIterator.prototype.next = function () {
     return this._iterationObject;
 };
 
-},{"./generic-collection":122,"./generic-order":124,"./shim-function":131,"weak-map":397}],131:[function(require,module,exports){
+},{"./generic-collection":119,"./generic-order":121,"./shim-function":128,"weak-map":396}],128:[function(require,module,exports){
 
 module.exports = Function;
 
@@ -32928,7 +29106,7 @@ Function.get = function (key) {
 };
 
 
-},{}],132:[function(require,module,exports){
+},{}],129:[function(require,module,exports){
 "use strict";
 
 var WeakMap = require("weak-map");
@@ -33454,7 +29632,7 @@ Object.clear = function (object) {
     return object;
 };
 
-},{"weak-map":397}],133:[function(require,module,exports){
+},{"weak-map":396}],130:[function(require,module,exports){
 
 /**
     accepts a string; returns the string with regex metacharacters escaped.
@@ -33470,7 +29648,7 @@ if (!RegExp.escape) {
 }
 
 
-},{}],134:[function(require,module,exports){
+},{}],131:[function(require,module,exports){
 
 var Array = require("./shim-array");
 var Object = require("./shim-object");
@@ -33478,7 +29656,7 @@ var Function = require("./shim-function");
 var RegExp = require("./shim-regexp");
 
 
-},{"./shim-array":130,"./shim-function":131,"./shim-object":132,"./shim-regexp":133}],135:[function(require,module,exports){
+},{"./shim-array":127,"./shim-function":128,"./shim-object":129,"./shim-regexp":130}],132:[function(require,module,exports){
 "use strict";
 
 module.exports = TreeLog;
@@ -33520,7 +29698,7 @@ TreeLog.unicodeSharp = {
 };
 
 
-},{}],136:[function(require,module,exports){
+},{}],133:[function(require,module,exports){
 /*
 
 The MIT License (MIT)
@@ -33648,7 +29826,9 @@ function applyStyle() {
     var code = ansiStyles[nestedStyles[i]];
     str = code.open + str.replace(code.closeRe, code.open) + code.close;
     if (newLinesPresent) {
-      str = str.replace(newLineRegex, code.close + '\n' + code.open);
+      str = str.replace(newLineRegex, function(match) {
+        return code.close + match + code.open;
+      });
     }
   }
 
@@ -33706,10 +29886,10 @@ colors.zalgo = require('./custom/zalgo');
 
 // maps
 colors.maps = {};
-colors.maps.america = require('./maps/america');
-colors.maps.zebra = require('./maps/zebra');
-colors.maps.rainbow = require('./maps/rainbow');
-colors.maps.random = require('./maps/random');
+colors.maps.america = require('./maps/america')(colors);
+colors.maps.zebra = require('./maps/zebra')(colors);
+colors.maps.rainbow = require('./maps/rainbow')(colors);
+colors.maps.random = require('./maps/random')(colors);
 
 for (var map in colors.maps) {
   (function(map) {
@@ -33721,7 +29901,7 @@ for (var map in colors.maps) {
 
 defineProps(colors, init());
 
-},{"./custom/trap":137,"./custom/zalgo":138,"./maps/america":139,"./maps/rainbow":140,"./maps/random":141,"./maps/zebra":142,"./styles":143,"./system/supports-colors":145,"util":395}],137:[function(require,module,exports){
+},{"./custom/trap":134,"./custom/zalgo":135,"./maps/america":136,"./maps/rainbow":137,"./maps/random":138,"./maps/zebra":139,"./styles":140,"./system/supports-colors":142,"util":394}],134:[function(require,module,exports){
 module['exports'] = function runTheTrap(text, options) {
   var result = '';
   text = text || 'Run the trap, drop the bass';
@@ -33769,7 +29949,7 @@ module['exports'] = function runTheTrap(text, options) {
   return result;
 };
 
-},{}],138:[function(require,module,exports){
+},{}],135:[function(require,module,exports){
 // please no
 module['exports'] = function zalgo(text, options) {
   text = text || '   he is here   ';
@@ -33881,10 +30061,8 @@ module['exports'] = function zalgo(text, options) {
 };
 
 
-},{}],139:[function(require,module,exports){
-var colors = require('../colors');
-
-module['exports'] = (function() {
+},{}],136:[function(require,module,exports){
+module['exports'] = function(colors) {
   return function(letter, i, exploded) {
     if (letter === ' ') return letter;
     switch (i%3) {
@@ -33893,12 +30071,10 @@ module['exports'] = (function() {
       case 2: return colors.blue(letter);
     }
   };
-})();
+};
 
-},{"../colors":136}],140:[function(require,module,exports){
-var colors = require('../colors');
-
-module['exports'] = (function() {
+},{}],137:[function(require,module,exports){
+module['exports'] = function(colors) {
   // RoY G BiV
   var rainbowColors = ['red', 'yellow', 'green', 'blue', 'magenta'];
   return function(letter, i, exploded) {
@@ -33908,13 +30084,11 @@ module['exports'] = (function() {
       return colors[rainbowColors[i++ % rainbowColors.length]](letter);
     }
   };
-})();
+};
 
 
-},{"../colors":136}],141:[function(require,module,exports){
-var colors = require('../colors');
-
-module['exports'] = (function() {
+},{}],138:[function(require,module,exports){
+module['exports'] = function(colors) {
   var available = ['underline', 'inverse', 'grey', 'yellow', 'red', 'green',
     'blue', 'white', 'cyan', 'magenta'];
   return function(letter, i, exploded) {
@@ -33923,16 +30097,16 @@ module['exports'] = (function() {
         available[Math.round(Math.random() * (available.length - 2))]
       ](letter);
   };
-})();
-
-},{"../colors":136}],142:[function(require,module,exports){
-var colors = require('../colors');
-
-module['exports'] = function(letter, i, exploded) {
-  return i % 2 === 0 ? letter : colors.inverse(letter);
 };
 
-},{"../colors":136}],143:[function(require,module,exports){
+},{}],139:[function(require,module,exports){
+module['exports'] = function(colors) {
+  return function(letter, i, exploded) {
+    return i % 2 === 0 ? letter : colors.inverse(letter);
+  };
+};
+
+},{}],140:[function(require,module,exports){
 /*
 The MIT License (MIT)
 
@@ -34011,7 +30185,7 @@ Object.keys(codes).forEach(function(key) {
   style.close = '\u001b[' + val[1] + 'm';
 });
 
-},{}],144:[function(require,module,exports){
+},{}],141:[function(require,module,exports){
 (function (process){
 /*
 MIT License
@@ -34050,7 +30224,7 @@ module.exports = function(flag, argv) {
 };
 
 }).call(this,require('_process'))
-},{"_process":328}],145:[function(require,module,exports){
+},{"_process":326}],142:[function(require,module,exports){
 (function (process){
 /*
 The MIT License (MIT)
@@ -34205,7 +30379,7 @@ module.exports = {
 };
 
 }).call(this,require('_process'))
-},{"./has-flag.js":144,"_process":328,"os":300}],146:[function(require,module,exports){
+},{"./has-flag.js":141,"_process":326,"os":298}],143:[function(require,module,exports){
 //
 // Remark: Requiring this file will use the "safe" colors API,
 // which will not touch String.prototype.
@@ -34217,7 +30391,7 @@ module.exports = {
 var colors = require('./lib/colors');
 module['exports'] = colors;
 
-},{"./lib/colors":136}],147:[function(require,module,exports){
+},{"./lib/colors":133}],144:[function(require,module,exports){
 /**
  * Slice reference.
  */
@@ -34242,7 +30416,7 @@ module.exports = function(obj, fn){
   }
 };
 
-},{}],148:[function(require,module,exports){
+},{}],145:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -34407,7 +30581,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],149:[function(require,module,exports){
+},{}],146:[function(require,module,exports){
 
 module.exports = function(a, b){
   var fn = function(){};
@@ -34415,7 +30589,7 @@ module.exports = function(a, b){
   a.prototype = new fn;
   a.prototype.constructor = a;
 };
-},{}],150:[function(require,module,exports){
+},{}],147:[function(require,module,exports){
 !function(globals) {
 'use strict'
 
@@ -34463,7 +30637,7 @@ if (typeof module !== 'undefined' && module.exports) { //CommonJS
 }
 
 }(this);
-},{}],151:[function(require,module,exports){
+},{}],148:[function(require,module,exports){
 !function(globals) {
 'use strict'
 
@@ -34493,7 +30667,7 @@ if (typeof module !== 'undefined' && module.exports) { //CommonJS
 }
 
 }(this);
-},{}],152:[function(require,module,exports){
+},{}],149:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -34604,133 +30778,135 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":229}],153:[function(require,module,exports){
+},{"../../is-buffer/index.js":227}],150:[function(require,module,exports){
 (function (Buffer){
-var elliptic = require('elliptic');
-var BN = require('bn.js');
+var elliptic = require('elliptic')
+var BN = require('bn.js')
 
-module.exports = function createECDH(curve) {
-	return new ECDH(curve);
-};
+module.exports = function createECDH (curve) {
+  return new ECDH(curve)
+}
 
 var aliases = {
-	secp256k1: {
-		name: 'secp256k1',
-		byteLength: 32
-	},
-	secp224r1: {
-		name: 'p224',
-		byteLength: 28
-	},
-	prime256v1: {
-		name: 'p256',
-		byteLength: 32
-	},
-	prime192v1: {
-		name: 'p192',
-		byteLength: 24
-	},
-	ed25519: {
-		name: 'ed25519',
-		byteLength: 32
-	},
-	secp384r1: {
-		name: 'p384',
-		byteLength: 48
-	},
-	secp521r1: {
-		name: 'p521',
-		byteLength: 66
-	}
-};
+  secp256k1: {
+    name: 'secp256k1',
+    byteLength: 32
+  },
+  secp224r1: {
+    name: 'p224',
+    byteLength: 28
+  },
+  prime256v1: {
+    name: 'p256',
+    byteLength: 32
+  },
+  prime192v1: {
+    name: 'p192',
+    byteLength: 24
+  },
+  ed25519: {
+    name: 'ed25519',
+    byteLength: 32
+  },
+  secp384r1: {
+    name: 'p384',
+    byteLength: 48
+  },
+  secp521r1: {
+    name: 'p521',
+    byteLength: 66
+  }
+}
 
-aliases.p224 = aliases.secp224r1;
-aliases.p256 = aliases.secp256r1 = aliases.prime256v1;
-aliases.p192 = aliases.secp192r1 = aliases.prime192v1;
-aliases.p384 = aliases.secp384r1;
-aliases.p521 = aliases.secp521r1;
+aliases.p224 = aliases.secp224r1
+aliases.p256 = aliases.secp256r1 = aliases.prime256v1
+aliases.p192 = aliases.secp192r1 = aliases.prime192v1
+aliases.p384 = aliases.secp384r1
+aliases.p521 = aliases.secp521r1
 
-function ECDH(curve) {
-	this.curveType = aliases[curve];
-	if (!this.curveType ) {
-		this.curveType = {
-			name: curve
-		};
-	}
-	this.curve = new elliptic.ec(this.curveType.name);
-	this.keys = void 0;
+function ECDH (curve) {
+  this.curveType = aliases[curve]
+  if (!this.curveType) {
+    this.curveType = {
+      name: curve
+    }
+  }
+  this.curve = new elliptic.ec(this.curveType.name) // eslint-disable-line new-cap
+  this.keys = void 0
 }
 
 ECDH.prototype.generateKeys = function (enc, format) {
-	this.keys = this.curve.genKeyPair();
-	return this.getPublicKey(enc, format);
-};
+  this.keys = this.curve.genKeyPair()
+  return this.getPublicKey(enc, format)
+}
 
 ECDH.prototype.computeSecret = function (other, inenc, enc) {
-	inenc = inenc || 'utf8';
-	if (!Buffer.isBuffer(other)) {
-		other = new Buffer(other, inenc);
-	}
-	var otherPub = this.curve.keyFromPublic(other).getPublic();
-	var out = otherPub.mul(this.keys.getPrivate()).getX();
-	return formatReturnValue(out, enc, this.curveType.byteLength);
-};
+  inenc = inenc || 'utf8'
+  if (!Buffer.isBuffer(other)) {
+    other = new Buffer(other, inenc)
+  }
+  var otherPub = this.curve.keyFromPublic(other).getPublic()
+  var out = otherPub.mul(this.keys.getPrivate()).getX()
+  return formatReturnValue(out, enc, this.curveType.byteLength)
+}
 
 ECDH.prototype.getPublicKey = function (enc, format) {
-	var key = this.keys.getPublic(format === 'compressed', true);
-	if (format === 'hybrid') {
-		if (key[key.length - 1] % 2) {
-			key[0] = 7;
-		} else {
-			key [0] = 6;
-		}
-	}
-	return formatReturnValue(key, enc);
-};
+  var key = this.keys.getPublic(format === 'compressed', true)
+  if (format === 'hybrid') {
+    if (key[key.length - 1] % 2) {
+      key[0] = 7
+    } else {
+      key[0] = 6
+    }
+  }
+  return formatReturnValue(key, enc)
+}
 
 ECDH.prototype.getPrivateKey = function (enc) {
-	return formatReturnValue(this.keys.getPrivate(), enc);
-};
+  return formatReturnValue(this.keys.getPrivate(), enc)
+}
 
 ECDH.prototype.setPublicKey = function (pub, enc) {
-	enc = enc || 'utf8';
-	if (!Buffer.isBuffer(pub)) {
-		pub = new Buffer(pub, enc);
-	}
-	this.keys._importPublic(pub);
-	return this;
-};
+  enc = enc || 'utf8'
+  if (!Buffer.isBuffer(pub)) {
+    pub = new Buffer(pub, enc)
+  }
+  this.keys._importPublic(pub)
+  return this
+}
 
 ECDH.prototype.setPrivateKey = function (priv, enc) {
-	enc = enc || 'utf8';
-	if (!Buffer.isBuffer(priv)) {
-		priv = new Buffer(priv, enc);
-	}
-	var _priv = new BN(priv);
-	_priv = _priv.toString(16);
-	this.keys._importPrivate(_priv);
-	return this;
-};
+  enc = enc || 'utf8'
+  if (!Buffer.isBuffer(priv)) {
+    priv = new Buffer(priv, enc)
+  }
 
-function formatReturnValue(bn, enc, len) {
-	if (!Array.isArray(bn)) {
-		bn = bn.toArray();
-	}
-	var buf = new Buffer(bn);
-	if (len && buf.length < len) {
-		var zeros = new Buffer(len - buf.length);
-		zeros.fill(0);
-		buf = Buffer.concat([zeros, buf]);
-	}
-	if (!enc) {
-		return buf;
-	} else {
-		return buf.toString(enc);
-	}
+  var _priv = new BN(priv)
+  _priv = _priv.toString(16)
+  this.keys = this.curve.genKeyPair()
+  this.keys._importPrivate(_priv)
+  return this
+}
+
+function formatReturnValue (bn, enc, len) {
+  if (!Array.isArray(bn)) {
+    bn = bn.toArray()
+  }
+  var buf = new Buffer(bn)
+  if (len && buf.length < len) {
+    var zeros = new Buffer(len - buf.length)
+    zeros.fill(0)
+    buf = Buffer.concat([zeros, buf])
+  }
+  if (!enc) {
+    return buf
+  } else {
+    return buf.toString(enc)
+  }
 }
 
 }).call(this,require("buffer").Buffer)
-},{"bn.js":81,"buffer":115,"elliptic":173}],154:[function(require,module,exports){
+},{"bn.js":78,"buffer":112,"elliptic":170}],151:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -34762,14 +30938,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":117,"inherits":228,"md5.js":281,"ripemd160":354,"sha.js":364}],155:[function(require,module,exports){
+},{"cipher-base":114,"inherits":226,"md5.js":279,"ripemd160":352,"sha.js":362}],152:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":281}],156:[function(require,module,exports){
+},{"md5.js":279}],153:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -34833,7 +31009,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":157,"cipher-base":117,"create-hash/md5":155,"inherits":228,"ripemd160":354,"safe-buffer":355,"sha.js":364}],157:[function(require,module,exports){
+},{"./legacy":154,"cipher-base":114,"create-hash/md5":152,"inherits":226,"ripemd160":352,"safe-buffer":353,"sha.js":362}],154:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -34881,7 +31057,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":117,"inherits":228,"safe-buffer":355}],158:[function(require,module,exports){
+},{"cipher-base":114,"inherits":226,"safe-buffer":353}],155:[function(require,module,exports){
 'use strict'
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
@@ -34980,7 +31156,7 @@ exports.constants = {
   'POINT_CONVERSION_HYBRID': 6
 }
 
-},{"browserify-cipher":101,"browserify-sign":108,"browserify-sign/algos":105,"create-ecdh":153,"create-hash":154,"create-hmac":156,"diffie-hellman":169,"pbkdf2":320,"public-encrypt":329,"randombytes":339,"randomfill":340}],159:[function(require,module,exports){
+},{"browserify-cipher":98,"browserify-sign":105,"browserify-sign/algos":102,"create-ecdh":150,"create-hash":151,"create-hmac":153,"diffie-hellman":166,"pbkdf2":318,"public-encrypt":327,"randombytes":337,"randomfill":338}],156:[function(require,module,exports){
 /*
     cycle.js
     2013-02-19
@@ -35152,7 +31328,7 @@ cycle.retrocycle = function retrocycle($) {
     return $;
 };
 
-},{}],160:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -35351,7 +31527,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":161,"_process":328}],161:[function(require,module,exports){
+},{"./debug":158,"_process":326}],158:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -35578,7 +31754,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":290}],162:[function(require,module,exports){
+},{"ms":288}],159:[function(require,module,exports){
 'use strict';
 
 exports.utils = require('./des/utils');
@@ -35587,7 +31763,7 @@ exports.DES = require('./des/des');
 exports.CBC = require('./des/cbc');
 exports.EDE = require('./des/ede');
 
-},{"./des/cbc":163,"./des/cipher":164,"./des/des":165,"./des/ede":166,"./des/utils":167}],163:[function(require,module,exports){
+},{"./des/cbc":160,"./des/cipher":161,"./des/des":162,"./des/ede":163,"./des/utils":164}],160:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -35654,7 +31830,7 @@ proto._update = function _update(inp, inOff, out, outOff) {
   }
 };
 
-},{"inherits":228,"minimalistic-assert":287}],164:[function(require,module,exports){
+},{"inherits":226,"minimalistic-assert":285}],161:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -35797,7 +31973,7 @@ Cipher.prototype._finalDecrypt = function _finalDecrypt() {
   return this._unpad(out);
 };
 
-},{"minimalistic-assert":287}],165:[function(require,module,exports){
+},{"minimalistic-assert":285}],162:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -35942,7 +32118,7 @@ DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
   utils.rip(l, r, out, off);
 };
 
-},{"../des":162,"inherits":228,"minimalistic-assert":287}],166:[function(require,module,exports){
+},{"../des":159,"inherits":226,"minimalistic-assert":285}],163:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -35999,7 +32175,7 @@ EDE.prototype._update = function _update(inp, inOff, out, outOff) {
 EDE.prototype._pad = DES.prototype._pad;
 EDE.prototype._unpad = DES.prototype._unpad;
 
-},{"../des":162,"inherits":228,"minimalistic-assert":287}],167:[function(require,module,exports){
+},{"../des":159,"inherits":226,"minimalistic-assert":285}],164:[function(require,module,exports){
 'use strict';
 
 exports.readUInt32BE = function readUInt32BE(bytes, off) {
@@ -36257,7 +32433,7 @@ exports.padSplit = function padSplit(num, size, group) {
   return out.join(' ');
 };
 
-},{}],168:[function(require,module,exports){
+},{}],165:[function(require,module,exports){
 'use strict';
 
 var enabled = require('enabled');
@@ -36294,7 +32470,7 @@ module.exports = function factory(name) {
   };
 };
 
-},{"enabled":189}],169:[function(require,module,exports){
+},{"enabled":186}],166:[function(require,module,exports){
 (function (Buffer){
 var generatePrime = require('./lib/generatePrime')
 var primes = require('./lib/primes.json')
@@ -36340,7 +32516,7 @@ exports.DiffieHellmanGroup = exports.createDiffieHellmanGroup = exports.getDiffi
 exports.createDiffieHellman = exports.DiffieHellman = createDiffieHellman
 
 }).call(this,require("buffer").Buffer)
-},{"./lib/dh":170,"./lib/generatePrime":171,"./lib/primes.json":172,"buffer":115}],170:[function(require,module,exports){
+},{"./lib/dh":167,"./lib/generatePrime":168,"./lib/primes.json":169,"buffer":112}],167:[function(require,module,exports){
 (function (Buffer){
 var BN = require('bn.js');
 var MillerRabin = require('miller-rabin');
@@ -36508,7 +32684,7 @@ function formatReturnValue(bn, enc) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./generatePrime":171,"bn.js":81,"buffer":115,"miller-rabin":286,"randombytes":339}],171:[function(require,module,exports){
+},{"./generatePrime":168,"bn.js":78,"buffer":112,"miller-rabin":284,"randombytes":337}],168:[function(require,module,exports){
 var randomBytes = require('randombytes');
 module.exports = findPrime;
 findPrime.simpleSieve = simpleSieve;
@@ -36615,7 +32791,7 @@ function findPrime(bits, gen) {
 
 }
 
-},{"bn.js":81,"miller-rabin":286,"randombytes":339}],172:[function(require,module,exports){
+},{"bn.js":78,"miller-rabin":284,"randombytes":337}],169:[function(require,module,exports){
 module.exports={
     "modp1": {
         "gen": "02",
@@ -36650,7 +32826,7 @@ module.exports={
         "prime": "ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca18217c32905e462e36ce3be39e772c180e86039b2783a2ec07a28fb5c55df06f4c52c9de2bcbf6955817183995497cea956ae515d2261898fa051015728e5a8aaac42dad33170d04507a33a85521abdf1cba64ecfb850458dbef0a8aea71575d060c7db3970f85a6e1e4c7abf5ae8cdb0933d71e8c94e04a25619dcee3d2261ad2ee6bf12ffa06d98a0864d87602733ec86a64521f2b18177b200cbbe117577a615d6c770988c0bad946e208e24fa074e5ab3143db5bfce0fd108e4b82d120a92108011a723c12a787e6d788719a10bdba5b2699c327186af4e23c1a946834b6150bda2583e9ca2ad44ce8dbbbc2db04de8ef92e8efc141fbecaa6287c59474e6bc05d99b2964fa090c3a2233ba186515be7ed1f612970cee2d7afb81bdd762170481cd0069127d5b05aa993b4ea988d8fddc186ffb7dc90a6c08f4df435c93402849236c3fab4d27c7026c1d4dcb2602646dec9751e763dba37bdf8ff9406ad9e530ee5db382f413001aeb06a53ed9027d831179727b0865a8918da3edbebcf9b14ed44ce6cbaced4bb1bdb7f1447e6cc254b332051512bd7af426fb8f401378cd2bf5983ca01c64b92ecf032ea15d1721d03f482d7ce6e74fef6d55e702f46980c82b5a84031900b1c9e59e7c97fbec7e8f323a97a7e36cc88be0f1d45b7ff585ac54bd407b22b4154aacc8f6d7ebf48e1d814cc5ed20f8037e0a79715eef29be32806a1d58bb7c5da76f550aa3d8a1fbff0eb19ccb1a313d55cda56c9ec2ef29632387fe8d76e3c0468043e8f663f4860ee12bf2d5b0b7474d6e694f91e6dbe115974a3926f12fee5e438777cb6a932df8cd8bec4d073b931ba3bc832b68d9dd300741fa7bf8afc47ed2576f6936ba424663aab639c5ae4f5683423b4742bf1c978238f16cbe39d652de3fdb8befc848ad922222e04a4037c0713eb57a81a23f0c73473fc646cea306b4bcbc8862f8385ddfa9d4b7fa2c087e879683303ed5bdd3a062b3cf5b3a278a66d2a13f83f44f82ddf310ee074ab6a364597e899a0255dc164f31cc50846851df9ab48195ded7ea1b1d510bd7ee74d73faf36bc31ecfa268359046f4eb879f924009438b481c6cd7889a002ed5ee382bc9190da6fc026e479558e4475677e9aa9e3050e2765694dfc81f56e880b96e7160c980dd98edd3dfffffffffffffffff"
     }
 }
-},{}],173:[function(require,module,exports){
+},{}],170:[function(require,module,exports){
 'use strict';
 
 var elliptic = exports;
@@ -36665,7 +32841,7 @@ elliptic.curves = require('./elliptic/curves');
 elliptic.ec = require('./elliptic/ec');
 elliptic.eddsa = require('./elliptic/eddsa');
 
-},{"../package.json":188,"./elliptic/curve":176,"./elliptic/curves":179,"./elliptic/ec":180,"./elliptic/eddsa":183,"./elliptic/utils":187,"brorand":82}],174:[function(require,module,exports){
+},{"../package.json":185,"./elliptic/curve":173,"./elliptic/curves":176,"./elliptic/ec":177,"./elliptic/eddsa":180,"./elliptic/utils":184,"brorand":79}],171:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -37042,7 +33218,7 @@ BasePoint.prototype.dblp = function dblp(k) {
   return r;
 };
 
-},{"../../elliptic":173,"bn.js":81}],175:[function(require,module,exports){
+},{"../../elliptic":170,"bn.js":78}],172:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -37477,7 +33653,7 @@ Point.prototype.eqXToP = function eqXToP(x) {
 Point.prototype.toP = Point.prototype.normalize;
 Point.prototype.mixedAdd = Point.prototype.add;
 
-},{"../../elliptic":173,"../curve":176,"bn.js":81,"inherits":228}],176:[function(require,module,exports){
+},{"../../elliptic":170,"../curve":173,"bn.js":78,"inherits":226}],173:[function(require,module,exports){
 'use strict';
 
 var curve = exports;
@@ -37487,7 +33663,7 @@ curve.short = require('./short');
 curve.mont = require('./mont');
 curve.edwards = require('./edwards');
 
-},{"./base":174,"./edwards":175,"./mont":177,"./short":178}],177:[function(require,module,exports){
+},{"./base":171,"./edwards":172,"./mont":174,"./short":175}],174:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -37669,7 +33845,7 @@ Point.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-},{"../../elliptic":173,"../curve":176,"bn.js":81,"inherits":228}],178:[function(require,module,exports){
+},{"../../elliptic":170,"../curve":173,"bn.js":78,"inherits":226}],175:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -38609,7 +34785,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
   return this.z.cmpn(0) === 0;
 };
 
-},{"../../elliptic":173,"../curve":176,"bn.js":81,"inherits":228}],179:[function(require,module,exports){
+},{"../../elliptic":170,"../curve":173,"bn.js":78,"inherits":226}],176:[function(require,module,exports){
 'use strict';
 
 var curves = exports;
@@ -38816,7 +34992,7 @@ defineCurve('secp256k1', {
   ]
 });
 
-},{"../elliptic":173,"./precomputed/secp256k1":186,"hash.js":211}],180:[function(require,module,exports){
+},{"../elliptic":170,"./precomputed/secp256k1":183,"hash.js":209}],177:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -39058,7 +35234,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
   throw new Error('Unable to find valid recovery factor');
 };
 
-},{"../../elliptic":173,"./key":181,"./signature":182,"bn.js":81,"hmac-drbg":224}],181:[function(require,module,exports){
+},{"../../elliptic":170,"./key":178,"./signature":179,"bn.js":78,"hmac-drbg":222}],178:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -39179,7 +35355,7 @@ KeyPair.prototype.inspect = function inspect() {
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
 
-},{"../../elliptic":173,"bn.js":81}],182:[function(require,module,exports){
+},{"../../elliptic":170,"bn.js":78}],179:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -39316,7 +35492,7 @@ Signature.prototype.toDER = function toDER(enc) {
   return utils.encode(res, enc);
 };
 
-},{"../../elliptic":173,"bn.js":81}],183:[function(require,module,exports){
+},{"../../elliptic":170,"bn.js":78}],180:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -39436,7 +35612,7 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-},{"../../elliptic":173,"./key":184,"./signature":185,"hash.js":211}],184:[function(require,module,exports){
+},{"../../elliptic":170,"./key":181,"./signature":182,"hash.js":209}],181:[function(require,module,exports){
 'use strict';
 
 var elliptic = require('../../elliptic');
@@ -39534,7 +35710,7 @@ KeyPair.prototype.getPublic = function getPublic(enc) {
 
 module.exports = KeyPair;
 
-},{"../../elliptic":173}],185:[function(require,module,exports){
+},{"../../elliptic":170}],182:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -39602,7 +35778,7 @@ Signature.prototype.toHex = function toHex() {
 
 module.exports = Signature;
 
-},{"../../elliptic":173,"bn.js":81}],186:[function(require,module,exports){
+},{"../../elliptic":170,"bn.js":78}],183:[function(require,module,exports){
 module.exports = {
   doubles: {
     step: 4,
@@ -40384,7 +36560,7 @@ module.exports = {
   }
 };
 
-},{}],187:[function(require,module,exports){
+},{}],184:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -40506,12 +36682,12 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 
 
-},{"bn.js":81,"minimalistic-assert":287,"minimalistic-crypto-utils":288}],188:[function(require,module,exports){
+},{"bn.js":78,"minimalistic-assert":285,"minimalistic-crypto-utils":286}],185:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "elliptic@6.4.0",
-      "/Users/admin/Programming/saito"
+      "/Users/admin/Programming/newsaito"
     ]
   ],
   "_from": "elliptic@6.4.0",
@@ -40537,7 +36713,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.0.tgz",
   "_spec": "6.4.0",
-  "_where": "/Users/admin/Programming/saito",
+  "_where": "/Users/admin/Programming/newsaito",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -40599,7 +36775,7 @@ module.exports={
   "version": "6.4.0"
 }
 
-},{}],189:[function(require,module,exports){
+},{}],186:[function(require,module,exports){
 'use strict';
 
 var env = require('env-variable');
@@ -40647,7 +36823,7 @@ module.exports = function enabled(name, variables) {
   return false;
 };
 
-},{"env-variable":202}],190:[function(require,module,exports){
+},{"env-variable":199}],187:[function(require,module,exports){
 
 module.exports = require('./socket');
 
@@ -40659,7 +36835,7 @@ module.exports = require('./socket');
  */
 module.exports.parser = require('engine.io-parser');
 
-},{"./socket":191,"engine.io-parser":199}],191:[function(require,module,exports){
+},{"./socket":188,"engine.io-parser":196}],188:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -41406,7 +37582,7 @@ Socket.prototype.filterUpgrades = function (upgrades) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./transport":192,"./transports/index":193,"component-emitter":148,"debug":160,"engine.io-parser":199,"indexof":227,"parseqs":317,"parseuri":318}],192:[function(require,module,exports){
+},{"./transport":189,"./transports/index":190,"component-emitter":145,"debug":157,"engine.io-parser":196,"indexof":225,"parseqs":315,"parseuri":316}],189:[function(require,module,exports){
 /**
  * Module dependencies.
  */
@@ -41565,7 +37741,7 @@ Transport.prototype.onClose = function () {
   this.emit('close');
 };
 
-},{"component-emitter":148,"engine.io-parser":199}],193:[function(require,module,exports){
+},{"component-emitter":145,"engine.io-parser":196}],190:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies
@@ -41622,7 +37798,7 @@ function polling (opts) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling-jsonp":194,"./polling-xhr":195,"./websocket":197,"xmlhttprequest-ssl":198}],194:[function(require,module,exports){
+},{"./polling-jsonp":191,"./polling-xhr":192,"./websocket":194,"xmlhttprequest-ssl":195}],191:[function(require,module,exports){
 (function (global){
 
 /**
@@ -41857,7 +38033,7 @@ JSONPPolling.prototype.doWrite = function (data, fn) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":196,"component-inherit":149}],195:[function(require,module,exports){
+},{"./polling":193,"component-inherit":146}],192:[function(require,module,exports){
 (function (global){
 /**
  * Module requirements.
@@ -42273,7 +38449,7 @@ function unloadHandler () {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":196,"component-emitter":148,"component-inherit":149,"debug":160,"xmlhttprequest-ssl":198}],196:[function(require,module,exports){
+},{"./polling":193,"component-emitter":145,"component-inherit":146,"debug":157,"xmlhttprequest-ssl":195}],193:[function(require,module,exports){
 /**
  * Module dependencies.
  */
@@ -42520,7 +38696,7 @@ Polling.prototype.uri = function () {
   return schema + '://' + (ipv6 ? '[' + this.hostname + ']' : this.hostname) + port + this.path + query;
 };
 
-},{"../transport":192,"component-inherit":149,"debug":160,"engine.io-parser":199,"parseqs":317,"xmlhttprequest-ssl":198,"yeast":421}],197:[function(require,module,exports){
+},{"../transport":189,"component-inherit":146,"debug":157,"engine.io-parser":196,"parseqs":315,"xmlhttprequest-ssl":195,"yeast":419}],194:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -42810,7 +38986,7 @@ WS.prototype.check = function () {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../transport":192,"component-inherit":149,"debug":160,"engine.io-parser":199,"parseqs":317,"ws":83,"yeast":421}],198:[function(require,module,exports){
+},{"../transport":189,"component-inherit":146,"debug":157,"engine.io-parser":196,"parseqs":315,"ws":80,"yeast":419}],195:[function(require,module,exports){
 (function (global){
 // browser shim for xmlhttprequest module
 
@@ -42851,7 +39027,7 @@ module.exports = function (opts) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"has-cors":209}],199:[function(require,module,exports){
+},{"has-cors":207}],196:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -43461,7 +39637,7 @@ exports.decodePayloadAsBinary = function (data, binaryType, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./keys":200,"./utf8":201,"after":38,"arraybuffer.slice":39,"base64-arraybuffer":76,"blob":80,"has-binary2":207}],200:[function(require,module,exports){
+},{"./keys":197,"./utf8":198,"after":32,"arraybuffer.slice":33,"base64-arraybuffer":73,"blob":77,"has-binary2":205}],197:[function(require,module,exports){
 
 /**
  * Gets the keys for an object.
@@ -43482,7 +39658,7 @@ module.exports = Object.keys || function keys (obj){
   return arr;
 };
 
-},{}],201:[function(require,module,exports){
+},{}],198:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/utf8js v2.1.2 by @mathias */
 ;(function(root) {
@@ -43741,7 +39917,7 @@ module.exports = Object.keys || function keys (obj){
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],202:[function(require,module,exports){
+},{}],199:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -43844,7 +40020,7 @@ env.parse = function parse(query) {
 module.exports = env;
 
 }).call(this,require('_process'))
-},{"_process":328}],203:[function(require,module,exports){
+},{"_process":326}],200:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -44275,24 +40451,28 @@ EventEmitter.prototype.removeAllListeners =
       return this;
     };
 
-EventEmitter.prototype.listeners = function listeners(type) {
-  var evlistener;
-  var ret;
-  var events = this._events;
+function _listeners(target, type, unwrap) {
+  var events = target._events;
 
   if (!events)
-    ret = [];
-  else {
-    evlistener = events[type];
-    if (!evlistener)
-      ret = [];
-    else if (typeof evlistener === 'function')
-      ret = [evlistener.listener || evlistener];
-    else
-      ret = unwrapListeners(evlistener);
-  }
+    return [];
 
-  return ret;
+  var evlistener = events[type];
+  if (!evlistener)
+    return [];
+
+  if (typeof evlistener === 'function')
+    return unwrap ? [evlistener.listener || evlistener] : [evlistener];
+
+  return unwrap ? unwrapListeners(evlistener) : arrayClone(evlistener, evlistener.length);
+}
+
+EventEmitter.prototype.listeners = function listeners(type) {
+  return _listeners(this, type, true);
+};
+
+EventEmitter.prototype.rawListeners = function rawListeners(type) {
+  return _listeners(this, type, false);
 };
 
 EventEmitter.listenerCount = function(emitter, type) {
@@ -44365,7 +40545,7 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],204:[function(require,module,exports){
+},{}],201:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -44412,7 +40592,112 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":281,"safe-buffer":355}],205:[function(require,module,exports){
+},{"md5.js":279,"safe-buffer":353}],202:[function(require,module,exports){
+module.exports = stringify
+stringify.default = stringify
+stringify.stable = deterministicStringify
+stringify.stableStringify = deterministicStringify
+
+var arr = []
+
+// Regular stringify
+function stringify (obj, replacer, spacer) {
+  decirc(obj, '', [], undefined)
+  var res = JSON.stringify(obj, replacer, spacer)
+  while (arr.length !== 0) {
+    var part = arr.pop()
+    part[0][part[1]] = part[2]
+  }
+  return res
+}
+function decirc (val, k, stack, parent) {
+  var i
+  if (typeof val === 'object' && val !== null) {
+    for (i = 0; i < stack.length; i++) {
+      if (stack[i] === val) {
+        parent[k] = '[Circular]'
+        arr.push([parent, k, val])
+        return
+      }
+    }
+    stack.push(val)
+    // Optimize for Arrays. Big arrays could kill the performance otherwise!
+    if (Array.isArray(val)) {
+      for (i = 0; i < val.length; i++) {
+        decirc(val[i], i, stack, val)
+      }
+    } else {
+      var keys = Object.keys(val)
+      for (i = 0; i < keys.length; i++) {
+        var key = keys[i]
+        decirc(val[key], key, stack, val)
+      }
+    }
+    stack.pop()
+  }
+}
+
+// Stable-stringify
+function compareFunction (a, b) {
+  if (a < b) {
+    return -1
+  }
+  if (a > b) {
+    return 1
+  }
+  return 0
+}
+
+function deterministicStringify (obj, replacer, spacer) {
+  var tmp = deterministicDecirc(obj, '', [], undefined) || obj
+  var res = JSON.stringify(tmp, replacer, spacer)
+  while (arr.length !== 0) {
+    var part = arr.pop()
+    part[0][part[1]] = part[2]
+  }
+  return res
+}
+
+function deterministicDecirc (val, k, stack, parent) {
+  var i
+  if (typeof val === 'object' && val !== null) {
+    for (i = 0; i < stack.length; i++) {
+      if (stack[i] === val) {
+        parent[k] = '[Circular]'
+        arr.push([parent, k, val])
+        return
+      }
+    }
+    if (typeof val.toJSON === 'function') {
+      return
+    }
+    stack.push(val)
+    // Optimize for Arrays. Big arrays could kill the performance otherwise!
+    if (Array.isArray(val)) {
+      for (i = 0; i < val.length; i++) {
+        deterministicDecirc(val[i], i, stack, val)
+      }
+    } else {
+      // Create a temporary object in the required way
+      var tmp = {}
+      var keys = Object.keys(val).sort(compareFunction)
+      for (i = 0; i < keys.length; i++) {
+        var key = keys[i]
+        deterministicDecirc(val[key], key, stack, val)
+        tmp[key] = val[key]
+      }
+      if (parent !== undefined) {
+        arr.push([parent, k, val])
+        parent[k] = tmp
+      } else {
+        return tmp
+      }
+    }
+    stack.pop()
+  }
+}
+
+},{}],203:[function(require,module,exports){
 (function (main) {
   'use strict';
 
@@ -44748,7 +41033,7 @@ module.exports = EVP_BytesToKey
   }
 })(this);
 
-},{}],206:[function(require,module,exports){
+},{}],204:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -45259,8 +41544,8 @@ var BubbleEvents = function BubbleEvents(emitter,proxy){
     })
 }
 }).call(this,require('_process'))
-},{"_process":328,"crypto":158,"events":203,"fs":113,"moment":289,"path":319}],207:[function(require,module,exports){
-(function (global){
+},{"_process":326,"crypto":155,"events":200,"fs":110,"moment":287,"path":317}],205:[function(require,module,exports){
+(function (Buffer){
 /* global Blob File */
 
 /*
@@ -45270,8 +41555,10 @@ var BubbleEvents = function BubbleEvents(emitter,proxy){
 var isArray = require('isarray');
 
 var toString = Object.prototype.toString;
-var withNativeBlob = typeof global.Blob === 'function' || toString.call(global.Blob) === '[object BlobConstructor]';
-var withNativeFile = typeof global.File === 'function' || toString.call(global.File) === '[object FileConstructor]';
+var withNativeBlob = typeof Blob === 'function' ||
+                        typeof Blob !== 'undefined' && toString.call(Blob) === '[object BlobConstructor]';
+var withNativeFile = typeof File === 'function' ||
+                        typeof File !== 'undefined' && toString.call(File) === '[object FileConstructor]';
 
 /**
  * Module exports.
@@ -45302,11 +41589,11 @@ function hasBinary (obj) {
     return false;
   }
 
-  if ((typeof global.Buffer === 'function' && global.Buffer.isBuffer && global.Buffer.isBuffer(obj)) ||
-     (typeof global.ArrayBuffer === 'function' && obj instanceof ArrayBuffer) ||
-     (withNativeBlob && obj instanceof Blob) ||
-     (withNativeFile && obj instanceof File)
-    ) {
+  if ((typeof Buffer === 'function' && Buffer.isBuffer && Buffer.isBuffer(obj)) ||
+    (typeof ArrayBuffer === 'function' && obj instanceof ArrayBuffer) ||
+    (withNativeBlob && obj instanceof Blob) ||
+    (withNativeFile && obj instanceof File)
+  ) {
     return true;
   }
 
@@ -45324,15 +41611,15 @@ function hasBinary (obj) {
   return false;
 }
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"isarray":208}],208:[function(require,module,exports){
+}).call(this,require("buffer").Buffer)
+},{"buffer":112,"isarray":206}],206:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],209:[function(require,module,exports){
+},{}],207:[function(require,module,exports){
 
 /**
  * Module exports.
@@ -45351,7 +41638,7 @@ try {
   module.exports = false;
 }
 
-},{}],210:[function(require,module,exports){
+},{}],208:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
@@ -45448,7 +41735,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":228,"safe-buffer":355,"stream":382}],211:[function(require,module,exports){
+},{"inherits":226,"safe-buffer":353,"stream":381}],209:[function(require,module,exports){
 var hash = exports;
 
 hash.utils = require('./hash/utils');
@@ -45465,7 +41752,7 @@ hash.sha384 = hash.sha.sha384;
 hash.sha512 = hash.sha.sha512;
 hash.ripemd160 = hash.ripemd.ripemd160;
 
-},{"./hash/common":212,"./hash/hmac":213,"./hash/ripemd":214,"./hash/sha":215,"./hash/utils":222}],212:[function(require,module,exports){
+},{"./hash/common":210,"./hash/hmac":211,"./hash/ripemd":212,"./hash/sha":213,"./hash/utils":220}],210:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -45559,7 +41846,7 @@ BlockHash.prototype._pad = function pad() {
   return res;
 };
 
-},{"./utils":222,"minimalistic-assert":287}],213:[function(require,module,exports){
+},{"./utils":220,"minimalistic-assert":285}],211:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -45608,7 +41895,7 @@ Hmac.prototype.digest = function digest(enc) {
   return this.outer.digest(enc);
 };
 
-},{"./utils":222,"minimalistic-assert":287}],214:[function(require,module,exports){
+},{"./utils":220,"minimalistic-assert":285}],212:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -45756,7 +42043,7 @@ var sh = [
   8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
 ];
 
-},{"./common":212,"./utils":222}],215:[function(require,module,exports){
+},{"./common":210,"./utils":220}],213:[function(require,module,exports){
 'use strict';
 
 exports.sha1 = require('./sha/1');
@@ -45765,7 +42052,7 @@ exports.sha256 = require('./sha/256');
 exports.sha384 = require('./sha/384');
 exports.sha512 = require('./sha/512');
 
-},{"./sha/1":216,"./sha/224":217,"./sha/256":218,"./sha/384":219,"./sha/512":220}],216:[function(require,module,exports){
+},{"./sha/1":214,"./sha/224":215,"./sha/256":216,"./sha/384":217,"./sha/512":218}],214:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -45841,7 +42128,7 @@ SHA1.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":212,"../utils":222,"./common":221}],217:[function(require,module,exports){
+},{"../common":210,"../utils":220,"./common":219}],215:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -45873,7 +42160,7 @@ SHA224.prototype._digest = function digest(enc) {
 };
 
 
-},{"../utils":222,"./256":218}],218:[function(require,module,exports){
+},{"../utils":220,"./256":216}],216:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -45980,7 +42267,7 @@ SHA256.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":212,"../utils":222,"./common":221,"minimalistic-assert":287}],219:[function(require,module,exports){
+},{"../common":210,"../utils":220,"./common":219,"minimalistic-assert":285}],217:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -46017,7 +42304,7 @@ SHA384.prototype._digest = function digest(enc) {
     return utils.split32(this.h.slice(0, 12), 'big');
 };
 
-},{"../utils":222,"./512":220}],220:[function(require,module,exports){
+},{"../utils":220,"./512":218}],218:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -46349,7 +42636,7 @@ function g1_512_lo(xh, xl) {
   return r;
 }
 
-},{"../common":212,"../utils":222,"minimalistic-assert":287}],221:[function(require,module,exports){
+},{"../common":210,"../utils":220,"minimalistic-assert":285}],219:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -46400,7 +42687,7 @@ function g1_256(x) {
 }
 exports.g1_256 = g1_256;
 
-},{"../utils":222}],222:[function(require,module,exports){
+},{"../utils":220}],220:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -46655,7 +42942,7 @@ function shr64_lo(ah, al, num) {
 }
 exports.shr64_lo = shr64_lo;
 
-},{"inherits":228,"minimalistic-assert":287}],223:[function(require,module,exports){
+},{"inherits":226,"minimalistic-assert":285}],221:[function(require,module,exports){
 'use strict';
 var fs = require('fs');
 var crypto = require('crypto');
@@ -46727,7 +43014,7 @@ hasha.fromFileSync = function (fp, opts) {
 	return hasha(fs.readFileSync(fp), opts);
 };
 
-},{"crypto":158,"fs":113,"is-stream":230,"pinkie-promise":325}],224:[function(require,module,exports){
+},{"crypto":155,"fs":110,"is-stream":228,"pinkie-promise":323}],222:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -46842,7 +43129,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   return utils.encode(res, enc);
 };
 
-},{"hash.js":211,"minimalistic-assert":287,"minimalistic-crypto-utils":288}],225:[function(require,module,exports){
+},{"hash.js":209,"minimalistic-assert":285,"minimalistic-crypto-utils":286}],223:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -46875,7 +43162,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":113,"url":390}],226:[function(require,module,exports){
+},{"http":110,"url":390}],224:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -46961,7 +43248,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],227:[function(require,module,exports){
+},{}],225:[function(require,module,exports){
 
 var indexOf = [].indexOf;
 
@@ -46972,32 +43259,9 @@ module.exports = function(arr, obj){
   }
   return -1;
 };
-},{}],228:[function(require,module,exports){
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    var TempCtor = function () {}
-    TempCtor.prototype = superCtor.prototype
-    ctor.prototype = new TempCtor()
-    ctor.prototype.constructor = ctor
-  }
-}
-
-},{}],229:[function(require,module,exports){
+},{}],226:[function(require,module,exports){
+arguments[4][49][0].apply(exports,arguments)
+},{"dup":49}],227:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -47020,7 +43284,7 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],230:[function(require,module,exports){
+},{}],228:[function(require,module,exports){
 'use strict';
 
 var isStream = module.exports = function (stream) {
@@ -47043,9 +43307,9 @@ isStream.transform = function (stream) {
 	return isStream.duplex(stream) && typeof stream._transform === 'function' && typeof stream._transformState === 'object';
 };
 
-},{}],231:[function(require,module,exports){
-arguments[4][208][0].apply(exports,arguments)
-},{"dup":208}],232:[function(require,module,exports){
+},{}],229:[function(require,module,exports){
+arguments[4][206][0].apply(exports,arguments)
+},{"dup":206}],230:[function(require,module,exports){
 var root = require('./_root');
 
 /** Built-in value references. */
@@ -47053,7 +43317,7 @@ var Symbol = root.Symbol;
 
 module.exports = Symbol;
 
-},{"./_root":248}],233:[function(require,module,exports){
+},{"./_root":246}],231:[function(require,module,exports){
 var baseTimes = require('./_baseTimes'),
     isArguments = require('./isArguments'),
     isArray = require('./isArray'),
@@ -47104,7 +43368,7 @@ function arrayLikeKeys(value, inherited) {
 
 module.exports = arrayLikeKeys;
 
-},{"./_baseTimes":238,"./_isIndex":242,"./isArguments":249,"./isArray":250,"./isBuffer":252,"./isTypedArray":257}],234:[function(require,module,exports){
+},{"./_baseTimes":236,"./_isIndex":240,"./isArguments":247,"./isArray":248,"./isBuffer":250,"./isTypedArray":255}],232:[function(require,module,exports){
 var Symbol = require('./_Symbol'),
     getRawTag = require('./_getRawTag'),
     objectToString = require('./_objectToString');
@@ -47134,7 +43398,7 @@ function baseGetTag(value) {
 
 module.exports = baseGetTag;
 
-},{"./_Symbol":232,"./_getRawTag":241,"./_objectToString":246}],235:[function(require,module,exports){
+},{"./_Symbol":230,"./_getRawTag":239,"./_objectToString":244}],233:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     isObjectLike = require('./isObjectLike');
 
@@ -47154,7 +43418,7 @@ function baseIsArguments(value) {
 
 module.exports = baseIsArguments;
 
-},{"./_baseGetTag":234,"./isObjectLike":256}],236:[function(require,module,exports){
+},{"./_baseGetTag":232,"./isObjectLike":254}],234:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     isLength = require('./isLength'),
     isObjectLike = require('./isObjectLike');
@@ -47216,7 +43480,7 @@ function baseIsTypedArray(value) {
 
 module.exports = baseIsTypedArray;
 
-},{"./_baseGetTag":234,"./isLength":254,"./isObjectLike":256}],237:[function(require,module,exports){
+},{"./_baseGetTag":232,"./isLength":252,"./isObjectLike":254}],235:[function(require,module,exports){
 var isPrototype = require('./_isPrototype'),
     nativeKeys = require('./_nativeKeys');
 
@@ -47248,7 +43512,7 @@ function baseKeys(object) {
 
 module.exports = baseKeys;
 
-},{"./_isPrototype":243,"./_nativeKeys":244}],238:[function(require,module,exports){
+},{"./_isPrototype":241,"./_nativeKeys":242}],236:[function(require,module,exports){
 /**
  * The base implementation of `_.times` without support for iteratee shorthands
  * or max array length checks.
@@ -47270,7 +43534,7 @@ function baseTimes(n, iteratee) {
 
 module.exports = baseTimes;
 
-},{}],239:[function(require,module,exports){
+},{}],237:[function(require,module,exports){
 /**
  * The base implementation of `_.unary` without support for storing metadata.
  *
@@ -47286,7 +43550,7 @@ function baseUnary(func) {
 
 module.exports = baseUnary;
 
-},{}],240:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 (function (global){
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
@@ -47294,7 +43558,7 @@ var freeGlobal = typeof global == 'object' && global && global.Object === Object
 module.exports = freeGlobal;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],241:[function(require,module,exports){
+},{}],239:[function(require,module,exports){
 var Symbol = require('./_Symbol');
 
 /** Used for built-in method references. */
@@ -47342,7 +43606,7 @@ function getRawTag(value) {
 
 module.exports = getRawTag;
 
-},{"./_Symbol":232}],242:[function(require,module,exports){
+},{"./_Symbol":230}],240:[function(require,module,exports){
 /** Used as references for various `Number` constants. */
 var MAX_SAFE_INTEGER = 9007199254740991;
 
@@ -47369,7 +43633,7 @@ function isIndex(value, length) {
 
 module.exports = isIndex;
 
-},{}],243:[function(require,module,exports){
+},{}],241:[function(require,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -47389,7 +43653,7 @@ function isPrototype(value) {
 
 module.exports = isPrototype;
 
-},{}],244:[function(require,module,exports){
+},{}],242:[function(require,module,exports){
 var overArg = require('./_overArg');
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
@@ -47397,7 +43661,7 @@ var nativeKeys = overArg(Object.keys, Object);
 
 module.exports = nativeKeys;
 
-},{"./_overArg":247}],245:[function(require,module,exports){
+},{"./_overArg":245}],243:[function(require,module,exports){
 var freeGlobal = require('./_freeGlobal');
 
 /** Detect free variable `exports`. */
@@ -47429,7 +43693,7 @@ var nodeUtil = (function() {
 
 module.exports = nodeUtil;
 
-},{"./_freeGlobal":240}],246:[function(require,module,exports){
+},{"./_freeGlobal":238}],244:[function(require,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -47453,7 +43717,7 @@ function objectToString(value) {
 
 module.exports = objectToString;
 
-},{}],247:[function(require,module,exports){
+},{}],245:[function(require,module,exports){
 /**
  * Creates a unary function that invokes `func` with its argument transformed.
  *
@@ -47470,7 +43734,7 @@ function overArg(func, transform) {
 
 module.exports = overArg;
 
-},{}],248:[function(require,module,exports){
+},{}],246:[function(require,module,exports){
 var freeGlobal = require('./_freeGlobal');
 
 /** Detect free variable `self`. */
@@ -47481,7 +43745,7 @@ var root = freeGlobal || freeSelf || Function('return this')();
 
 module.exports = root;
 
-},{"./_freeGlobal":240}],249:[function(require,module,exports){
+},{"./_freeGlobal":238}],247:[function(require,module,exports){
 var baseIsArguments = require('./_baseIsArguments'),
     isObjectLike = require('./isObjectLike');
 
@@ -47519,7 +43783,7 @@ var isArguments = baseIsArguments(function() { return arguments; }()) ? baseIsAr
 
 module.exports = isArguments;
 
-},{"./_baseIsArguments":235,"./isObjectLike":256}],250:[function(require,module,exports){
+},{"./_baseIsArguments":233,"./isObjectLike":254}],248:[function(require,module,exports){
 /**
  * Checks if `value` is classified as an `Array` object.
  *
@@ -47547,7 +43811,7 @@ var isArray = Array.isArray;
 
 module.exports = isArray;
 
-},{}],251:[function(require,module,exports){
+},{}],249:[function(require,module,exports){
 var isFunction = require('./isFunction'),
     isLength = require('./isLength');
 
@@ -47582,7 +43846,7 @@ function isArrayLike(value) {
 
 module.exports = isArrayLike;
 
-},{"./isFunction":253,"./isLength":254}],252:[function(require,module,exports){
+},{"./isFunction":251,"./isLength":252}],250:[function(require,module,exports){
 var root = require('./_root'),
     stubFalse = require('./stubFalse');
 
@@ -47622,7 +43886,7 @@ var isBuffer = nativeIsBuffer || stubFalse;
 
 module.exports = isBuffer;
 
-},{"./_root":248,"./stubFalse":260}],253:[function(require,module,exports){
+},{"./_root":246,"./stubFalse":258}],251:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     isObject = require('./isObject');
 
@@ -47661,7 +43925,7 @@ function isFunction(value) {
 
 module.exports = isFunction;
 
-},{"./_baseGetTag":234,"./isObject":255}],254:[function(require,module,exports){
+},{"./_baseGetTag":232,"./isObject":253}],252:[function(require,module,exports){
 /** Used as references for various `Number` constants. */
 var MAX_SAFE_INTEGER = 9007199254740991;
 
@@ -47698,7 +43962,7 @@ function isLength(value) {
 
 module.exports = isLength;
 
-},{}],255:[function(require,module,exports){
+},{}],253:[function(require,module,exports){
 /**
  * Checks if `value` is the
  * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
@@ -47731,7 +43995,7 @@ function isObject(value) {
 
 module.exports = isObject;
 
-},{}],256:[function(require,module,exports){
+},{}],254:[function(require,module,exports){
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
  * and has a `typeof` result of "object".
@@ -47762,7 +44026,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],257:[function(require,module,exports){
+},{}],255:[function(require,module,exports){
 var baseIsTypedArray = require('./_baseIsTypedArray'),
     baseUnary = require('./_baseUnary'),
     nodeUtil = require('./_nodeUtil');
@@ -47791,7 +44055,7 @@ var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedA
 
 module.exports = isTypedArray;
 
-},{"./_baseIsTypedArray":236,"./_baseUnary":239,"./_nodeUtil":245}],258:[function(require,module,exports){
+},{"./_baseIsTypedArray":234,"./_baseUnary":237,"./_nodeUtil":243}],256:[function(require,module,exports){
 var arrayLikeKeys = require('./_arrayLikeKeys'),
     baseKeys = require('./_baseKeys'),
     isArrayLike = require('./isArrayLike');
@@ -47830,7 +44094,7 @@ function keys(object) {
 
 module.exports = keys;
 
-},{"./_arrayLikeKeys":233,"./_baseKeys":237,"./isArrayLike":251}],259:[function(require,module,exports){
+},{"./_arrayLikeKeys":231,"./_baseKeys":235,"./isArrayLike":249}],257:[function(require,module,exports){
 /**
  * This method returns `undefined`.
  *
@@ -47849,7 +44113,7 @@ function noop() {
 
 module.exports = noop;
 
-},{}],260:[function(require,module,exports){
+},{}],258:[function(require,module,exports){
 /**
  * This method returns `false`.
  *
@@ -47869,7 +44133,7 @@ function stubFalse() {
 
 module.exports = stubFalse;
 
-},{}],261:[function(require,module,exports){
+},{}],259:[function(require,module,exports){
 'use strict';
 
 const format = require('./format');
@@ -47885,7 +44149,7 @@ module.exports = format(info => {
   return info;
 });
 
-},{"./format":266}],262:[function(require,module,exports){
+},{"./format":264}],260:[function(require,module,exports){
 'use strict';
 
 /*
@@ -47923,28 +44187,65 @@ Object.defineProperty(format, 'splat',       { value: require('./splat') });
 Object.defineProperty(format, 'timestamp',   { value: require('./timestamp') });
 Object.defineProperty(format, 'uncolorize',  { value: require('./uncolorize') });
 
-},{"././format":266,"././levels":269,"./align":261,"./cli":263,"./colorize":264,"./combine":265,"./json":267,"./label":268,"./logstash":270,"./metadata":271,"./pad-levels":272,"./pretty-print":273,"./printf":274,"./simple":275,"./splat":276,"./timestamp":277,"./uncolorize":278}],263:[function(require,module,exports){
+},{"././format":264,"././levels":267,"./align":259,"./cli":261,"./colorize":262,"./combine":263,"./json":265,"./label":266,"./logstash":268,"./metadata":269,"./pad-levels":270,"./pretty-print":271,"./printf":272,"./simple":273,"./splat":274,"./timestamp":275,"./uncolorize":276}],261:[function(require,module,exports){
 'use strict';
 
-const format = require('./format');
-const colorize = require('./colorize');
-const padLevels = require('./pad-levels');
+const { Colorizer } = require('./colorize');
+const { Padder } = require('./pad-levels');
+const { configs, MESSAGE } = require('triple-beam');
+
+
+/**
+ * Cli format class that handles initial state for a a separate
+ * Colorizer and Padder instance.
+ */
+class CliFormat {
+  constructor(opts = {}) {
+    if (!opts.levels) {
+      opts.levels = configs.npm.levels;
+    }
+
+    this.colorizer = new Colorizer(opts);
+    this.padder = new Padder(opts);
+    this.options = opts;
+  }
+
+  /*
+   * function transform (info, opts)
+   * Attempts to both:
+   * 1. Pad the { level }
+   * 2. Colorize the { level, message }
+   * of the given `logform` info object depending on the `opts`.
+   */
+  transform(info, opts) {
+    this.colorizer.transform(
+      this.padder.transform(info, opts),
+      opts
+    );
+
+    info[MESSAGE] = `${info.level}:${info.message}`;
+    return info;
+  }
+}
 
 /*
- * function cli (info)
+ * function cli (opts)
  * Returns a new instance of the CLI format that turns a log
  * `info` object into the same format previously available
  * in `winston.cli()` in `winston < 3.0.0`.
  */
-module.exports = format(
-  colorize(),
-  padLevels()
-);
+module.exports = opts => new CliFormat(opts);
 
-},{"./colorize":264,"./format":266,"./pad-levels":272}],264:[function(require,module,exports){
+//
+// Attach the CliFormat for registration purposes
+//
+module.exports.Format = CliFormat;
+
+},{"./colorize":262,"./pad-levels":270,"triple-beam":389}],262:[function(require,module,exports){
 'use strict';
 
 const colors = require('colors/safe');
+const { LEVEL } = require('triple-beam');
 
 //
 // Fix colors not appearing in non-tty environments
@@ -47957,11 +44258,11 @@ colors.enabled = true;
  */
 const hasSpace = /\s+/;
 
+/*
+ * Colorizer format. Wraps the `level` and/or `message` properties
+ * of the `info` objects with ANSI color codes based on a few options.
+ */
 class Colorizer {
-  /*
-   * function setupColors(info)
-   * Attaches a Colorizer instance to the format.
-   */
   constructor(opts = {}) {
     if (opts.colors) {
       this.addColors(opts.colors);
@@ -48000,10 +44301,10 @@ class Colorizer {
   }
 
   /*
-   * function colorize (level, message)
+   * function colorize (lookup, level, message)
    * Performs multi-step colorization using colors/safe
    */
-  colorize(level, message) {
+  colorize(lookup, level, message) {
     if (typeof message === 'undefined') {
       message = level;
     }
@@ -48012,16 +44313,16 @@ class Colorizer {
     // If the color for the level is just a string
     // then attempt to colorize the message with it.
     //
-    if (!Array.isArray(Colorizer.allColors[level])) {
-      return colors[Colorizer.allColors[level]](message);
+    if (!Array.isArray(Colorizer.allColors[lookup])) {
+      return colors[Colorizer.allColors[lookup]](message);
     }
 
     //
     // If it is an Array then iterate over that Array, applying
     // the colors function for each item.
     //
-    for (let i = 0, len = Colorizer.allColors[level].length; i < len; i++) {
-      message = colors[Colorizer.allColors[level][i]](message);
+    for (let i = 0, len = Colorizer.allColors[lookup].length; i < len; i++) {
+      message = colors[Colorizer.allColors[lookup][i]](message);
     }
 
     return message;
@@ -48033,13 +44334,12 @@ class Colorizer {
    * `logform` info object.
    */
   transform(info, opts) {
-    const { level } = info;
     if (opts.level || opts.all || !opts.message) {
-      info.level = this.colorize(level);
+      info.level = this.colorize(info[LEVEL], info.level);
     }
 
     if (opts.all || opts.message) {
-      info.message = this.colorize(level, info.message);
+      info.message = this.colorize(info[LEVEL], info.level, info.message);
     }
 
     return info;
@@ -48061,7 +44361,7 @@ module.exports.Colorizer
   = module.exports.Format
   = Colorizer;
 
-},{"colors/safe":146}],265:[function(require,module,exports){
+},{"colors/safe":143,"triple-beam":389}],263:[function(require,module,exports){
 'use strict';
 
 const format = require('./format');
@@ -48122,7 +44422,14 @@ module.exports = (...formats) => {
   return instance;
 };
 
-},{"./format":266}],266:[function(require,module,exports){
+//
+// Export the cascade method for use in cli and other
+// combined formats that should not be assumed to be
+// singletons.
+//
+module.exports.cascade = cascade;
+
+},{"./format":264}],264:[function(require,module,exports){
 'use strict';
 
 /*
@@ -48155,6 +44462,7 @@ module.exports = formatFn => {
   function Format(options = {}) {
     this.options = options;
   }
+
   Format.prototype.transform = formatFn;
 
   //
@@ -48175,12 +44483,13 @@ module.exports = formatFn => {
   return createFormatWrap;
 };
 
-},{}],267:[function(require,module,exports){
+},{}],265:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
 const format = require('./format');
 const { MESSAGE } = require('triple-beam');
+const jsonStringify = require('fast-safe-stringify');
 
 /*
  * function replacer (key, value)
@@ -48199,12 +44508,12 @@ function replacer(key, value) {
  * to transports in `winston < 3.0.0`.
  */
 module.exports = format((info, opts) => {
-  info[MESSAGE] = JSON.stringify(info, opts.replacer || replacer, opts.space);
+  info[MESSAGE] = jsonStringify(info, opts.replacer || replacer, opts.space);
   return info;
 });
 
 }).call(this,require("buffer").Buffer)
-},{"./format":266,"buffer":115,"triple-beam":389}],268:[function(require,module,exports){
+},{"./format":264,"buffer":112,"fast-safe-stringify":202,"triple-beam":389}],266:[function(require,module,exports){
 'use strict';
 
 const format = require('./format');
@@ -48225,7 +44534,7 @@ module.exports = format((info, opts) => {
   return info;
 });
 
-},{"./format":266}],269:[function(require,module,exports){
+},{"./format":264}],267:[function(require,module,exports){
 'use strict';
 
 const { Colorizer } = require('./colorize');
@@ -48239,11 +44548,12 @@ module.exports = config => {
   return config;
 };
 
-},{"./colorize":264}],270:[function(require,module,exports){
+},{"./colorize":262}],268:[function(require,module,exports){
 'use strict';
 
 const format = require('./format');
 const { MESSAGE } = require('triple-beam');
+const jsonStringify = require('fast-safe-stringify');
 
 /*
  * function logstash (info)
@@ -48265,11 +44575,11 @@ module.exports = format(info => {
   }
 
   logstash['@fields'] = info;
-  info[MESSAGE] = JSON.stringify(logstash);
+  info[MESSAGE] = jsonStringify(logstash);
   return info;
 });
 
-},{"./format":266,"triple-beam":389}],271:[function(require,module,exports){
+},{"./format":264,"fast-safe-stringify":202,"triple-beam":389}],269:[function(require,module,exports){
 'use strict';
 
 const format = require('./format');
@@ -48332,47 +44642,75 @@ module.exports = format((info, opts = {}) => {
   return info;
 });
 
-},{"./format":266}],272:[function(require,module,exports){
+},{"./format":264}],270:[function(require,module,exports){
 /* eslint no-unused-vars: 0 */
 'use strict';
 
-const { configs } = require('triple-beam');
+const { configs, LEVEL, MESSAGE } = require('triple-beam');
 
 class Padder {
   constructor(opts = { levels: configs.npm.levels }) {
-    this.addPadding(opts.levels, opts.filler);
+    this.paddings = Padder.paddingForLevels(opts.levels, opts.filler);
     this.options = opts;
   }
 
+  /**
+   * Returns the maximum length of keys in the specified `levels` Object.
+   * @param  {Object} levels Set of all levels to calculate longest level against.
+   * @returns {Number} Maximum length of the longest level string.
+   */
   static getLongestLevel(levels) {
     const lvls = Object.keys(levels).map(level => level.length);
     return Math.max(...lvls);
   }
 
-  static calcPadding(level, filler) {
-    const targetLen = Padder.longestLevel + 1 - level.length;
+  /**
+   * Returns the padding for the specified `level` assuming that the
+   * maximum length of all levels it's associated with is `maxLength`.
+   * @param  {String} level Level to calculate padding for.
+   * @param  {String} filler Repeatable text to use for padding.
+   * @param  {Number} maxLength Length of the longest level
+   * @returns {String} Padding string for the `level`
+   */
+  static paddingForLevel(level, filler, maxLength) {
+    const targetLen = maxLength + 1 - level.length;
     const rep = Math.floor(targetLen / filler.length);
-    const padStr = `${filler}${filler.repeat(rep)}`;
-
-    return padStr.slice(0, targetLen);
+    const padding = `${filler}${filler.repeat(rep)}`;
+    return padding.slice(0, targetLen);
   }
 
-  static addPadding(levels, filler = ' ') {
-    Padder.longestLevel = Padder.getLongestLevel(levels);
-    Padder.allPadding = Object.keys(levels).reduce((acc, level) => {
-      acc[level] = Padder.calcPadding(level, filler);
+  /**
+   * Returns an object with the string paddings for the given `levels`
+   * using the specified `filler`.
+   * @param  {Object} levels Set of all levels to calculate padding for.
+   * @param  {String} filler Repeatable text to use for padding.
+   * @returns {Object} Mapping of level to desired padding.
+   */
+  static paddingForLevels(levels, filler = ' ') {
+    const maxLength = Padder.getLongestLevel(levels);
+    return Object.keys(levels).reduce((acc, level) => {
+      acc[level] = Padder.paddingForLevel(level, filler, maxLength);
       return acc;
     }, {});
-
-    return Padder.allPadding;
   }
 
-  addPadding(levels, filler) {
-    return Padder.addPadding(levels, filler);
-  }
-
+  /**
+   * Prepends the padding onto the `message` based on the `LEVEL` of
+   * the `info`. This is based on the behavior of `winston@2` which also
+   * prepended the level onto the message.
+   *
+   * See: https://github.com/winstonjs/winston/blob/2.x/lib/winston/logger.js#L198-L201
+   *
+   * @param  {Info} info Logform info object
+   * @param  {Object} opts Options passed along to this instance.
+   * @returns {Info} Modified logform info object.
+   */
   transform(info, opts) {
-    info.padding = this.addPadding(opts.levels, opts.filler);
+    info.message = `${this.paddings[info[LEVEL]]}${info.message}`;
+    if (info[MESSAGE]) {
+      info[MESSAGE] = `${this.paddings[info[LEVEL]]}${info[MESSAGE]}`;
+    }
+
     return info;
   }
 }
@@ -48389,7 +44727,7 @@ module.exports.Padder
   = module.exports.Format
   = Padder;
 
-},{"triple-beam":389}],273:[function(require,module,exports){
+},{"triple-beam":389}],271:[function(require,module,exports){
 'use strict';
 
 const inspect = require('util').inspect;
@@ -48407,7 +44745,7 @@ module.exports = format((info, opts) => {
   return info;
 });
 
-},{"./format":266,"triple-beam":389,"util":395}],274:[function(require,module,exports){
+},{"./format":264,"triple-beam":389,"util":394}],272:[function(require,module,exports){
 'use strict';
 
 const { MESSAGE } = require('triple-beam');
@@ -48435,12 +44773,13 @@ module.exports.Printf
   = module.exports.Format
   = Printf;
 
-},{"triple-beam":389}],275:[function(require,module,exports){
+},{"triple-beam":389}],273:[function(require,module,exports){
 /* eslint no-undefined: 0 */
 'use strict';
 
 const format = require('./format');
 const { MESSAGE } = require('triple-beam');
+const jsonStringify = require('fast-safe-stringify');
 
 /*
  * function simple (info)
@@ -48453,7 +44792,7 @@ const { MESSAGE } = require('triple-beam');
  *    ${level}: ${message} ${JSON.stringify(rest)}    otherwise
  */
 module.exports = format(info => {
-  const stringifiedRest = JSON.stringify(Object.assign({}, info, {
+  const stringifiedRest = jsonStringify(Object.assign({}, info, {
     level: undefined,
     message: undefined,
     splat: undefined
@@ -48469,11 +44808,105 @@ module.exports = format(info => {
   return info;
 });
 
-},{"./format":266,"triple-beam":389}],276:[function(require,module,exports){
+},{"./format":264,"fast-safe-stringify":202,"triple-beam":389}],274:[function(require,module,exports){
 'use strict';
 
-const format = require('./format');
 const util = require('util');
+const { SPLAT } = require('triple-beam');
+
+/**
+ * Captures the number of format (i.e. %s strings) in a given string.
+ * Based on `util.format`, see Node.js source:
+ * https://github.com/nodejs/node/blob/b1c8f15c5f169e021f7c46eb7b219de95fe97603/lib/util.js#L201-L230
+ * @type {RegExp}
+ */
+const formatRegExp = /%[scdjifoO%]/g;
+
+/**
+ * Captures the number of escaped % signs in a format string (i.e. %s strings).
+ * @type {RegExp}
+ */
+const escapedPercent = /%%/g;
+
+class Splatter {
+  constructor(opts) {
+    this.options = opts;
+  }
+
+  /**
+   * Check to see if tokens <= splat.length, assign { splat, meta } into the
+   * `info` accordingly, and write to this instance.
+   *
+   * @param  {Info} info Logform info message.
+   * @param  {String[]} tokens Set of string interpolation tokens.
+   * @returns {Info} Modified info message
+   * @private
+   */
+  _splat(info, tokens) {
+    const msg = info.message;
+    const splat = info[SPLAT] || [];
+    const percents = msg.match(escapedPercent);
+    const escapes = percents && percents.length || 0;
+
+    // The expected splat is the number of tokens minus the number of escapes
+    // e.g.
+    // - { expectedSplat: 3 } '%d %s %j'
+    // - { expectedSplat: 5 } '[%s] %d%% %d%% %s %j'
+    //
+    // Any "meta" will be arugments in addition to the expected splat size
+    // regardless of type. e.g.
+    //
+    // logger.log('info', '%d%% %s %j', 100, 'wow', { such: 'js' }, { thisIsMeta: true });
+    // would result in splat of four (4), but only three (3) are expected. Therefore:
+    //
+    // extraSplat = 3 - 4 = -1
+    // metas = [100, 'wow', { such: 'js' }, { thisIsMeta: true }].splice(-1, -1 * -1);
+    // splat = [100, 'wow', { such: 'js' }]
+    const expectedSplat = tokens.length - escapes;
+    const extraSplat = expectedSplat - splat.length;
+    const metas = extraSplat < 0
+      ? splat.splice(extraSplat, -1 * extraSplat)
+      : [];
+
+    // Now that { splat } has been separated from any potential { meta }. we
+    // can assign this to the `info` object and write it to our format stream.
+    if (metas.length === 1) {
+      info.meta = metas[0];
+    } else if (metas.length) {
+      info.meta = metas;
+    }
+
+    info.message = util.format(msg, ...splat);
+    return info;
+  }
+
+  /**
+   * Transforms the `info` message by using `util.format` to complete
+   * any `info.message` provided it has string interpolation tokens.
+   * If no tokens exist then `info` is immutable.
+   *
+   * @param  {Info} info Logform info message.
+   * @param  {Object} opts Options for this instance.
+   * @returns {Info} Modified info message
+   */
+  transform(info) {
+    const msg = info.message;
+    const splat = info[SPLAT];
+
+    // Evaluate if the message has any interpolation tokens. If not,
+    // then let evaluation continue.
+    const tokens = msg && msg.match && msg.match(formatRegExp);
+    if (!tokens && (!splat || !splat.length)) {
+      return info;
+    }
+
+    if (tokens) {
+      return this._splat(info, tokens);
+    }
+
+    return info;
+  }
+}
 
 /*
  * function splat (info)
@@ -48481,15 +44914,9 @@ const util = require('util');
  * which performs string interpolation from `info` objects. This was
  * previously exposed implicitly in `winston < 3.0.0`.
  */
-module.exports = format(info => {
-  if (info.splat) {
-    info.message = util.format(info.message, ...info.splat);
-  }
+module.exports = opts => new Splatter(opts);
 
-  return info;
-});
-
-},{"./format":266,"util":395}],277:[function(require,module,exports){
+},{"triple-beam":389,"util":394}],275:[function(require,module,exports){
 'use strict';
 
 const fecha = require('fecha');
@@ -48521,7 +44948,7 @@ module.exports = format((info, opts) => {
   return info;
 });
 
-},{"./format":266,"fecha":205}],278:[function(require,module,exports){
+},{"./format":264,"fecha":203}],276:[function(require,module,exports){
 'use strict';
 
 const colors = require('colors/safe');
@@ -48550,12 +44977,12 @@ module.exports = format((info, opts) => {
   return info;
 });
 
-},{"./format":266,"colors/safe":146,"triple-beam":389}],279:[function(require,module,exports){
+},{"./format":264,"colors/safe":143,"triple-beam":389}],277:[function(require,module,exports){
 // super simple module for the most common nodejs use case.
 exports.markdown = require("./markdown");
 exports.parse = exports.markdown.toHTML;
 
-},{"./markdown":280}],280:[function(require,module,exports){
+},{"./markdown":278}],278:[function(require,module,exports){
 // Released under MIT license
 // Copyright (c) 2009-2010 Dominic Baggott
 // Copyright (c) 2009-2010 Ash Berlin
@@ -50282,7 +46709,7 @@ function merge_text_nodes( jsonml ) {
   }
 } )() );
 
-},{"util":395}],281:[function(require,module,exports){
+},{"util":394}],279:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 var inherits = require('inherits')
@@ -50431,7 +46858,7 @@ function fnI (a, b, c, d, m, k, s) {
 module.exports = MD5
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":115,"hash-base":210,"inherits":228}],282:[function(require,module,exports){
+},{"buffer":112,"hash-base":208,"inherits":226}],280:[function(require,module,exports){
 (function () {
 
     'use strict';
@@ -50551,7 +46978,7 @@ module.exports = MD5
 
 })();
 
-},{"./lib/hash-array":283,"./lib/hash-file":284,"./lib/merkle-gen":285}],283:[function(require,module,exports){
+},{"./lib/hash-array":281,"./lib/hash-file":282,"./lib/merkle-gen":283}],281:[function(require,module,exports){
 (function () {
 
     'use strict';
@@ -50621,7 +47048,7 @@ module.exports = MD5
     module.exports = HashArray;
 
 })();
-},{"collections/fast-map":120,"hasha":223}],284:[function(require,module,exports){
+},{"collections/fast-map":117,"hasha":221}],282:[function(require,module,exports){
 (function (Buffer){
 (function () {
 
@@ -50714,7 +47141,7 @@ module.exports = MD5
 })();
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":115,"chunking-streams":116,"collections/fast-map":120,"fs":113,"hasha":223}],285:[function(require,module,exports){
+},{"buffer":112,"chunking-streams":113,"collections/fast-map":117,"fs":110,"hasha":221}],283:[function(require,module,exports){
 (function () {
 
     'use strict';
@@ -50847,7 +47274,7 @@ module.exports = MD5
 
 })();
 
-},{"collections/deque":118,"hasha":223}],286:[function(require,module,exports){
+},{"collections/deque":115,"hasha":221}],284:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
@@ -50964,7 +47391,7 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
   return false;
 };
 
-},{"bn.js":81,"brorand":82}],287:[function(require,module,exports){
+},{"bn.js":78,"brorand":79}],285:[function(require,module,exports){
 module.exports = assert;
 
 function assert(val, msg) {
@@ -50977,7 +47404,7 @@ assert.equal = function assertEqual(l, r, msg) {
     throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
 };
 
-},{}],288:[function(require,module,exports){
+},{}],286:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -51037,7 +47464,7 @@ utils.encode = function encode(arr, enc) {
     return arr;
 };
 
-},{}],289:[function(require,module,exports){
+},{}],287:[function(require,module,exports){
 //! moment.js
 
 ;(function (global, factory) {
@@ -55545,7 +51972,7 @@ utils.encode = function encode(arr, enc) {
 
 })));
 
-},{}],290:[function(require,module,exports){
+},{}],288:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -55699,7 +52126,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],291:[function(require,module,exports){
+},{}],289:[function(require,module,exports){
 var CryptoJS = require('./lib/core').CryptoJS;
 require('./lib/enc-base64');
 require('./lib/md5');
@@ -55710,7 +52137,7 @@ var JsonFormatter = require('./lib/jsonformatter').JsonFormatter;
 
 exports.CryptoJS = CryptoJS;
 exports.JsonFormatter = JsonFormatter;
-},{"./lib/aes":292,"./lib/cipher-core":293,"./lib/core":294,"./lib/enc-base64":295,"./lib/evpkdf":296,"./lib/jsonformatter":297,"./lib/md5":298}],292:[function(require,module,exports){
+},{"./lib/aes":290,"./lib/cipher-core":291,"./lib/core":292,"./lib/enc-base64":293,"./lib/evpkdf":294,"./lib/jsonformatter":295,"./lib/md5":296}],290:[function(require,module,exports){
 var CryptoJS = require('./core').CryptoJS;
 
 /*
@@ -55927,7 +52354,7 @@ code.google.com/p/crypto-js/wiki/License
     C.AES = BlockCipher._createHelper(AES);
 }());
 
-},{"./core":294}],293:[function(require,module,exports){
+},{"./core":292}],291:[function(require,module,exports){
 var CryptoJS = require('./core').CryptoJS;
 
 /*
@@ -56794,7 +53221,7 @@ CryptoJS.lib.Cipher || (function (undefined) {
     });
 }());
 
-},{"./core":294}],294:[function(require,module,exports){
+},{"./core":292}],292:[function(require,module,exports){
 /*
 CryptoJS v3.1.2
 code.google.com/p/crypto-js
@@ -57510,7 +53937,7 @@ var CryptoJS = CryptoJS || (function (Math, undefined) {
 
 exports.CryptoJS = CryptoJS;
 
-},{}],295:[function(require,module,exports){
+},{}],293:[function(require,module,exports){
 var CryptoJS = require('./core').CryptoJS;
 
 /*
@@ -57623,7 +54050,7 @@ code.google.com/p/crypto-js/wiki/License
     };
 }());
 
-},{"./core":294}],296:[function(require,module,exports){
+},{"./core":292}],294:[function(require,module,exports){
 var CryptoJS = require('./core').CryptoJS;
 
 /*
@@ -57745,7 +54172,7 @@ code.google.com/p/crypto-js/wiki/License
     };
 }());
 
-},{"./core":294}],297:[function(require,module,exports){
+},{"./core":292}],295:[function(require,module,exports){
 var CryptoJS = require('./core').CryptoJS;
 
 // create custom json serialization format
@@ -57792,7 +54219,7 @@ var JsonFormatter = {
 };
 
 exports.JsonFormatter = JsonFormatter;
-},{"./core":294}],298:[function(require,module,exports){
+},{"./core":292}],296:[function(require,module,exports){
 var CryptoJS = require('./core').CryptoJS;
 
 /*
@@ -58050,7 +54477,7 @@ code.google.com/p/crypto-js/wiki/License
     C.HmacMD5 = Hasher._createHmacHelper(MD5);
 }(Math));
 
-},{"./core":294}],299:[function(require,module,exports){
+},{"./core":292}],297:[function(require,module,exports){
 'use strict';
 
 /**
@@ -58089,7 +54516,7 @@ module.exports = function one(fn) {
   return onetime;
 };
 
-},{}],300:[function(require,module,exports){
+},{}],298:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -58140,7 +54567,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],301:[function(require,module,exports){
+},{}],299:[function(require,module,exports){
 'use strict';
 
 
@@ -58247,7 +54674,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],302:[function(require,module,exports){
+},{}],300:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -58300,7 +54727,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],303:[function(require,module,exports){
+},{}],301:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -58370,7 +54797,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],304:[function(require,module,exports){
+},{}],302:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -58431,7 +54858,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],305:[function(require,module,exports){
+},{}],303:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -60307,7 +56734,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":301,"./adler32":302,"./crc32":304,"./messages":309,"./trees":310}],306:[function(require,module,exports){
+},{"../utils/common":299,"./adler32":300,"./crc32":302,"./messages":307,"./trees":308}],304:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -60654,7 +57081,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],307:[function(require,module,exports){
+},{}],305:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -62212,7 +58639,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":301,"./adler32":302,"./crc32":304,"./inffast":306,"./inftrees":308}],308:[function(require,module,exports){
+},{"../utils/common":299,"./adler32":300,"./crc32":302,"./inffast":304,"./inftrees":306}],306:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -62557,7 +58984,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":301}],309:[function(require,module,exports){
+},{"../utils/common":299}],307:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -62591,7 +59018,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],310:[function(require,module,exports){
+},{}],308:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -63813,7 +60240,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":301}],311:[function(require,module,exports){
+},{"../utils/common":299}],309:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -63862,7 +60289,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],312:[function(require,module,exports){
+},{}],310:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -63876,7 +60303,7 @@ module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.43": "aes-256-ofb",
 "2.16.840.1.101.3.4.1.44": "aes-256-cfb"
 }
-},{}],313:[function(require,module,exports){
+},{}],311:[function(require,module,exports){
 // from https://github.com/indutny/self-signed/blob/gh-pages/lib/asn1.js
 // Fedor, you are amazing.
 'use strict'
@@ -64000,7 +60427,7 @@ exports.signature = asn1.define('signature', function () {
   )
 })
 
-},{"./certificate":314,"asn1.js":40}],314:[function(require,module,exports){
+},{"./certificate":312,"asn1.js":34}],312:[function(require,module,exports){
 // from https://github.com/Rantanen/node-dtls/blob/25a7dc861bda38cfeac93a723500eea4f0ac2e86/Certificate.js
 // thanks to @Rantanen
 
@@ -64090,7 +60517,7 @@ var X509Certificate = asn.define('X509Certificate', function () {
 
 module.exports = X509Certificate
 
-},{"asn1.js":40}],315:[function(require,module,exports){
+},{"asn1.js":34}],313:[function(require,module,exports){
 (function (Buffer){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r\+\/\=]+)[\n\r]+/m
@@ -64124,7 +60551,7 @@ module.exports = function (okey, password) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"browserify-aes":86,"buffer":115,"evp_bytestokey":204}],316:[function(require,module,exports){
+},{"browserify-aes":83,"buffer":112,"evp_bytestokey":201}],314:[function(require,module,exports){
 (function (Buffer){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
@@ -64234,7 +60661,7 @@ function decrypt (data, password) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./aesid.json":312,"./asn1":313,"./fixProc":315,"browserify-aes":86,"buffer":115,"pbkdf2":320}],317:[function(require,module,exports){
+},{"./aesid.json":310,"./asn1":311,"./fixProc":313,"browserify-aes":83,"buffer":112,"pbkdf2":318}],315:[function(require,module,exports){
 /**
  * Compiles a querystring
  * Returns string representation of the object
@@ -64273,7 +60700,7 @@ exports.decode = function(qs){
   return qry;
 };
 
-},{}],318:[function(require,module,exports){
+},{}],316:[function(require,module,exports){
 /**
  * Parses an URI
  *
@@ -64314,8 +60741,11 @@ module.exports = function parseuri(str) {
     return uri;
 };
 
-},{}],319:[function(require,module,exports){
+},{}],317:[function(require,module,exports){
 (function (process){
+// .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
+// backported and transplited with Babel, with backwards-compat fixes
+
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -64366,14 +60796,6 @@ function normalizeArray(parts, allowAboveRoot) {
 
   return parts;
 }
-
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
-};
 
 // path.resolve([from ...], to)
 // posix version
@@ -64490,37 +60912,120 @@ exports.relative = function(from, to) {
 exports.sep = '/';
 exports.delimiter = ':';
 
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
+exports.dirname = function (path) {
+  if (typeof path !== 'string') path = path + '';
+  if (path.length === 0) return '.';
+  var code = path.charCodeAt(0);
+  var hasRoot = code === 47 /*/*/;
+  var end = -1;
+  var matchedSlash = true;
+  for (var i = path.length - 1; i >= 1; --i) {
+    code = path.charCodeAt(i);
+    if (code === 47 /*/*/) {
+        if (!matchedSlash) {
+          end = i;
+          break;
+        }
+      } else {
+      // We saw the first non-path separator
+      matchedSlash = false;
+    }
   }
 
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
+  if (end === -1) return hasRoot ? '/' : '.';
+  if (hasRoot && end === 1) {
+    // return '//';
+    // Backwards-compat fix:
+    return '/';
   }
-
-  return root + dir;
+  return path.slice(0, end);
 };
 
+function basename(path) {
+  if (typeof path !== 'string') path = path + '';
 
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
+  var start = 0;
+  var end = -1;
+  var matchedSlash = true;
+  var i;
+
+  for (i = path.length - 1; i >= 0; --i) {
+    if (path.charCodeAt(i) === 47 /*/*/) {
+        // If we reached a path separator that was not part of a set of path
+        // separators at the end of the string, stop now
+        if (!matchedSlash) {
+          start = i + 1;
+          break;
+        }
+      } else if (end === -1) {
+      // We saw the first non-path separator, mark this as the end of our
+      // path component
+      matchedSlash = false;
+      end = i + 1;
+    }
+  }
+
+  if (end === -1) return '';
+  return path.slice(start, end);
+}
+
+// Uses a mixed approach for backwards-compatibility, as ext behavior changed
+// in new Node.js versions, so only basename() above is backported here
+exports.basename = function (path, ext) {
+  var f = basename(path);
   if (ext && f.substr(-1 * ext.length) === ext) {
     f = f.substr(0, f.length - ext.length);
   }
   return f;
 };
 
+exports.extname = function (path) {
+  if (typeof path !== 'string') path = path + '';
+  var startDot = -1;
+  var startPart = 0;
+  var end = -1;
+  var matchedSlash = true;
+  // Track the state of characters (if any) we see before our first dot and
+  // after any path separator we find
+  var preDotState = 0;
+  for (var i = path.length - 1; i >= 0; --i) {
+    var code = path.charCodeAt(i);
+    if (code === 47 /*/*/) {
+        // If we reached a path separator that was not part of a set of path
+        // separators at the end of the string, stop now
+        if (!matchedSlash) {
+          startPart = i + 1;
+          break;
+        }
+        continue;
+      }
+    if (end === -1) {
+      // We saw the first non-path separator, mark this as the end of our
+      // extension
+      matchedSlash = false;
+      end = i + 1;
+    }
+    if (code === 46 /*.*/) {
+        // If this is our first dot, mark it as the start of our extension
+        if (startDot === -1)
+          startDot = i;
+        else if (preDotState !== 1)
+          preDotState = 1;
+    } else if (startDot !== -1) {
+      // We saw a non-dot and non-path separator before our dot, so we should
+      // have a good chance at having a non-empty extension
+      preDotState = -1;
+    }
+  }
 
-exports.extname = function(path) {
-  return splitPath(path)[3];
+  if (startDot === -1 || end === -1 ||
+      // We saw a non-dot character immediately before the dot
+      preDotState === 0 ||
+      // The (right-most) trimmed path component is exactly '..'
+      preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
+    return '';
+  }
+  return path.slice(startDot, end);
 };
 
 function filter (xs, f) {
@@ -64542,11 +61047,11 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":328}],320:[function(require,module,exports){
+},{"_process":326}],318:[function(require,module,exports){
 exports.pbkdf2 = require('./lib/async')
 exports.pbkdf2Sync = require('./lib/sync')
 
-},{"./lib/async":321,"./lib/sync":324}],321:[function(require,module,exports){
+},{"./lib/async":319,"./lib/sync":322}],319:[function(require,module,exports){
 (function (process,global){
 var checkParameters = require('./precondition')
 var defaultEncoding = require('./default-encoding')
@@ -64650,7 +61155,7 @@ module.exports = function (password, salt, iterations, keylen, digest, callback)
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./default-encoding":322,"./precondition":323,"./sync":324,"_process":328,"safe-buffer":355}],322:[function(require,module,exports){
+},{"./default-encoding":320,"./precondition":321,"./sync":322,"_process":326,"safe-buffer":353}],320:[function(require,module,exports){
 (function (process){
 var defaultEncoding
 /* istanbul ignore next */
@@ -64664,7 +61169,7 @@ if (process.browser) {
 module.exports = defaultEncoding
 
 }).call(this,require('_process'))
-},{"_process":328}],323:[function(require,module,exports){
+},{"_process":326}],321:[function(require,module,exports){
 (function (Buffer){
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
 
@@ -64696,7 +61201,7 @@ module.exports = function (password, salt, iterations, keylen) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":229}],324:[function(require,module,exports){
+},{"../../is-buffer/index.js":227}],322:[function(require,module,exports){
 var md5 = require('create-hash/md5')
 var rmd160 = require('ripemd160')
 var sha = require('sha.js')
@@ -64799,13 +61304,13 @@ function pbkdf2 (password, salt, iterations, keylen, digest) {
 
 module.exports = pbkdf2
 
-},{"./default-encoding":322,"./precondition":323,"create-hash/md5":155,"ripemd160":354,"safe-buffer":355,"sha.js":364}],325:[function(require,module,exports){
+},{"./default-encoding":320,"./precondition":321,"create-hash/md5":152,"ripemd160":352,"safe-buffer":353,"sha.js":362}],323:[function(require,module,exports){
 'use strict';
 
 module.exports = typeof Promise === 'function' ? Promise : require('pinkie');
 
-},{"pinkie":326}],326:[function(require,module,exports){
-(function (global){
+},{"pinkie":324}],324:[function(require,module,exports){
+(function (global,setImmediate){
 'use strict';
 
 var PENDING = 'pending';
@@ -65099,8 +61604,8 @@ Promise.reject = function (reason) {
 
 module.exports = Promise;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],327:[function(require,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
+},{"timers":383}],325:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -65148,7 +61653,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this,require('_process'))
-},{"_process":328}],328:[function(require,module,exports){
+},{"_process":326}],326:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -65334,7 +61839,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],329:[function(require,module,exports){
+},{}],327:[function(require,module,exports){
 exports.publicEncrypt = require('./publicEncrypt');
 exports.privateDecrypt = require('./privateDecrypt');
 
@@ -65345,7 +61850,7 @@ exports.privateEncrypt = function privateEncrypt(key, buf) {
 exports.publicDecrypt = function publicDecrypt(key, buf) {
   return exports.privateDecrypt(key, buf, true);
 };
-},{"./privateDecrypt":331,"./publicEncrypt":332}],330:[function(require,module,exports){
+},{"./privateDecrypt":329,"./publicEncrypt":330}],328:[function(require,module,exports){
 (function (Buffer){
 var createHash = require('create-hash');
 module.exports = function (seed, len) {
@@ -65364,7 +61869,7 @@ function i2ops(c) {
   return out;
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":115,"create-hash":154}],331:[function(require,module,exports){
+},{"buffer":112,"create-hash":151}],329:[function(require,module,exports){
 (function (Buffer){
 var parseKeys = require('parse-asn1');
 var mgf = require('./mgf');
@@ -65475,7 +61980,7 @@ function compare(a, b){
   return dif;
 }
 }).call(this,require("buffer").Buffer)
-},{"./mgf":330,"./withPublic":333,"./xor":334,"bn.js":81,"browserify-rsa":104,"buffer":115,"create-hash":154,"parse-asn1":316}],332:[function(require,module,exports){
+},{"./mgf":328,"./withPublic":331,"./xor":332,"bn.js":78,"browserify-rsa":101,"buffer":112,"create-hash":151,"parse-asn1":314}],330:[function(require,module,exports){
 (function (Buffer){
 var parseKeys = require('parse-asn1');
 var randomBytes = require('randombytes');
@@ -65573,7 +62078,7 @@ function nonZero(len, crypto) {
   return out;
 }
 }).call(this,require("buffer").Buffer)
-},{"./mgf":330,"./withPublic":333,"./xor":334,"bn.js":81,"browserify-rsa":104,"buffer":115,"create-hash":154,"parse-asn1":316,"randombytes":339}],333:[function(require,module,exports){
+},{"./mgf":328,"./withPublic":331,"./xor":332,"bn.js":78,"browserify-rsa":101,"buffer":112,"create-hash":151,"parse-asn1":314,"randombytes":337}],331:[function(require,module,exports){
 (function (Buffer){
 var bn = require('bn.js');
 function withPublic(paddedMsg, key) {
@@ -65586,7 +62091,7 @@ function withPublic(paddedMsg, key) {
 
 module.exports = withPublic;
 }).call(this,require("buffer").Buffer)
-},{"bn.js":81,"buffer":115}],334:[function(require,module,exports){
+},{"bn.js":78,"buffer":112}],332:[function(require,module,exports){
 module.exports = function xor(a, b) {
   var len = a.length;
   var i = -1;
@@ -65595,7 +62100,7 @@ module.exports = function xor(a, b) {
   }
   return a
 };
-},{}],335:[function(require,module,exports){
+},{}],333:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -66132,7 +62637,7 @@ module.exports = function xor(a, b) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],336:[function(require,module,exports){
+},{}],334:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66218,7 +62723,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],337:[function(require,module,exports){
+},{}],335:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66305,13 +62810,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],338:[function(require,module,exports){
+},{}],336:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":336,"./encode":337}],339:[function(require,module,exports){
+},{"./decode":334,"./encode":335}],337:[function(require,module,exports){
 (function (process,global){
 'use strict'
 
@@ -66353,7 +62858,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":328,"safe-buffer":355}],340:[function(require,module,exports){
+},{"_process":326,"safe-buffer":353}],338:[function(require,module,exports){
 (function (process,global){
 'use strict'
 
@@ -66465,10 +62970,10 @@ function randomFillSync (buf, offset, size) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":328,"randombytes":339,"safe-buffer":355}],341:[function(require,module,exports){
+},{"_process":326,"randombytes":337,"safe-buffer":353}],339:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":342}],342:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":340}],340:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66600,7 +63105,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":344,"./_stream_writable":346,"core-util-is":152,"inherits":228,"process-nextick-args":327}],343:[function(require,module,exports){
+},{"./_stream_readable":342,"./_stream_writable":344,"core-util-is":149,"inherits":226,"process-nextick-args":325}],341:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66648,7 +63153,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":345,"core-util-is":152,"inherits":228}],344:[function(require,module,exports){
+},{"./_stream_transform":343,"core-util-is":149,"inherits":226}],342:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -67670,7 +64175,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":342,"./internal/streams/BufferList":347,"./internal/streams/destroy":348,"./internal/streams/stream":349,"_process":328,"core-util-is":152,"events":203,"inherits":228,"isarray":231,"process-nextick-args":327,"safe-buffer":355,"string_decoder/":383,"util":83}],345:[function(require,module,exports){
+},{"./_stream_duplex":340,"./internal/streams/BufferList":345,"./internal/streams/destroy":346,"./internal/streams/stream":347,"_process":326,"core-util-is":149,"events":200,"inherits":226,"isarray":229,"process-nextick-args":325,"safe-buffer":353,"string_decoder/":382,"util":80}],343:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -67885,8 +64390,8 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":342,"core-util-is":152,"inherits":228}],346:[function(require,module,exports){
-(function (process,global){
+},{"./_stream_duplex":340,"core-util-is":149,"inherits":226}],344:[function(require,module,exports){
+(function (process,global,setImmediate){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -68574,8 +65079,8 @@ Writable.prototype._destroy = function (err, cb) {
   this.end();
   cb(err);
 };
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":342,"./internal/streams/destroy":348,"./internal/streams/stream":349,"_process":328,"core-util-is":152,"inherits":228,"process-nextick-args":327,"safe-buffer":355,"util-deprecate":392}],347:[function(require,module,exports){
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
+},{"./_stream_duplex":340,"./internal/streams/destroy":346,"./internal/streams/stream":347,"_process":326,"core-util-is":149,"inherits":226,"process-nextick-args":325,"safe-buffer":353,"timers":383,"util-deprecate":392}],345:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -68655,7 +65160,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":355,"util":83}],348:[function(require,module,exports){
+},{"safe-buffer":353,"util":80}],346:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -68730,13 +65235,13 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":327}],349:[function(require,module,exports){
+},{"process-nextick-args":325}],347:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":203}],350:[function(require,module,exports){
+},{"events":200}],348:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":351}],351:[function(require,module,exports){
+},{"./readable":349}],349:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -68745,13 +65250,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":342,"./lib/_stream_passthrough.js":343,"./lib/_stream_readable.js":344,"./lib/_stream_transform.js":345,"./lib/_stream_writable.js":346}],352:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":340,"./lib/_stream_passthrough.js":341,"./lib/_stream_readable.js":342,"./lib/_stream_transform.js":343,"./lib/_stream_writable.js":344}],350:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":351}],353:[function(require,module,exports){
+},{"./readable":349}],351:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":346}],354:[function(require,module,exports){
+},{"./lib/_stream_writable.js":344}],352:[function(require,module,exports){
 'use strict'
 var Buffer = require('buffer').Buffer
 var inherits = require('inherits')
@@ -68916,7 +65421,7 @@ function fn5 (a, b, c, d, e, m, k, s) {
 
 module.exports = RIPEMD160
 
-},{"buffer":115,"hash-base":210,"inherits":228}],355:[function(require,module,exports){
+},{"buffer":112,"hash-base":208,"inherits":226}],353:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -68980,11 +65485,11 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":115}],356:[function(require,module,exports){
+},{"buffer":112}],354:[function(require,module,exports){
 'use strict'
 module.exports = require('./lib')(require('./lib/elliptic'))
 
-},{"./lib":360,"./lib/elliptic":359}],357:[function(require,module,exports){
+},{"./lib":358,"./lib/elliptic":357}],355:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 var toString = Object.prototype.toString
@@ -69032,7 +65537,7 @@ exports.isNumberInInterval = function (number, x, y, message) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":229}],358:[function(require,module,exports){
+},{"../../is-buffer/index.js":227}],356:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var bip66 = require('bip66')
@@ -69227,7 +65732,7 @@ exports.signatureImportLax = function (sig) {
   return { r: r, s: s }
 }
 
-},{"bip66":79,"safe-buffer":355}],359:[function(require,module,exports){
+},{"bip66":76,"safe-buffer":353}],357:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var createHash = require('create-hash')
@@ -69489,7 +65994,7 @@ exports.ecdhUnsafe = function (publicKey, privateKey, compressed) {
   return Buffer.from(pair.pub.mul(scalar).encode(true, compressed))
 }
 
-},{"../messages.json":361,"bn.js":81,"create-hash":154,"elliptic":173,"safe-buffer":355}],360:[function(require,module,exports){
+},{"../messages.json":359,"bn.js":78,"create-hash":151,"elliptic":170,"safe-buffer":353}],358:[function(require,module,exports){
 'use strict'
 var assert = require('./assert')
 var der = require('./der')
@@ -69736,7 +66241,7 @@ module.exports = function (secp256k1) {
   }
 }
 
-},{"./assert":357,"./der":358,"./messages.json":361}],361:[function(require,module,exports){
+},{"./assert":355,"./der":356,"./messages.json":359}],359:[function(require,module,exports){
 module.exports={
   "COMPRESSED_TYPE_INVALID": "compressed should be a boolean",
   "EC_PRIVATE_KEY_TYPE_INVALID": "private key should be a Buffer",
@@ -69775,7 +66280,7 @@ module.exports={
   "TWEAK_LENGTH_INVALID": "tweak length is invalid"
 }
 
-},{}],362:[function(require,module,exports){
+},{}],360:[function(require,module,exports){
 (function (process){
 exports = module.exports = SemVer;
 
@@ -71103,7 +67608,7 @@ function coerce(version) {
 }
 
 }).call(this,require('_process'))
-},{"_process":328}],363:[function(require,module,exports){
+},{"_process":326}],361:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 // prototype class for hash functions
@@ -71186,7 +67691,7 @@ Hash.prototype._update = function () {
 
 module.exports = Hash
 
-},{"safe-buffer":355}],364:[function(require,module,exports){
+},{"safe-buffer":353}],362:[function(require,module,exports){
 var exports = module.exports = function SHA (algorithm) {
   algorithm = algorithm.toLowerCase()
 
@@ -71203,7 +67708,7 @@ exports.sha256 = require('./sha256')
 exports.sha384 = require('./sha384')
 exports.sha512 = require('./sha512')
 
-},{"./sha":365,"./sha1":366,"./sha224":367,"./sha256":368,"./sha384":369,"./sha512":370}],365:[function(require,module,exports){
+},{"./sha":363,"./sha1":364,"./sha224":365,"./sha256":366,"./sha384":367,"./sha512":368}],363:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
  * in FIPS PUB 180-1
@@ -71299,7 +67804,7 @@ Sha.prototype._hash = function () {
 
 module.exports = Sha
 
-},{"./hash":363,"inherits":228,"safe-buffer":355}],366:[function(require,module,exports){
+},{"./hash":361,"inherits":226,"safe-buffer":353}],364:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -71400,7 +67905,7 @@ Sha1.prototype._hash = function () {
 
 module.exports = Sha1
 
-},{"./hash":363,"inherits":228,"safe-buffer":355}],367:[function(require,module,exports){
+},{"./hash":361,"inherits":226,"safe-buffer":353}],365:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -71455,7 +67960,7 @@ Sha224.prototype._hash = function () {
 
 module.exports = Sha224
 
-},{"./hash":363,"./sha256":368,"inherits":228,"safe-buffer":355}],368:[function(require,module,exports){
+},{"./hash":361,"./sha256":366,"inherits":226,"safe-buffer":353}],366:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -71592,7 +68097,7 @@ Sha256.prototype._hash = function () {
 
 module.exports = Sha256
 
-},{"./hash":363,"inherits":228,"safe-buffer":355}],369:[function(require,module,exports){
+},{"./hash":361,"inherits":226,"safe-buffer":353}],367:[function(require,module,exports){
 var inherits = require('inherits')
 var SHA512 = require('./sha512')
 var Hash = require('./hash')
@@ -71651,7 +68156,7 @@ Sha384.prototype._hash = function () {
 
 module.exports = Sha384
 
-},{"./hash":363,"./sha512":370,"inherits":228,"safe-buffer":355}],370:[function(require,module,exports){
+},{"./hash":361,"./sha512":368,"inherits":226,"safe-buffer":353}],368:[function(require,module,exports){
 var inherits = require('inherits')
 var Hash = require('./hash')
 var Buffer = require('safe-buffer').Buffer
@@ -71913,7 +68418,7 @@ Sha512.prototype._hash = function () {
 
 module.exports = Sha512
 
-},{"./hash":363,"inherits":228,"safe-buffer":355}],371:[function(require,module,exports){
+},{"./hash":361,"inherits":226,"safe-buffer":353}],369:[function(require,module,exports){
 !function(globals) {
 'use strict'
 
@@ -72068,7 +68573,7 @@ sha256.x2 = function(message, options) {
 
 }(this);
 
-},{"convert-hex":150,"convert-string":151}],372:[function(require,module,exports){
+},{"convert-hex":147,"convert-string":148}],370:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -72164,7 +68669,7 @@ exports.connect = lookup;
 exports.Manager = require('./manager');
 exports.Socket = require('./socket');
 
-},{"./manager":373,"./socket":375,"./url":376,"debug":160,"socket.io-parser":378}],373:[function(require,module,exports){
+},{"./manager":371,"./socket":373,"./url":374,"debug":157,"socket.io-parser":376}],371:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -72739,7 +69244,7 @@ Manager.prototype.onreconnect = function () {
   this.emitAll('reconnect', attempt);
 };
 
-},{"./on":374,"./socket":375,"backo2":74,"component-bind":147,"component-emitter":148,"debug":160,"engine.io-client":190,"indexof":227,"socket.io-parser":378}],374:[function(require,module,exports){
+},{"./on":372,"./socket":373,"backo2":71,"component-bind":144,"component-emitter":145,"debug":157,"engine.io-client":187,"indexof":225,"socket.io-parser":376}],372:[function(require,module,exports){
 
 /**
  * Module exports.
@@ -72765,7 +69270,7 @@ function on (obj, ev, fn) {
   };
 }
 
-},{}],375:[function(require,module,exports){
+},{}],373:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -72990,7 +69495,10 @@ Socket.prototype.onclose = function (reason) {
  */
 
 Socket.prototype.onpacket = function (packet) {
-  if (packet.nsp !== this.nsp) return;
+  var sameNamespace = packet.nsp === this.nsp;
+  var rootNamespaceError = packet.type === parser.ERROR && packet.nsp === '/';
+
+  if (!sameNamespace && !rootNamespaceError) return;
 
   switch (packet.type) {
     case parser.CONNECT:
@@ -73202,7 +69710,7 @@ Socket.prototype.binary = function (binary) {
   return this;
 };
 
-},{"./on":374,"component-bind":147,"component-emitter":148,"debug":160,"has-binary2":207,"parseqs":317,"socket.io-parser":378,"to-array":384}],376:[function(require,module,exports){
+},{"./on":372,"component-bind":144,"component-emitter":145,"debug":157,"has-binary2":205,"parseqs":315,"socket.io-parser":376,"to-array":384}],374:[function(require,module,exports){
 (function (global){
 
 /**
@@ -73281,7 +69789,7 @@ function url (uri, loc) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"debug":160,"parseuri":318}],377:[function(require,module,exports){
+},{"debug":157,"parseuri":316}],375:[function(require,module,exports){
 (function (global){
 /*global Blob,File*/
 
@@ -73426,7 +69934,7 @@ exports.removeBlobs = function(data, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./is-buffer":379,"isarray":380}],378:[function(require,module,exports){
+},{"./is-buffer":377,"isarray":378}],376:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -73845,7 +70353,7 @@ function error(msg) {
   };
 }
 
-},{"./binary":377,"./is-buffer":379,"component-emitter":148,"debug":160,"isarray":380}],379:[function(require,module,exports){
+},{"./binary":375,"./is-buffer":377,"component-emitter":145,"debug":157,"isarray":378}],377:[function(require,module,exports){
 (function (global){
 
 module.exports = isBuf;
@@ -73873,9 +70381,499 @@ function isBuf(obj) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],380:[function(require,module,exports){
-arguments[4][208][0].apply(exports,arguments)
-},{"dup":208}],381:[function(require,module,exports){
+},{}],378:[function(require,module,exports){
+arguments[4][206][0].apply(exports,arguments)
+},{"dup":206}],379:[function(require,module,exports){
+(function (global){
+'use strict';
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var sqlite3 = _interopDefault(require('sqlite3'));
+var fs = _interopDefault(require('fs'));
+var path = _interopDefault(require('path'));
+
+/**
+ * SQLite client library for Node.js applications
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
+
+function prepareParams(args, { offset = 0, excludeLastArg = false } = {}) {
+  const hasOneParam = args.length === offset + 1 + (excludeLastArg ? 1 : 0);
+  if (hasOneParam) {
+    return args[offset];
+  }
+  return Array.prototype.slice.call(args, offset, args.length - (excludeLastArg ? 1 : 0));
+}
+
+/**
+ * SQLite client library for Node.js applications
+ *
+ * Copyright © 2016 Kriasoft, LLC. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
+
+class Statement {
+
+  constructor(stmt, Promise) {
+    this.stmt = stmt;
+    this.Promise = Promise;
+  }
+
+  get sql() {
+    return this.stmt.sql;
+  }
+
+  get lastID() {
+    return this.stmt.lastID;
+  }
+
+  get changes() {
+    return this.stmt.changes;
+  }
+
+  bind() {
+    const params = prepareParams(arguments);
+    return new this.Promise((resolve, reject) => {
+      this.stmt.bind(params, err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this);
+        }
+      });
+    });
+  }
+
+  reset() {
+    return new this.Promise(resolve => {
+      this.stmt.reset(() => {
+        resolve(this);
+      });
+    });
+  }
+
+  finalize() {
+    return new this.Promise((resolve, reject) => {
+      this.stmt.finalize(err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  run() {
+    const params = prepareParams(arguments);
+    return new this.Promise((resolve, reject) => {
+      this.stmt.run(params, err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this);
+        }
+      });
+    });
+  }
+
+  get() {
+    const params = prepareParams(arguments);
+    return new this.Promise((resolve, reject) => {
+      this.stmt.get(params, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      });
+    });
+  }
+
+  all() {
+    const params = prepareParams(arguments);
+    return new this.Promise((resolve, reject) => {
+      this.stmt.all(params, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
+
+  each() {
+    const params = prepareParams(arguments, { excludeLastArg: true });
+    const callback = arguments[arguments.length - 1];
+    return new this.Promise((resolve, reject) => {
+      this.stmt.each(params, callback, (err, rowsCount = 0) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rowsCount);
+        }
+      });
+    });
+  }
+
+}
+
+var asyncToGenerator = function (fn) {
+  return function () {
+    var gen = fn.apply(this, arguments);
+    return new Promise(function (resolve, reject) {
+      function step(key, arg) {
+        try {
+          var info = gen[key](arg);
+          var value = info.value;
+        } catch (error) {
+          reject(error);
+          return;
+        }
+
+        if (info.done) {
+          resolve(value);
+        } else {
+          return Promise.resolve(value).then(function (value) {
+            step("next", value);
+          }, function (err) {
+            step("throw", err);
+          });
+        }
+      }
+
+      return step("next");
+    });
+  };
+};
+
+/**
+ * SQLite client library for Node.js applications
+ *
+ * Copyright © 2016 Kriasoft, LLC. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
+
+// eslint-disable-next-line no-unused-vars,import/no-unresolved,import/extensions
+class Database {
+  /**
+   * Initializes a new instance of the database client.
+   * @param {sqlite3.Database} driver An instance of SQLite3 driver library.
+   * @param {{Promise: PromiseConstructor}} promiseLibrary ES6 Promise library to use.
+     */
+  constructor(driver, promiseLibrary) {
+    this.driver = driver;
+    this.Promise = promiseLibrary.Promise;
+  }
+
+  /**
+   * Close the database.
+   */
+  close() {
+    return new this.Promise((resolve, reject) => {
+      this.driver.close(err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  /**
+   * Register listeners for Sqlite3 events
+   *
+   * @param {'trace'|'profile'|'error'|'open'|'close'} eventName
+   * @param {() => void} listener trigger listener function
+   */
+  on(eventName, listener) {
+    this.driver.on(eventName, listener);
+  }
+
+  run(sql) {
+    const params = prepareParams(arguments, { offset: 1 });
+    const Promise = this.Promise;
+    return new Promise((resolve, reject) => {
+      this.driver.run(sql, params, function runExecResult(err) {
+        if (err) {
+          reject(err);
+        } else {
+          // Per https://github.com/mapbox/node-sqlite3/wiki/API#databaserunsql-param--callback
+          // when run() succeeds, the `this' object is a driver statement object. Wrap it as a
+          // Statement.
+          resolve(new Statement(this, Promise));
+        }
+      });
+    });
+  }
+
+  get(sql) {
+    const params = prepareParams(arguments, { offset: 1 });
+    return new this.Promise((resolve, reject) => {
+      this.driver.get(sql, params, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      });
+    });
+  }
+
+  all(sql) {
+    const params = prepareParams(arguments, { offset: 1 });
+    return new this.Promise((resolve, reject) => {
+      this.driver.all(sql, params, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
+
+  /**
+   * Runs all the SQL queries in the supplied string. No result rows are retrieved.
+   */
+  exec(sql) {
+    return new this.Promise((resolve, reject) => {
+      this.driver.exec(sql, err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this);
+        }
+      });
+    });
+  }
+
+  each(sql) {
+    const params = prepareParams(arguments, { offset: 1, excludeLastArg: true });
+    const callback = arguments[arguments.length - 1];
+    return new this.Promise((resolve, reject) => {
+      this.driver.each(sql, params, callback, (err, rowsCount = 0) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rowsCount);
+        }
+      });
+    });
+  }
+
+  prepare(sql) {
+    const params = prepareParams(arguments, { offset: 1 });
+    return new this.Promise((resolve, reject) => {
+      const stmt = this.driver.prepare(sql, params, err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(new Statement(stmt, this.Promise));
+        }
+      });
+    });
+  }
+
+  /**
+   * Set a configuration option for the database.
+   */
+  configure(option, value) {
+    this.driver.configure(option, value);
+  }
+
+  /**
+   * Migrates database schema to the latest version
+   */
+  migrate({ force, table = 'migrations', migrationsPath = './migrations' } = {}) {
+    var _this = this;
+
+    return asyncToGenerator(function* () {
+      /* eslint-disable no-await-in-loop */
+      const location = path.resolve(migrationsPath);
+
+      // Get the list of migration files, for example:
+      //   { id: 1, name: 'initial', filename: '001-initial.sql' }
+      //   { id: 2, name: 'feature', fielname: '002-feature.sql' }
+      const migrations = yield new _this.Promise(function (resolve, reject) {
+        fs.readdir(location, function (err, files) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(files.map(function (x) {
+              return x.match(/^(\d+).(.*?)\.sql$/);
+            }).filter(function (x) {
+              return x !== null;
+            }).map(function (x) {
+              return { id: Number(x[1]), name: x[2], filename: x[0] };
+            }).sort(function (a, b) {
+              return Math.sign(a.id - b.id);
+            }));
+          }
+        });
+      });
+
+      if (!migrations.length) {
+        throw new Error(`No migration files found in '${location}'.`);
+      }
+
+      // Ge the list of migrations, for example:
+      //   { id: 1, name: 'initial', filename: '001-initial.sql', up: ..., down: ... }
+      //   { id: 2, name: 'feature', fielname: '002-feature.sql', up: ..., down: ... }
+      yield Promise.all(migrations.map(function (migration) {
+        return new _this.Promise(function (resolve, reject) {
+          const filename = path.join(location, migration.filename);
+          fs.readFile(filename, 'utf-8', function (err, data) {
+            if (err) {
+              reject(err);
+            } else {
+              const [up, down] = data.split(/^--\s+?down\b/mi);
+              if (!down) {
+                const message = `The ${migration.filename} file does not contain '-- Down' separator.`;
+                reject(new Error(message));
+              } else {
+                /* eslint-disable no-param-reassign */
+                migration.up = up.replace(/^-- .*?$/gm, '').trim(); // Remove comments
+                migration.down = down.trim(); // and trim whitespaces
+                /* eslint-enable no-param-reassign */
+                resolve();
+              }
+            }
+          });
+        });
+      }));
+
+      // Create a database table for migrations meta data if it doesn't exist
+      yield _this.run(`CREATE TABLE IF NOT EXISTS "${table}" (
+  id   INTEGER PRIMARY KEY,
+  name TEXT    NOT NULL,
+  up   TEXT    NOT NULL,
+  down TEXT    NOT NULL
+)`);
+
+      // Get the list of already applied migrations
+      let dbMigrations = yield _this.all(`SELECT id, name, up, down FROM "${table}" ORDER BY id ASC`);
+
+      // Undo migrations that exist only in the database but not in files,
+      // also undo the last migration if the `force` option was set to `last`.
+      const lastMigration = migrations[migrations.length - 1];
+      for (const migration of dbMigrations.slice().sort(function (a, b) {
+        return Math.sign(b.id - a.id);
+      })) {
+        if (!migrations.some(function (x) {
+          return x.id === migration.id;
+        }) || force === 'last' && migration.id === lastMigration.id) {
+          yield _this.run('BEGIN');
+          try {
+            yield _this.exec(migration.down);
+            yield _this.run(`DELETE FROM "${table}" WHERE id = ?`, migration.id);
+            yield _this.run('COMMIT');
+            dbMigrations = dbMigrations.filter(function (x) {
+              return x.id !== migration.id;
+            });
+          } catch (err) {
+            yield _this.run('ROLLBACK');
+            throw err;
+          }
+        } else {
+          break;
+        }
+      }
+
+      // Apply pending migrations
+      const lastMigrationId = dbMigrations.length ? dbMigrations[dbMigrations.length - 1].id : 0;
+      for (const migration of migrations) {
+        if (migration.id > lastMigrationId) {
+          yield _this.run('BEGIN');
+          try {
+            yield _this.exec(migration.up);
+            yield _this.run(`INSERT INTO "${table}" (id, name, up, down) VALUES (?, ?, ?, ?)`, migration.id, migration.name, migration.up, migration.down);
+            yield _this.run('COMMIT');
+          } catch (err) {
+            yield _this.run('ROLLBACK');
+            throw err;
+          }
+        }
+      }
+
+      /* eslint-enable no-await-in-loop */
+      return _this;
+    })();
+  }
+}
+
+/**
+ * SQLite client library for Node.js applications
+ *
+ * Copyright © 2016 Kriasoft, LLC. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
+
+const promise = global.Promise;
+const db = new Database(null, { Promise: promise });
+
+/**
+ * Opens SQLite database.
+ *
+ * @returns Promise<Database> A promise that resolves to an instance of SQLite database client.
+ */
+db.open = (filename, {
+  mode = null,
+  verbose = false,
+  Promise = promise,
+  cached = false } = {}) => {
+  let driver;
+  let DBDriver = sqlite3.Database;
+
+  if (cached) {
+    DBDriver = sqlite3.cached.Database;
+  }
+
+  if (verbose) {
+    sqlite3.verbose();
+  }
+
+  return new Promise((resolve, reject) => {
+    if (mode !== null) {
+      driver = new DBDriver(filename, mode, err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    } else {
+      driver = new DBDriver(filename, err => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    }
+  }).then(() => {
+    db.driver = driver;
+    db.Promise = Promise;
+    return new Database(driver, { Promise });
+  });
+};
+
+module.exports = db;
+
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"fs":110,"path":317,"sqlite3":110}],380:[function(require,module,exports){
 exports.get = function(belowFn) {
   var oldLimit = Error.stackTraceLimit;
   Error.stackTraceLimit = Infinity;
@@ -74013,7 +71011,7 @@ exports._createParsedCallSite = function(properties) {
   return new CallSite(properties);
 };
 
-},{}],382:[function(require,module,exports){
+},{}],381:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -74142,7 +71140,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":203,"inherits":228,"readable-stream/duplex.js":341,"readable-stream/passthrough.js":350,"readable-stream/readable.js":351,"readable-stream/transform.js":352,"readable-stream/writable.js":353}],383:[function(require,module,exports){
+},{"events":200,"inherits":226,"readable-stream/duplex.js":339,"readable-stream/passthrough.js":348,"readable-stream/readable.js":349,"readable-stream/transform.js":350,"readable-stream/writable.js":351}],382:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -74439,7 +71437,86 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":355}],384:[function(require,module,exports){
+},{"safe-buffer":353}],383:[function(require,module,exports){
+(function (setImmediate,clearImmediate){
+var nextTick = require('process/browser.js').nextTick;
+var apply = Function.prototype.apply;
+var slice = Array.prototype.slice;
+var immediateIds = {};
+var nextImmediateId = 0;
+
+// DOM APIs, for completeness
+
+exports.setTimeout = function() {
+  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
+};
+exports.setInterval = function() {
+  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
+};
+exports.clearTimeout =
+exports.clearInterval = function(timeout) { timeout.close(); };
+
+function Timeout(id, clearFn) {
+  this._id = id;
+  this._clearFn = clearFn;
+}
+Timeout.prototype.unref = Timeout.prototype.ref = function() {};
+Timeout.prototype.close = function() {
+  this._clearFn.call(window, this._id);
+};
+
+// Does not start the time, just sets up the members needed.
+exports.enroll = function(item, msecs) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = msecs;
+};
+
+exports.unenroll = function(item) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = -1;
+};
+
+exports._unrefActive = exports.active = function(item) {
+  clearTimeout(item._idleTimeoutId);
+
+  var msecs = item._idleTimeout;
+  if (msecs >= 0) {
+    item._idleTimeoutId = setTimeout(function onTimeout() {
+      if (item._onTimeout)
+        item._onTimeout();
+    }, msecs);
+  }
+};
+
+// That's not how node.js implements it but the exposed api is the same.
+exports.setImmediate = typeof setImmediate === "function" ? setImmediate : function(fn) {
+  var id = nextImmediateId++;
+  var args = arguments.length < 2 ? false : slice.call(arguments, 1);
+
+  immediateIds[id] = true;
+
+  nextTick(function onNextTick() {
+    if (immediateIds[id]) {
+      // fn.call() is faster so we optimize for the common use-case
+      // @see http://jsperf.com/call-apply-segu
+      if (args) {
+        fn.apply(null, args);
+      } else {
+        fn.call(null);
+      }
+      // Prevent ids from leaking
+      exports.clearImmediate(id);
+    }
+  });
+
+  return id;
+};
+
+exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate : function(id) {
+  delete immediateIds[id];
+};
+}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
+},{"process/browser.js":326,"timers":383}],384:[function(require,module,exports){
 module.exports = toArray
 
 function toArray(list, index) {
@@ -75392,7 +72469,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":391,"punycode":335,"querystring":338}],391:[function(require,module,exports){
+},{"./util":391,"punycode":333,"querystring":336}],391:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -75482,605 +72559,10 @@ function config (name) {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],393:[function(require,module,exports){
-arguments[4][228][0].apply(exports,arguments)
-},{"dup":228}],394:[function(require,module,exports){
-module.exports = function isBuffer(arg) {
-  return arg && typeof arg === 'object'
-    && typeof arg.copy === 'function'
-    && typeof arg.fill === 'function'
-    && typeof arg.readUInt8 === 'function';
-}
-},{}],395:[function(require,module,exports){
-(function (process,global){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-var formatRegExp = /%[sdj%]/g;
-exports.format = function(f) {
-  if (!isString(f)) {
-    var objects = [];
-    for (var i = 0; i < arguments.length; i++) {
-      objects.push(inspect(arguments[i]));
-    }
-    return objects.join(' ');
-  }
-
-  var i = 1;
-  var args = arguments;
-  var len = args.length;
-  var str = String(f).replace(formatRegExp, function(x) {
-    if (x === '%%') return '%';
-    if (i >= len) return x;
-    switch (x) {
-      case '%s': return String(args[i++]);
-      case '%d': return Number(args[i++]);
-      case '%j':
-        try {
-          return JSON.stringify(args[i++]);
-        } catch (_) {
-          return '[Circular]';
-        }
-      default:
-        return x;
-    }
-  });
-  for (var x = args[i]; i < len; x = args[++i]) {
-    if (isNull(x) || !isObject(x)) {
-      str += ' ' + x;
-    } else {
-      str += ' ' + inspect(x);
-    }
-  }
-  return str;
-};
-
-
-// Mark that a method should not be used.
-// Returns a modified function which warns once by default.
-// If --no-deprecation is set, then it is a no-op.
-exports.deprecate = function(fn, msg) {
-  // Allow for deprecating things in the process of starting up.
-  if (isUndefined(global.process)) {
-    return function() {
-      return exports.deprecate(fn, msg).apply(this, arguments);
-    };
-  }
-
-  if (process.noDeprecation === true) {
-    return fn;
-  }
-
-  var warned = false;
-  function deprecated() {
-    if (!warned) {
-      if (process.throwDeprecation) {
-        throw new Error(msg);
-      } else if (process.traceDeprecation) {
-        console.trace(msg);
-      } else {
-        console.error(msg);
-      }
-      warned = true;
-    }
-    return fn.apply(this, arguments);
-  }
-
-  return deprecated;
-};
-
-
-var debugs = {};
-var debugEnviron;
-exports.debuglog = function(set) {
-  if (isUndefined(debugEnviron))
-    debugEnviron = process.env.NODE_DEBUG || '';
-  set = set.toUpperCase();
-  if (!debugs[set]) {
-    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
-      var pid = process.pid;
-      debugs[set] = function() {
-        var msg = exports.format.apply(exports, arguments);
-        console.error('%s %d: %s', set, pid, msg);
-      };
-    } else {
-      debugs[set] = function() {};
-    }
-  }
-  return debugs[set];
-};
-
-
-/**
- * Echos the value of a value. Trys to print the value out
- * in the best way possible given the different types.
- *
- * @param {Object} obj The object to print out.
- * @param {Object} opts Optional options object that alters the output.
- */
-/* legacy: obj, showHidden, depth, colors*/
-function inspect(obj, opts) {
-  // default options
-  var ctx = {
-    seen: [],
-    stylize: stylizeNoColor
-  };
-  // legacy...
-  if (arguments.length >= 3) ctx.depth = arguments[2];
-  if (arguments.length >= 4) ctx.colors = arguments[3];
-  if (isBoolean(opts)) {
-    // legacy...
-    ctx.showHidden = opts;
-  } else if (opts) {
-    // got an "options" object
-    exports._extend(ctx, opts);
-  }
-  // set default options
-  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
-  if (isUndefined(ctx.depth)) ctx.depth = 2;
-  if (isUndefined(ctx.colors)) ctx.colors = false;
-  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
-  if (ctx.colors) ctx.stylize = stylizeWithColor;
-  return formatValue(ctx, obj, ctx.depth);
-}
-exports.inspect = inspect;
-
-
-// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-inspect.colors = {
-  'bold' : [1, 22],
-  'italic' : [3, 23],
-  'underline' : [4, 24],
-  'inverse' : [7, 27],
-  'white' : [37, 39],
-  'grey' : [90, 39],
-  'black' : [30, 39],
-  'blue' : [34, 39],
-  'cyan' : [36, 39],
-  'green' : [32, 39],
-  'magenta' : [35, 39],
-  'red' : [31, 39],
-  'yellow' : [33, 39]
-};
-
-// Don't use 'blue' not visible on cmd.exe
-inspect.styles = {
-  'special': 'cyan',
-  'number': 'yellow',
-  'boolean': 'yellow',
-  'undefined': 'grey',
-  'null': 'bold',
-  'string': 'green',
-  'date': 'magenta',
-  // "name": intentionally not styling
-  'regexp': 'red'
-};
-
-
-function stylizeWithColor(str, styleType) {
-  var style = inspect.styles[styleType];
-
-  if (style) {
-    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
-           '\u001b[' + inspect.colors[style][1] + 'm';
-  } else {
-    return str;
-  }
-}
-
-
-function stylizeNoColor(str, styleType) {
-  return str;
-}
-
-
-function arrayToHash(array) {
-  var hash = {};
-
-  array.forEach(function(val, idx) {
-    hash[val] = true;
-  });
-
-  return hash;
-}
-
-
-function formatValue(ctx, value, recurseTimes) {
-  // Provide a hook for user-specified inspect functions.
-  // Check that value is an object with an inspect function on it
-  if (ctx.customInspect &&
-      value &&
-      isFunction(value.inspect) &&
-      // Filter out the util module, it's inspect function is special
-      value.inspect !== exports.inspect &&
-      // Also filter out any prototype objects using the circular check.
-      !(value.constructor && value.constructor.prototype === value)) {
-    var ret = value.inspect(recurseTimes, ctx);
-    if (!isString(ret)) {
-      ret = formatValue(ctx, ret, recurseTimes);
-    }
-    return ret;
-  }
-
-  // Primitive types cannot have properties
-  var primitive = formatPrimitive(ctx, value);
-  if (primitive) {
-    return primitive;
-  }
-
-  // Look up the keys of the object.
-  var keys = Object.keys(value);
-  var visibleKeys = arrayToHash(keys);
-
-  if (ctx.showHidden) {
-    keys = Object.getOwnPropertyNames(value);
-  }
-
-  // IE doesn't make error fields non-enumerable
-  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
-  if (isError(value)
-      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
-    return formatError(value);
-  }
-
-  // Some type of object without properties can be shortcutted.
-  if (keys.length === 0) {
-    if (isFunction(value)) {
-      var name = value.name ? ': ' + value.name : '';
-      return ctx.stylize('[Function' + name + ']', 'special');
-    }
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    }
-    if (isDate(value)) {
-      return ctx.stylize(Date.prototype.toString.call(value), 'date');
-    }
-    if (isError(value)) {
-      return formatError(value);
-    }
-  }
-
-  var base = '', array = false, braces = ['{', '}'];
-
-  // Make Array say that they are Array
-  if (isArray(value)) {
-    array = true;
-    braces = ['[', ']'];
-  }
-
-  // Make functions say that they are functions
-  if (isFunction(value)) {
-    var n = value.name ? ': ' + value.name : '';
-    base = ' [Function' + n + ']';
-  }
-
-  // Make RegExps say that they are RegExps
-  if (isRegExp(value)) {
-    base = ' ' + RegExp.prototype.toString.call(value);
-  }
-
-  // Make dates with properties first say the date
-  if (isDate(value)) {
-    base = ' ' + Date.prototype.toUTCString.call(value);
-  }
-
-  // Make error with message first say the error
-  if (isError(value)) {
-    base = ' ' + formatError(value);
-  }
-
-  if (keys.length === 0 && (!array || value.length == 0)) {
-    return braces[0] + base + braces[1];
-  }
-
-  if (recurseTimes < 0) {
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    } else {
-      return ctx.stylize('[Object]', 'special');
-    }
-  }
-
-  ctx.seen.push(value);
-
-  var output;
-  if (array) {
-    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
-  } else {
-    output = keys.map(function(key) {
-      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
-    });
-  }
-
-  ctx.seen.pop();
-
-  return reduceToSingleString(output, base, braces);
-}
-
-
-function formatPrimitive(ctx, value) {
-  if (isUndefined(value))
-    return ctx.stylize('undefined', 'undefined');
-  if (isString(value)) {
-    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-                                             .replace(/'/g, "\\'")
-                                             .replace(/\\"/g, '"') + '\'';
-    return ctx.stylize(simple, 'string');
-  }
-  if (isNumber(value))
-    return ctx.stylize('' + value, 'number');
-  if (isBoolean(value))
-    return ctx.stylize('' + value, 'boolean');
-  // For some reason typeof null is "object", so special case here.
-  if (isNull(value))
-    return ctx.stylize('null', 'null');
-}
-
-
-function formatError(value) {
-  return '[' + Error.prototype.toString.call(value) + ']';
-}
-
-
-function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
-  var output = [];
-  for (var i = 0, l = value.length; i < l; ++i) {
-    if (hasOwnProperty(value, String(i))) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          String(i), true));
-    } else {
-      output.push('');
-    }
-  }
-  keys.forEach(function(key) {
-    if (!key.match(/^\d+$/)) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          key, true));
-    }
-  });
-  return output;
-}
-
-
-function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
-  var name, str, desc;
-  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
-  if (desc.get) {
-    if (desc.set) {
-      str = ctx.stylize('[Getter/Setter]', 'special');
-    } else {
-      str = ctx.stylize('[Getter]', 'special');
-    }
-  } else {
-    if (desc.set) {
-      str = ctx.stylize('[Setter]', 'special');
-    }
-  }
-  if (!hasOwnProperty(visibleKeys, key)) {
-    name = '[' + key + ']';
-  }
-  if (!str) {
-    if (ctx.seen.indexOf(desc.value) < 0) {
-      if (isNull(recurseTimes)) {
-        str = formatValue(ctx, desc.value, null);
-      } else {
-        str = formatValue(ctx, desc.value, recurseTimes - 1);
-      }
-      if (str.indexOf('\n') > -1) {
-        if (array) {
-          str = str.split('\n').map(function(line) {
-            return '  ' + line;
-          }).join('\n').substr(2);
-        } else {
-          str = '\n' + str.split('\n').map(function(line) {
-            return '   ' + line;
-          }).join('\n');
-        }
-      }
-    } else {
-      str = ctx.stylize('[Circular]', 'special');
-    }
-  }
-  if (isUndefined(name)) {
-    if (array && key.match(/^\d+$/)) {
-      return str;
-    }
-    name = JSON.stringify('' + key);
-    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-      name = name.substr(1, name.length - 2);
-      name = ctx.stylize(name, 'name');
-    } else {
-      name = name.replace(/'/g, "\\'")
-                 .replace(/\\"/g, '"')
-                 .replace(/(^"|"$)/g, "'");
-      name = ctx.stylize(name, 'string');
-    }
-  }
-
-  return name + ': ' + str;
-}
-
-
-function reduceToSingleString(output, base, braces) {
-  var numLinesEst = 0;
-  var length = output.reduce(function(prev, cur) {
-    numLinesEst++;
-    if (cur.indexOf('\n') >= 0) numLinesEst++;
-    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
-  }, 0);
-
-  if (length > 60) {
-    return braces[0] +
-           (base === '' ? '' : base + '\n ') +
-           ' ' +
-           output.join(',\n  ') +
-           ' ' +
-           braces[1];
-  }
-
-  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-}
-
-
-// NOTE: These type checking functions intentionally don't use `instanceof`
-// because it is fragile and can be easily faked with `Object.create()`.
-function isArray(ar) {
-  return Array.isArray(ar);
-}
-exports.isArray = isArray;
-
-function isBoolean(arg) {
-  return typeof arg === 'boolean';
-}
-exports.isBoolean = isBoolean;
-
-function isNull(arg) {
-  return arg === null;
-}
-exports.isNull = isNull;
-
-function isNullOrUndefined(arg) {
-  return arg == null;
-}
-exports.isNullOrUndefined = isNullOrUndefined;
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-exports.isNumber = isNumber;
-
-function isString(arg) {
-  return typeof arg === 'string';
-}
-exports.isString = isString;
-
-function isSymbol(arg) {
-  return typeof arg === 'symbol';
-}
-exports.isSymbol = isSymbol;
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-exports.isUndefined = isUndefined;
-
-function isRegExp(re) {
-  return isObject(re) && objectToString(re) === '[object RegExp]';
-}
-exports.isRegExp = isRegExp;
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-exports.isObject = isObject;
-
-function isDate(d) {
-  return isObject(d) && objectToString(d) === '[object Date]';
-}
-exports.isDate = isDate;
-
-function isError(e) {
-  return isObject(e) &&
-      (objectToString(e) === '[object Error]' || e instanceof Error);
-}
-exports.isError = isError;
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-exports.isFunction = isFunction;
-
-function isPrimitive(arg) {
-  return arg === null ||
-         typeof arg === 'boolean' ||
-         typeof arg === 'number' ||
-         typeof arg === 'string' ||
-         typeof arg === 'symbol' ||  // ES6 symbol
-         typeof arg === 'undefined';
-}
-exports.isPrimitive = isPrimitive;
-
-exports.isBuffer = require('./support/isBuffer');
-
-function objectToString(o) {
-  return Object.prototype.toString.call(o);
-}
-
-
-function pad(n) {
-  return n < 10 ? '0' + n.toString(10) : n.toString(10);
-}
-
-
-var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-              'Oct', 'Nov', 'Dec'];
-
-// 26 Feb 16:19:34
-function timestamp() {
-  var d = new Date();
-  var time = [pad(d.getHours()),
-              pad(d.getMinutes()),
-              pad(d.getSeconds())].join(':');
-  return [d.getDate(), months[d.getMonth()], time].join(' ');
-}
-
-
-// log is just a thin wrapper to console.log that prepends a timestamp
-exports.log = function() {
-  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
-};
-
-
-/**
- * Inherit the prototype methods from one constructor into another.
- *
- * The Function.prototype.inherits from lang.js rewritten as a standalone
- * function (not on Function.prototype). NOTE: If this file is to be loaded
- * during bootstrapping this function needs to be rewritten using some native
- * functions as prototype setup using normal JavaScript does not work as
- * expected during bootstrapping (see mirror.js in r114903).
- *
- * @param {function} ctor Constructor function which needs to inherit the
- *     prototype.
- * @param {function} superCtor Constructor function to inherit prototype from.
- */
-exports.inherits = require('inherits');
-
-exports._extend = function(origin, add) {
-  // Don't do anything if add isn't an object
-  if (!add || !isObject(add)) return origin;
-
-  var keys = Object.keys(add);
-  var i = keys.length;
-  while (i--) {
-    origin[keys[i]] = add[keys[i]];
-  }
-  return origin;
-};
-
-function hasOwnProperty(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-}
-
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":394,"_process":328,"inherits":393}],396:[function(require,module,exports){
+arguments[4][50][0].apply(exports,arguments)
+},{"dup":50}],394:[function(require,module,exports){
+arguments[4][51][0].apply(exports,arguments)
+},{"./support/isBuffer":393,"_process":326,"dup":51,"inherits":226}],395:[function(require,module,exports){
 var indexOf = function (xs, item) {
     if (xs.indexOf) return xs.indexOf(item);
     else for (var i = 0; i < xs.length; i++) {
@@ -76213,6 +72695,10 @@ forEach(Object_keys(Script.prototype), function (name) {
     };
 });
 
+exports.isContext = function (context) {
+    return context instanceof Context;
+};
+
 exports.createScript = function (code) {
     return exports.Script(code);
 };
@@ -76227,7 +72713,7 @@ exports.createContext = Script.createContext = function (context) {
     return copy;
 };
 
-},{}],397:[function(require,module,exports){
+},{}],396:[function(require,module,exports){
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -76914,7 +73400,7 @@ exports.createContext = Script.createContext = function (context) {
   }
 })();
 
-},{}],398:[function(require,module,exports){
+},{}],397:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -77213,7 +73699,7 @@ exports.timestamp = function () {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./lib/transport":399,"buffer":115,"cycle":159,"logform":262,"triple-beam":389,"util":395}],399:[function(require,module,exports){
+},{"./lib/transport":398,"buffer":112,"cycle":156,"logform":260,"triple-beam":389,"util":394}],398:[function(require,module,exports){
 /*
  * transport.js: Base Transport object for all Winston transports.
  *
@@ -77350,7 +73836,7 @@ Transport.prototype.logException = function (msg, meta, callback) {
   this.log(self.exceptionsLevel, msg, meta, function () { });
 };
 
-},{"events":203,"util":395}],400:[function(require,module,exports){
+},{"events":200,"util":394}],399:[function(require,module,exports){
 'use strict';
 
 var fs = require('fs');
@@ -77617,7 +74103,7 @@ DailyRotateFile.prototype.query = function (options, callback) {
     })(logFiles.shift());
 };
 
-},{"file-stream-rotator":206,"fs":113,"os":300,"path":319,"semver":362,"stream":382,"triple-beam":389,"util":395,"winston":405,"winston-compat":398,"winston-transport":402,"zlib":112}],401:[function(require,module,exports){
+},{"file-stream-rotator":204,"fs":110,"os":298,"path":317,"semver":360,"stream":381,"triple-beam":389,"util":394,"winston":403,"winston-compat":397,"winston-transport":401,"zlib":109}],400:[function(require,module,exports){
 'use strict';
 
 var winston = require('winston');
@@ -77626,177 +74112,11 @@ var DailyRotateFile = require('./daily-rotate-file');
 winston.transports.DailyRotateFile = DailyRotateFile;
 module.exports = DailyRotateFile;
 
-},{"./daily-rotate-file":400,"winston":405}],402:[function(require,module,exports){
-'use strict';
-
-const stream = require('stream');
-const util = require('util');
-const LEVEL = Symbol.for('level');
-
-/**
- * Constructor function for the TransportStream. This is the base prototype
- * that all `winston >= 3` transports should inherit from.
- *
- * @param  {Object} opts Options for this TransportStream instance
- *   @param {String} opts.level HIGHEST level according to RFC5424.
- *   @param {Boolean} opts.handleExceptions If true, info with { exception: true } will be written.
- *   @param {Function} opts.log Custom log function for simple Transport creation
- *   @param {Function} opts.close Called on "unpipe" from parent
- */
-var TransportStream = module.exports = function TransportStream(opts) {
-  stream.Writable.call(this, { objectMode: true });
-  opts = opts || {};
-
-  this.format = opts.format;
-  this.level = opts.level;
-  this.handleExceptions = opts.handleExceptions;
-  this.silent = opts.silent;
-
-  if (opts.log) this.log = opts.log;
-  if (opts.logv) this.logv = opts.logv;
-  if (opts.close) this.close = opts.close;
-
-  var self = this;
-
-  //
-  // Get the levels from the source we are piped from.
-  //
-  this.once('pipe', function (logger) {
-    //
-    // Remark (indexzero): this bookkeeping can only support multiple
-    // Logger parents with the same `levels`. This comes into play in
-    // the `winston.Container` code in which `container.add` takes
-    // a fully realized set of options with pre-constructed TransportStreams.
-    //
-    self.levels = logger.levels;
-    self.level = self.level || logger.level;
-    self.parent = logger;
-  });
-
-  //
-  // If and/or when the transport is removed from this instance
-  //
-  this.once('unpipe', function (src) {
-    //
-    // Remark (indexzero): this bookkeeping can only support multiple
-    // Logger parents with the same `levels`. This comes into play in
-    // the `winston.Container` code in which `container.add` takes
-    // a fully realized set of options with pre-constructed TransportStreams.
-    //
-    if (src === self.parent) {
-      this.parent = null;
-      if (self.close) {
-        self.close();
-      }
-    }
-  });
-};
-
-util.inherits(TransportStream, stream.Writable);
-
-/*
- * @private function _write(info)
- * Writes the info object to our transport instance.
- */
-TransportStream.prototype._write = function (info, enc, callback) {
-  if (this.silent || (info.exception === true && !this.handleExceptions)) {
-    return callback(null);
-  }
-
-  //
-  // Remark: This has to be handled in the base transport now because we cannot
-  // conditionally write to our pipe targets as stream.
-  //
-  if (!this.level || this.levels[this.level] >= this.levels[info[LEVEL]]) {
-    if (this.format) {
-      return this.log(
-        this.format.transform(Object.assign({}, info), this.format.options),
-        callback
-      );
-    }
-
-    return this.log(info, callback);
-  }
-
-  return callback(null);
-};
-
-/*
- * @private function _writev(chunks, callback)
- * Writes the batch of info objects (i.e. "object chunks") to our transport instance
- * after performing any necessary filtering.
- */
-TransportStream.prototype._writev = function (chunks, callback) {
-  if (this.logv) {
-    const infos = chunks.filter(this._accept, this);
-    if (!infos.length) {
-      return callback(null);
-    }
-
-    // Remark (indexzero): from a performance perspective if Transport
-    // implementers do choose to implement logv should we make it their
-    // responsibility to invoke their format?
-    return this.logv(infos, callback);
-  }
-
-  for (var i = 0; i < chunks.length; i++) {
-    if (this._accept(chunks[i])) {
-      if (this.format) {
-        this.log(
-          this.format.transform(Object.assign({}, chunks[i].chunk), this.format.options),
-          chunks[i].callback
-        );
-      } else {
-        this.log(chunks[i].chunk, chunks[i].callback);
-      }
-    }
-  }
-
-  return callback(null);
-};
-
-/**
- * Predicate function that returns true if the specfied `info` on the WriteReq, `write`, should
- * be passed down into the derived TransportStream's I/O via `.log(info, callback)`.
- * @param   {WriteReq} write winston@3 Node.js WriteReq for the `info` object representing the log message.
- * @returns {Boolean} Value indicating if the `write` should be accepted & logged.
- */
-TransportStream.prototype._accept = function (write) {
-  const info = write.chunk;
-  if (this.silent) {
-    return false;
-  }
-
-  //
-  // Immediately check the average case: log level filtering.
-  //
-  if (info.exception === true || !this.level || this.levels[this.level] >= this.levels[info[LEVEL]]) {
-    //
-    // Ensure the info object is valid based on `{ exception }`:
-    // 1. { handleExceptions: true }: all `info` objects are valid
-    // 2. { exception: false }: accepted by all transports.
-    //
-    if (this.handleExceptions || info.exception !== true) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-/**
- * _nop is short for "No operation"
- * @return {Boolean} Intentionally false.
- */
-TransportStream.prototype._nop = function () {
-  return void undefined;
-};
-
-},{"stream":382,"util":395}],403:[function(require,module,exports){
+},{"./daily-rotate-file":399,"winston":403}],401:[function(require,module,exports){
 'use strict';
 
 const util = require('util');
-const { Writable } = require('stream');
+const Writable = require('readable-stream/writable');
 const { LEVEL } = require('triple-beam');
 
 /**
@@ -77818,15 +74138,9 @@ const TransportStream = module.exports = function TransportStream(options = {}) 
   this.handleExceptions = options.handleExceptions;
   this.silent = options.silent;
 
-  if (options.log) {
-    this.log = options.log;
-  }
-  if (options.logv) {
-    this.logv = options.logv;
-  }
-  if (options.close) {
-    this.close = options.close;
-  }
+  if (options.log) this.log = options.log;
+  if (options.logv) this.logv = options.logv;
+  if (options.close) this.close = options.close;
 
   // Get the levels from the source we are piped from.
   this.once('pipe', logger => {
@@ -77835,7 +74149,6 @@ const TransportStream = module.exports = function TransportStream(options = {}) 
     // the `winston.Container` code in which `container.add` takes
     // a fully realized set of options with pre-constructed TransportStreams.
     this.levels = logger.levels;
-    this.level = this.level || logger.level;
     this.parent = logger;
   });
 
@@ -77873,15 +74186,35 @@ TransportStream.prototype._write = function _write(info, enc, callback) {
   }
 
   // Remark: This has to be handled in the base transport now because we
-  // cannot conditionally write to our pipe targets as stream.
-  if (!this.level || this.levels[this.level] >= this.levels[info[LEVEL]]) {
-    info = this.format
-      ? this.format.transform(Object.assign({}, info), this.format.options)
-      : info;
+  // cannot conditionally write to our pipe targets as stream. We always
+  // prefer any explicit level set on the Transport itself falling back to
+  // any level set on the parent.
+  const level = this.level || (this.parent && this.parent.level);
 
-    if (info) {
+  if (!level || this.levels[level] >= this.levels[info[LEVEL]]) {
+    if (info && !this.format) {
       return this.log(info, callback);
     }
+
+    let errState;
+    let transformed;
+
+    // We trap(and re-throw) any errors generated by the user-provided format, but also
+    // guarantee that the streams callback is invoked so that we can continue flowing.
+    try {
+      transformed = this.format.transform(Object.assign({}, info), this.format.options);
+    } catch (err) {
+      errState = err;
+    }
+
+    if (errState || !transformed) {
+      // eslint-disable-next-line callback-return
+      callback();
+      if (errState) throw errState;
+      return;
+    }
+
+    return this.log(transformed, callback);
   }
 
   return callback(null);
@@ -77909,17 +74242,37 @@ TransportStream.prototype._writev = function _writev(chunks, callback) {
   }
 
   for (let i = 0; i < chunks.length; i++) {
-    if (this._accept(chunks[i])) {
-      const info = this.format
-        ? this.format.transform(
-          Object.assign({}, chunks[i].chunk),
-          this.format.options
-        )
-        : chunks[i].chunk;
+    if (!this._accept(chunks[i])) continue;
 
-      if (info) {
-        this.log(info, chunks[i].callback);
+    if (chunks[i].chunk && !this.format) {
+      this.log(chunks[i].chunk, chunks[i].callback);
+      continue;
+    }
+
+    let errState;
+    let transformed;
+
+    // We trap(and re-throw) any errors generated by the user-provided format, but also
+    // guarantee that the streams callback is invoked so that we can continue flowing.
+    try {
+      transformed = this.format.transform(
+        Object.assign({}, chunks[i].chunk),
+        this.format.options
+      );
+    } catch (err) {
+      errState = err;
+    }
+
+    if (errState || !transformed) {
+      // eslint-disable-next-line callback-return
+      chunks[i].callback();
+      if (errState) {
+        // eslint-disable-next-line callback-return
+        callback(null);
+        throw errState;
       }
+    } else {
+      this.log(transformed, chunks[i].callback);
     }
   }
 
@@ -77941,11 +74294,15 @@ TransportStream.prototype._accept = function _accept(write) {
     return false;
   }
 
+  // We always prefer any explicit level set on the Transport itself
+  // falling back to any level set on the parent.
+  const level = this.level || (this.parent && this.parent.level);
+
   // Immediately check the average case: log level filtering.
   if (
     info.exception === true ||
-    !this.level ||
-    this.levels[this.level] >= this.levels[info[LEVEL]]
+    !level ||
+    this.levels[level] >= this.levels[info[LEVEL]]
   ) {
     // Ensure the info object is valid based on `{ exception }`:
     // 1. { handleExceptions: true }: all `info` objects are valid
@@ -77967,7 +74324,7 @@ TransportStream.prototype._nop = function _nop() {
   return void undefined;
 };
 
-},{"stream":382,"triple-beam":389,"util":395}],404:[function(require,module,exports){
+},{"readable-stream/writable":351,"triple-beam":389,"util":394}],402:[function(require,module,exports){
 'use strict';
 
 const util = require('util');
@@ -78088,7 +74445,7 @@ LegacyTransportStream.prototype.close = function close() {
   }
 };
 
-},{"./":403,"triple-beam":389,"util":395}],405:[function(require,module,exports){
+},{"./":401,"triple-beam":389,"util":394}],403:[function(require,module,exports){
 /**
  * winston.js: Top-level include defining Winston.
  *
@@ -78223,7 +74580,6 @@ Object.defineProperty(winston, 'exceptions', {
  * @type {Logger}
  */
 [
-  'paddings',
   'exitOnError'
 ].forEach(prop => {
   Object.defineProperty(winston, prop, {
@@ -78270,7 +74626,7 @@ warn.forProperties(winston, 'deprecated', [
 // Throw a useful error when users attempt to run `new winston.Logger`.
 warn.moved(winston, 'createLogger', 'Logger');
 
-},{"../package.json":420,"./winston/common":406,"./winston/config":407,"./winston/container":408,"./winston/create-logger":409,"./winston/exception-handler":410,"./winston/transports":418,"logform":262,"winston-transport":403}],406:[function(require,module,exports){
+},{"../package.json":418,"./winston/common":404,"./winston/config":405,"./winston/container":406,"./winston/create-logger":407,"./winston/exception-handler":408,"./winston/transports":416,"logform":260,"winston-transport":401}],404:[function(require,module,exports){
 /**
  * common.js: Internal helper and utility functions for winston.
  *
@@ -78281,20 +74637,6 @@ warn.moved(winston, 'createLogger', 'Logger');
 'use strict';
 
 const { format } = require('util');
-
-/**
- * Captures the number of format (i.e. %s strings) in a given string.
- * Based on `util.format`, see Node.js source:
- * https://github.com/nodejs/node/blob/b1c8f15c5f169e021f7c46eb7b219de95fe97603/lib/util.js#L201-L230
- * @type {RegExp}
- */
-exports.formatRegExp = /%[sdjifoO%]/g;
-
-/**
- * Captures the number of escaped % signs in a format string (i.e. %s strings).
- * @type {RegExp}
- */
-exports.escapedPercent = /%%/g;
 
 /**
  * Set of simple deprecation notices and a way to expose them for a set of
@@ -78347,7 +74689,7 @@ exports.warn = {
   }
 };
 
-},{"util":395}],407:[function(require,module,exports){
+},{"util":394}],405:[function(require,module,exports){
 /**
  * index.js: Default settings for all levels that winston knows about.
  *
@@ -78384,7 +74726,7 @@ exports.syslog = logform.levels(configs.syslog);
  */
 exports.addColors = logform.levels;
 
-},{"logform":262,"triple-beam":389}],408:[function(require,module,exports){
+},{"logform":260,"triple-beam":389}],406:[function(require,module,exports){
 /**
  * container.js: Inversion of control container for winston logger instances.
  *
@@ -78500,7 +74842,7 @@ module.exports = class Container {
   }
 };
 
-},{"./create-logger":409}],409:[function(require,module,exports){
+},{"./create-logger":407}],407:[function(require,module,exports){
 /**
  * create-logger.js: Logger factory for winston logger instances.
  *
@@ -78578,7 +74920,7 @@ module.exports = (opts = { levels: config.npm.levels }) => (
   new DerivedLogger(opts)
 );
 
-},{"./config":407,"./logger":412,"diagnostics":168,"triple-beam":389}],410:[function(require,module,exports){
+},{"./config":405,"./logger":410,"diagnostics":165,"triple-beam":389}],408:[function(require,module,exports){
 (function (process){
 /**
  * exception-handler.js: Object for handling uncaughtException events.
@@ -78828,7 +75170,7 @@ module.exports = class ExceptionHandler {
 };
 
 }).call(this,require('_process'))
-},{"./exception-stream":411,"_process":328,"async/forEach":59,"diagnostics":168,"one-time":299,"os":300,"stack-trace":381}],411:[function(require,module,exports){
+},{"./exception-stream":409,"_process":326,"async/forEach":56,"diagnostics":165,"one-time":297,"os":298,"stack-trace":380}],409:[function(require,module,exports){
 /**
  * exception-stream.js: TODO: add file header handler.
  *
@@ -78838,7 +75180,7 @@ module.exports = class ExceptionHandler {
 
 'use strict';
 
-const { Writable } = require('stream');
+const Writable = require('readable-stream/writable');
 
 /**
  * TODO: add class description.
@@ -78853,9 +75195,7 @@ module.exports = class ExceptionStream extends Writable {
    * @param {!TransportStream} transport - Stream to filter to exceptions
    */
   constructor(transport) {
-    super({
-      objectMode: true
-    });
+    super({ objectMode: true });
 
     if (!transport) {
       throw new Error('ExceptionStream requires a TransportStream instance.');
@@ -78886,7 +75226,8 @@ module.exports = class ExceptionStream extends Writable {
   }
 };
 
-},{"stream":382}],412:[function(require,module,exports){
+},{"readable-stream/writable":351}],410:[function(require,module,exports){
+(function (setImmediate){
 /**
  * logger.js: TODO: add file header description.
  *
@@ -78896,14 +75237,14 @@ module.exports = class ExceptionStream extends Writable {
 
 'use strict';
 
-const stream = require('stream');
+const stream = require('readable-stream');
 const asyncForEach = require('async/forEach');
-const { LEVEL } = require('triple-beam');
+const { LEVEL, SPLAT } = require('triple-beam');
 const isStream = require('is-stream');
 const ExceptionHandler = require('./exception-handler');
 const LegacyTransportStream = require('winston-transport/legacy');
 const Profiler = require('./profiler');
-const { clone, escapedPercent, formatRegExp, warn } = require('./common');
+const { clone, warn } = require('./common');
 const config = require('./config');
 
 /**
@@ -78955,20 +75296,8 @@ class Logger extends stream.Transform {
     this.silent = silent;
     this.format = format || this.format || require('logform/json')();
 
-    levels = levels || this.levels || config.npm.levels;
-    const maxLength = Math.max(...Object.keys(levels).map(lev => lev.length));
-
-    this.paddings = Object.keys(levels).reduce((acc, lev) => {
-      const pad = lev.length !== maxLength
-        ? new Array(maxLength - lev.length + 1).join(' ')
-        : '';
-
-      acc[lev] = pad;
-      return acc;
-    }, {});
-
     // Hoist other options onto this instance.
-    this.levels = levels;
+    this.levels = levels || this.levels || config.npm.levels;
     this.level = level;
     this.exceptions = new ExceptionHandler(this);
     this.profilers = {};
@@ -78996,15 +75325,16 @@ class Logger extends stream.Transform {
     }
   }
 
+  /* eslint-disable valid-jsdoc */
   /**
    * Ensure backwards compatibility with a `log` method
-   * @param {mixed} level - TODO: add param description.
+   * @param {mixed} level - Level the log message is written at.
    * @param {mixed} msg - TODO: add param description.
    * @param {mixed} meta - TODO: add param description.
    * @returns {Logger} - TODO: add return description.
    *
    * @example
-   *    // Supports the existing API, which is now DEPRECATED:
+   *    // Supports the existing API:
    *    logger.log('info', 'Hello world', { custom: true });
    *    logger.log('info', new Error('Yo, it\'s on fire'));
    *    logger.log('info', '%s %d%%', 'A string', 50, { thisIsMeta: true });
@@ -79015,15 +75345,15 @@ class Logger extends stream.Transform {
    *    logger.log({
    *      level: 'info',
    *      message: '%s %d%%',
-   *      splat: ['A string', 50],
+   *      [SPLAT]: ['A string', 50],
    *      meta: { thisIsMeta: true }
    *    });
+   *
    */
-  // log(level, msg, meta) {
-  log(...args) {
-    const [level, msg, meta] = args;
+  /* eslint-enable valid-jsdoc */
+  log(level, msg, ...splat) { // eslint-disable-line max-params
     // Optimize for the hotpath of logging JSON literals
-    if (args.length === 1) {
+    if (arguments.length === 1) {
       // Yo dawg, I heard you like levels ... seriously ...
       // In this context the LHS `level` here is actually the `info` so read
       // this as: info[LEVEL] = info.level;
@@ -79033,7 +75363,7 @@ class Logger extends stream.Transform {
     }
 
     // Slightly less hotpath, but worth optimizing for.
-    if (args.length === 2) {
+    if (arguments.length === 2) {
       if (msg && typeof msg === 'object') {
         msg[LEVEL] = msg.level = level;
         this.write(msg);
@@ -79044,25 +75374,23 @@ class Logger extends stream.Transform {
       return this;
     }
 
-    // Separation of the splat from { level, message, meta } must be done at
-    // this point in the objectMode stream since we only ever write a single
-    // object.
-    const tokens = msg && msg.match && msg.match(formatRegExp);
-    if (tokens) {
-      this._splat({
+    const [meta] = splat;
+    if (typeof meta === 'object' && meta !== null) {
+      this.write(Object.assign({}, meta, {
         [LEVEL]: level,
+        [SPLAT]: splat.slice(0),
         level,
         message: msg
-      }, tokens, args.slice(2));
-      return this;
+      }));
+    } else {
+      this.write(Object.assign({}, {
+        [LEVEL]: level,
+        [SPLAT]: splat,
+        level,
+        message: msg
+      }));
     }
 
-    const info = Object.assign({}, meta, {
-      [LEVEL]: level,
-      level,
-      message: msg
-    });
-    this.write(info);
     return this;
   }
 
@@ -79070,7 +75398,7 @@ class Logger extends stream.Transform {
    * Pushes data so that it can be picked up by all of our pipe targets.
    * @param {mixed} info - TODO: add param description.
    * @param {mixed} enc - TODO: add param description.
-   * @param {mixed} callback - TODO: add param description.
+   * @param {mixed} callback - Continues stream processing.
    * @returns {undefined}
    * @private
    */
@@ -79105,52 +75433,31 @@ class Logger extends stream.Transform {
     }
 
     // Here we write to the `format` pipe-chain, which on `readable` above will
-    // push the formatted `info` Object onto the buffer for this instance.
-    this.push(this.format.transform(info, this.format.options));
-    callback();
+    // push the formatted `info` Object onto the buffer for this instance. We trap
+    // (and re-throw) any errors generated by the user-provided format, but also
+    // guarantee that the streams callback is invoked so that we can continue flowing.
+    try {
+      this.push(this.format.transform(info, this.format.options));
+    } catch (ex) {
+      throw ex;
+    } finally {
+      // eslint-disable-next-line callback-return
+      callback();
+    }
   }
 
   /**
-   * Check to see if tokens <= splat.length, assign { splat, meta } into the
-   * `info` accordingly, and write to this instance.
-   * @param {mixed} info - TODO: add param description.
-   * @param {mixed} tokens - TODO: add param description.
-   * @param {mixed} splat - TODO: add param description.
-   * @returns {undefined}
-   * @private
+   * Delays the 'finish' event until all transport pipe targets have
+   * also emitted 'finish' or are already finished.
+   * @param {mixed} callback - Continues stream processing.
    */
-  _splat(info, tokens, splat) {
-    const percents = info.message.match(escapedPercent);
-    const escapes = percents && percents.length || 0;
-
-    // The expected splat is the number of tokens minus the number of escapes
-    // e.g.
-    // - { expectedSplat: 3 } '%d %s %j'
-    // - { expectedSplat: 5 } '[%s] %d%% %d%% %s %j'
-    //
-    // Any "meta" will be arugments in addition to the expected splat size
-    // regardless of type. e.g.
-    //
-    // logger.log('info', '%d%% %s %j', 100, 'wow', { such: 'js' }, { thisIsMeta: true });
-    // would result in splat of four (4), but only three (3) are expected. Therefore:
-    //
-    // extraSplat = 3 - 4 = -1
-    // metas = [100, 'wow', { such: 'js' }, { thisIsMeta: true }].splice(-1, -1 * -1);
-    // splat = [100, 'wow', { such: 'js' }]
-    const expectedSplat = tokens.length - escapes;
-    const extraSplat = expectedSplat - splat.length;
-    const metas = extraSplat < 0
-      ? splat.splice(extraSplat, -1 * extraSplat)
-      : [];
-
-    // Now that { splat } has been separated from any potential { meta }. we
-    // can assign this to the `info` object and write it to our format stream.
-    info.splat = splat;
-    if (metas.length) {
-      info.meta = metas[0];
-    }
-
-    this.write(info);
+  _final(callback) {
+    const transports = this.transports.slice();
+    asyncForEach(transports, (transport, next) => {
+      if (!transport || transport.finished) return setImmediate(next);
+      transport.once('finish', next);
+      transport.end();
+    }, callback);
   }
 
   /**
@@ -79159,10 +75466,12 @@ class Logger extends stream.Transform {
    * @returns {Logger} - TODO: add return description.
    */
   add(transport) {
-    // Support backwards compatibility with all existing `winston@1.x.x`
-    // transport. All NEW transports should inherit from
-    // `winston.TransportStream`.
-    const target = !isStream(transport)
+    // Support backwards compatibility with all existing `winston < 3.x.x`
+    // transports which meet one of two criteria:
+    // 1. They inherit from winston.Transport in  < 3.x.x which is NOT a stream.
+    // 2. They expose a log method which has a length greater than 2 (i.e. more then
+    //    just `log(info, callback)`.
+    const target = !isStream(transport) || transport.log.length > 2
       ? new LegacyTransportStream({ transport })
       : transport;
 
@@ -79188,7 +75497,7 @@ class Logger extends stream.Transform {
    */
   remove(transport) {
     let target = transport;
-    if (!isStream(transport)) {
+    if (!isStream(transport) || transport.log.length > 2) {
       target = this.transports
         .filter(match => match.transport === transport)[0];
     }
@@ -79447,7 +75756,8 @@ Object.defineProperty(Logger.prototype, 'transports', {
 
 module.exports = Logger;
 
-},{"./common":406,"./config":407,"./exception-handler":410,"./profiler":413,"async/forEach":59,"is-stream":230,"logform/json":267,"stream":382,"triple-beam":389,"winston-transport/legacy":404}],413:[function(require,module,exports){
+}).call(this,require("timers").setImmediate)
+},{"./common":404,"./config":405,"./exception-handler":408,"./profiler":411,"async/forEach":56,"is-stream":228,"logform/json":265,"readable-stream":349,"timers":383,"triple-beam":389,"winston-transport/legacy":402}],411:[function(require,module,exports){
 /**
  * profiler.js: TODO: add file header description.
  *
@@ -79500,7 +75810,7 @@ module.exports = class Profiler {
   }
 };
 
-},{}],414:[function(require,module,exports){
+},{}],412:[function(require,module,exports){
 (function (Buffer){
 /**
  * tail-file.js: TODO: add file header description.
@@ -79513,7 +75823,7 @@ module.exports = class Profiler {
 
 const fs = require('fs');
 const { StringDecoder } = require('string_decoder');
-const { Stream } = require('stream');
+const { Stream } = require('readable-stream');
 
 /**
  * Simple no-op function.
@@ -79628,7 +75938,8 @@ module.exports = (options, iter) => {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":115,"fs":113,"stream":382,"string_decoder":383}],415:[function(require,module,exports){
+},{"buffer":112,"fs":110,"readable-stream":349,"string_decoder":382}],413:[function(require,module,exports){
+(function (setImmediate){
 /* eslint-disable no-console */
 /*
  * console.js: Transport for outputting to the console.
@@ -79659,10 +75970,7 @@ module.exports = class Console extends TransportStream {
 
     // Expose the name of this Transport on the prototype
     this.name = 'console';
-    this.stderrLevels = this._getStderrLevels(
-      options.stderrLevels,
-      options.debugStdout
-    );
+    this.stderrLevels = this._stringArrayToSet(options.stderrLevels);
     this.eol = options.eol || os.EOL;
   }
 
@@ -79705,37 +76013,6 @@ module.exports = class Console extends TransportStream {
   }
 
   /**
-   * Convert stderrLevels into an Object for faster key-lookup times than an
-   * Array. For backwards compatibility, stderrLevels defaults to
-   * ['error', 'debug'] or ['error'] depending on whether options.debugStdout
-   * is true.
-   * @param {mixed} levels - TODO: add param description.
-   * @param {mixed} debugStdout - TODO: add param description.
-   * @returns {mixed} - TODO: add return description.
-   * @private
-   */
-  _getStderrLevels(levels, debugStdout) {
-    const defaultMsg = 'Cannot have non-string elements in stderrLevels Array';
-    if (debugStdout) {
-      if (levels) {
-        // Don't allow setting both debugStdout and stderrLevels together,
-        // since this could cause behaviour a programmer might not expect.
-        throw new Error('Cannot set debugStdout and stderrLevels together');
-      }
-
-      return this._stringArrayToSet(['error'], defaultMsg);
-    }
-
-    if (!levels) {
-      return this._stringArrayToSet(['error', 'debug'], defaultMsg);
-    } else if (!(Array.isArray(levels))) {
-      throw new Error('Cannot set stderrLevels to type other than Array');
-    }
-
-    return this._stringArrayToSet(levels, defaultMsg);
-  }
-
-  /**
    * Returns a Set-like object with strArray's elements as keys (each with the
    * value true).
    * @param {Array} strArray - Array of Set-elements as strings.
@@ -79744,7 +76021,14 @@ module.exports = class Console extends TransportStream {
    * @private
    */
   _stringArrayToSet(strArray, errMsg) {
-    errMsg = errMsg || 'Cannot make set from Array with non-string elements';
+    if (!strArray)
+      return {};
+
+    errMsg = errMsg || 'Cannot make set from type other than Array of string elements';
+
+    if (!Array.isArray(strArray)) {
+      throw new Error(errMsg);
+    }
 
     return strArray.reduce((set, el) =>  {
       if (typeof el !== 'string') {
@@ -79757,8 +76041,9 @@ module.exports = class Console extends TransportStream {
   }
 };
 
-},{"os":300,"triple-beam":389,"winston-transport":403}],416:[function(require,module,exports){
-(function (Buffer){
+}).call(this,require("timers").setImmediate)
+},{"os":298,"timers":383,"triple-beam":389,"winston-transport":401}],414:[function(require,module,exports){
+(function (Buffer,setImmediate){
 /**
  * file.js: Transport for outputting to a local log file.
  *
@@ -79773,7 +76058,7 @@ const path = require('path');
 const asyncSeries = require('async/series');
 const zlib = require('zlib');
 const { MESSAGE } = require('triple-beam');
-const { Stream, PassThrough } = require('stream');
+const { Stream, PassThrough } = require('readable-stream');
 const TransportStream = require('winston-transport');
 const debug = require('diagnostics')('winston:file');
 const os = require('os');
@@ -79808,6 +76093,7 @@ module.exports = class File extends TransportStream {
 
     // Setup the base stream that always gets piped to to handle buffering.
     this._stream = new PassThrough();
+    this._stream.setMaxListeners(30);
 
     // Bind this context for listener methods.
     this._onError = this._onError.bind(this);
@@ -80251,6 +76537,7 @@ module.exports = class File extends TransportStream {
         // and cleanup the previous source and dest once the source has drained.
         if (this.rotatedWhileOpening) {
           this._stream = new PassThrough();
+          this._stream.setMaxListeners(30);
           this._rotateFile();
           this.rotatedWhileOpening = false;
           this._cleanupStream(dest);
@@ -80381,9 +76668,9 @@ module.exports = class File extends TransportStream {
   }
 };
 
-}).call(this,require("buffer").Buffer)
-},{"../tail-file":414,"async/series":73,"buffer":115,"diagnostics":168,"fs":113,"os":300,"path":319,"stream":382,"triple-beam":389,"winston-transport":403,"zlib":112}],417:[function(require,module,exports){
-(function (Buffer){
+}).call(this,require("buffer").Buffer,require("timers").setImmediate)
+},{"../tail-file":412,"async/series":70,"buffer":112,"diagnostics":165,"fs":110,"os":298,"path":317,"readable-stream":349,"timers":383,"triple-beam":389,"winston-transport":401,"zlib":109}],415:[function(require,module,exports){
+(function (Buffer,setImmediate){
 /**
  * http.js: Transport for outputting to a json-rpcserver.
  *
@@ -80395,7 +76682,7 @@ module.exports = class File extends TransportStream {
 
 const http = require('http');
 const https = require('https');
-const { Stream } = require('stream');
+const { Stream } = require('readable-stream');
 const TransportStream = require('winston-transport');
 
 /**
@@ -80581,8 +76868,8 @@ module.exports = class Http extends TransportStream {
   }
 };
 
-}).call(this,require("buffer").Buffer)
-},{"buffer":115,"http":113,"https":225,"stream":382,"winston-transport":403}],418:[function(require,module,exports){
+}).call(this,require("buffer").Buffer,require("timers").setImmediate)
+},{"buffer":112,"http":110,"https":223,"readable-stream":349,"timers":383,"winston-transport":401}],416:[function(require,module,exports){
 /**
  * transports.js: Set of all transports Winston knows about.
  *
@@ -80640,7 +76927,8 @@ Object.defineProperty(exports, 'Stream', {
   }
 });
 
-},{"./console":415,"./file":416,"./http":417,"./stream":419}],419:[function(require,module,exports){
+},{"./console":413,"./file":414,"./http":415,"./stream":417}],417:[function(require,module,exports){
+(function (setImmediate){
 /**
  * stream.js: Transport for outputting to any arbitrary stream.
  *
@@ -80705,31 +76993,37 @@ module.exports = class Stream extends TransportStream {
   }
 };
 
-},{"is-stream":230,"os":300,"triple-beam":389,"winston-transport":403}],420:[function(require,module,exports){
+}).call(this,require("timers").setImmediate)
+},{"is-stream":228,"os":298,"timers":383,"triple-beam":389,"winston-transport":401}],418:[function(require,module,exports){
 module.exports={
-  "_from": "winston@^3.0.0-rc6",
-  "_id": "winston@3.0.0-rc6",
+  "_args": [
+    [
+      "winston@3.0.0",
+      "/Users/admin/Programming/newsaito"
+    ]
+  ],
+  "_from": "winston@3.0.0",
+  "_id": "winston@3.0.0",
   "_inBundle": false,
-  "_integrity": "sha512-4QwLccPbU/aJMA+j6uYTQ8TobwLKPWhpceJZwz1lkQ+wYv7bxGyAHIdbfEOrxsKHD8zRCcgCXPbbpV3BDRD1rw==",
+  "_integrity": "sha512-7QyfOo1PM5zGL6qma6NIeQQMh71FBg/8fhkSAePqtf5YEi6t+UrPDcUuHhuuUasgso49ccvMEsmqr0GBG2qaMQ==",
   "_location": "/winston",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "version",
     "registry": true,
-    "raw": "winston@^3.0.0-rc6",
+    "raw": "winston@3.0.0",
     "name": "winston",
     "escapedName": "winston",
-    "rawSpec": "^3.0.0-rc6",
+    "rawSpec": "3.0.0",
     "saveSpec": null,
-    "fetchSpec": "^3.0.0-rc6"
+    "fetchSpec": "3.0.0"
   },
   "_requiredBy": [
     "/"
   ],
-  "_resolved": "https://registry.npmjs.org/winston/-/winston-3.0.0-rc6.tgz",
-  "_shasum": "f6a0417be6cc2fe5c9a64fbb698e8da674cdf26a",
-  "_spec": "winston@^3.0.0-rc6",
-  "_where": "/Users/admin/Programming/saito",
+  "_resolved": "https://registry.npmjs.org/winston/-/winston-3.0.0.tgz",
+  "_spec": "3.0.0",
+  "_where": "/Users/admin/Programming/newsaito",
   "author": {
     "name": "Charlie Robbins",
     "email": "charlie.robbins@gmail.com"
@@ -80737,19 +77031,18 @@ module.exports={
   "bugs": {
     "url": "https://github.com/winstonjs/winston/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {
     "async": "^2.6.0",
     "diagnostics": "^1.0.1",
     "is-stream": "^1.1.0",
-    "logform": "^1.7.0",
+    "logform": "^1.9.0",
     "one-time": "0.0.4",
+    "readable-stream": "^2.3.6",
     "stack-trace": "0.0.x",
     "triple-beam": "^1.3.0",
-    "winston-transport": "^4.0.0"
+    "winston-transport": "^4.2.0"
   },
-  "deprecated": false,
-  "description": "A multi-transport async logging library for Node.js",
+  "description": "A logger for just about everything.",
   "devDependencies": {
     "@types/node": "^9.6.6",
     "abstract-winston-transport": ">= 0.5.1",
@@ -80772,9 +77065,16 @@ module.exports={
   "homepage": "https://github.com/winstonjs/winston#readme",
   "keywords": [
     "winston",
+    "logger",
     "logging",
+    "logs",
     "sysadmin",
-    "tools"
+    "bunyan",
+    "pino",
+    "loglevel",
+    "tools",
+    "json",
+    "stream"
   ],
   "license": "MIT",
   "main": "./lib/winston",
@@ -80784,8 +77084,12 @@ module.exports={
       "email": "jcrugzz@gmail.com"
     },
     {
-      "name": "Alberto Pose",
-      "email": "albertopose@gmail.com"
+      "name": "Chris Alderson",
+      "email": "chrisalderson@protonmail.com"
+    },
+    {
+      "name": "David Hyde",
+      "email": "dabh@stanford.edu"
     }
   ],
   "name": "winston",
@@ -80799,10 +77103,10 @@ module.exports={
     "test": "nyc --reporter=text --reporter lcov npm run test:mocha",
     "test:mocha": "mocha test/*.test.js test/**/*.test.js"
   },
-  "version": "3.0.0-rc6"
+  "version": "3.0.0"
 }
 
-},{}],421:[function(require,module,exports){
+},{}],419:[function(require,module,exports){
 'use strict';
 
 var alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'.split('')
