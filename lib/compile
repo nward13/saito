@@ -40,7 +40,7 @@ if [ "$1" == "nuke" ]; then
 #  cp -rfp data/fork1/* data/blocks/
   cp options.conf options
 
-  if [ ! -f options.server ]; then
+  if [ -f options.server ]; then
     cp options.server options
   fi
 
