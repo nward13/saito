@@ -17,6 +17,7 @@ lib/saito/web/browser.js
 lib/data/database.sq3
 lib/data/database.sq3-journal
 lib/saito/web/browser.js
+lib/saito/web/client.options
 lib/modules/mods/appstore/saitolib/*
 lib/modules/mods/advert/web/cache/*.png
 lib/modules/mods/appstore/web/cache/*
