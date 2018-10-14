@@ -9183,6 +9183,7 @@ Peer.prototype.sendHandshake = function sendHandshake() {
   request.data                          = {};
   request.data.host                     = "";
   request.data.port                     = "";
+  request.data.protocol                 = "";
   request.data.publickey                = this.app.wallet.returnPublicKey();
   this.challenge_local                  = (new Date().getTime());
   request.data.challenge                = this.challenge_local;
