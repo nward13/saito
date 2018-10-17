@@ -1,5 +1,5 @@
 
-We are still sorting out the details of our licensing terms.
+We are still sorting out the details of our licensing terms - it is currently not open source as it is not free to redistribute.
 
 Saito will be released under the GPL in the near future, most likely version 3.
 
