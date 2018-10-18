@@ -190,9 +190,12 @@ Settings.prototype.attachSettingsEvents = function attachSettingsEvents(app) {
   $('.save_wallet').on('click', function() {
     content    = JSON.stringify(module_self.app.options);
     var pom = document.createElement('a');
-        pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-        pom.setAttribute('download', "saito.wallet.json");
-        pom.click();
+    pom.setAttribute('type', "hidden");
+    pom.setAttribute('href', 'data:application/json;utf-8,' + encodeURIComponent(content));
+    pom.setAttribute('download', "saito.wallet.json");
+    document.body.appendChild(pom);
+    pom.click();
+    pom.remove();
   });
 
 
@@ -228,16 +231,17 @@ Settings.prototype.attachSettingsEvents = function attachSettingsEvents(app) {
         pom.click();
   });
 
-
   $('.reset_button').off();
   $('.reset_button').on('click', function() {
-    module_self.app.archives.resetArchives();
-    module_self.app.storage.resetOptions();
-    module_self.app.storage.saveOptions();
-    alert("Your account has been reset");
-    location.reload();
+    let reset_confirm = confirm("Are you sure you want to reset your wallet? You cannot retrieve your keys once you delete them")
+    if (reset_confirm) {
+      module_self.app.archives.resetArchives();
+      module_self.app.storage.resetOptions();
+      module_self.app.storage.saveOptions();
+      alert("Your account has been reset");
+      location.reload();
+    }
   });
-
 
   if (module_self.app.dns.dns.domains.length == 0) {
     $('.dns_info').hide();
