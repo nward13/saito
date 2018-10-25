@@ -1,0 +1,21 @@
+{
+    "ts": 1539247437431,
+    "prevhash": "2e808e5f2ed5347b4ac8eb1de046be43ef23580657c654e13f63eb1244680040",
+    "merkle": "9b4acaa74095060eb89968e946ca90a7c813aa47c31dc6942a200e4c02e205f6",
+    "creator": "gtmFJWVxynqcXCqC148FRfCTQbzEpKQVW51Hdi1SRWc5",
+    "id": 7,
+    "txsjson": [
+        "{\"transaction\":{\"id\":10,\"from\":[{\"add\":\"gtmFJWVxynqcXCqC148FRfCTQbzEpKQVW51Hdi1SRWc5\",\"amt\":\"248003.57064122\",\"type\":1,\"bid\":4,\"tid\":4,\"sid\":1,\"bhash\":\"c72adbf3549912c3f37a38a353b472476b63144876ea84dc1be9eb2173e6fb09\",\"lc\":1,\"rn\":87}],\"to\":[{\"add\":\"gtmFJWVxynqcXCqC148FRfCTQbzEpKQVW51Hdi1SRWc5\",\"amt\":\"247966.66717856\",\"type\":1,\"bid\":0,\"tid\":0,\"sid\":0,\"bhash\":\"\",\"lc\":1,\"rn\":74},{\"add\":\"gtmFJWVxynqcXCqC148FRfCTQbzEpKQVW51Hdi1SRWc5\",\"amt\":\"247966.66717856\",\"type\":1,\"bid\":0,\"tid\":0,\"sid\":1,\"bhash\":\"\",\"lc\":1,\"rn\":46},{\"add\":\"gtmFJWVxynqcXCqC148FRfCTQbzEpKQVW51Hdi1SRWc5\",\"amt\":\"248003.57054122\",\"type\":0,\"bid\":0,\"tid\":0,\"sid\":2,\"bhash\":\"\",\"lc\":1,\"rn\":15}],\"ts\":1539247429900,\"sig\":\"61qtUfJB3LMAPPUWpDFkSjhnwXZVkm7iPyrmgUjM7EYN6BZSFWRiktJT5CLWR5BhN4uibkBV8STi8fZnzYA6Vc6s\",\"msig\":\"ojMMgxonPz68vAqKvmoKH1h6KqxpmDQvNkQfiQfTuEYh8ZNfvZiSQUrB2VMq84jGkQdLTpAPcCz27BrcDjFN52v\",\"ver\":1,\"path\":[],\"type\":1,\"msg\":{\"name\":\"golden ticket\",\"target\":\"2e808e5f2ed5347b4ac8eb1de046be43ef23580657c654e13f63eb1244680040\",\"vote\":1,\"random\":\"0.037059797183620846\"},\"ps\":0},\"fees_total\":\"0.00010000\",\"fees_usable\":\"0.00010000\",\"fees_publickey\":\"\",\"dmsg\":\"\",\"size\":0,\"is_valid\":1,\"atr_rebroadcasting_limit\":10,\"atr_trapdoor_address\":\"00000000000000000000000000000000000000000000\"}",
+        "{\"transaction\":{\"id\":11,\"from\":[{\"add\":\"gtmFJWVxynqcXCqC148FRfCTQbzEpKQVW51Hdi1SRWc5\",\"amt\":0,\"type\":2,\"bid\":0,\"tid\":0,\"sid\":0,\"bhash\":\"\",\"lc\":1,\"rn\":0}],\"to\":[{\"add\":\"gtmFJWVxynqcXCqC148FRfCTQbzEpKQVW51Hdi1SRWc5\",\"amt\":\"0.00010000\",\"type\":2,\"bid\":0,\"tid\":0,\"sid\":0,\"bhash\":\"\",\"lc\":1,\"rn\":19}],\"ts\":1539247437431,\"sig\":\"3zNRsmYE8QGU69zq2YjuvxTdSuhcfDWB3Ws1iCXHf1KMKL6gAhtMZxoWg3EkAKRGrxbQKqTr9DpSahVH511cDqH7\",\"msig\":\"3u7okxdoFLUHSjXyc1R3JvZSTHPVgzDPwu9i4nKL4zZYvtE5tFU4bSTRcYj9ZtxxorTRxZ3rDuYDr5bwaDiWxeUj\",\"ver\":1,\"path\":[],\"type\":2,\"msg\":{},\"ps\":0},\"fees_total\":\"\",\"fees_usable\":\"\",\"fees_publickey\":\"\",\"dmsg\":\"\",\"size\":0,\"is_valid\":1,\"atr_rebroadcasting_limit\":10,\"atr_trapdoor_address\":\"00000000000000000000000000000000000000000000\"}"
+    ],
+    "bf": {
+        "start": 24.68640373019636,
+        "current": 0
+    },
+    "difficulty": 0.56,
+    "paysplit": 0.5,
+    "treasury": "9997024178.57064055",
+    "coinbase": "495908.73448934",
+    "reclaimed": "0.0",
+    "vote": 0
+}
