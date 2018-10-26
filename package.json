@@ -4,7 +4,7 @@
   "description": "big-data blockchain",
   "main": "start.js",
   "scripts": {
-    "start": "cd lib && NODE_ENV=dev node start.js",
+    "start": "NODE_ENV=dev node ./lib/start.js",
     "serve": "NODE_ENV=prod node --max_old_space_size=4144 lib/start.js",
     "nuke": " cd lib/ && ./compile nuke",
     "test": "NODE_ENV=test mocha 'tests/*.spec.js'"
