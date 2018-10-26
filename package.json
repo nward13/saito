@@ -4,7 +4,7 @@
   "description": "big-data blockchain",
   "main": "start.js",
   "scripts": {
-    "start": "NODE_ENV=dev node lib/start.js",
+    "start": "cd lib && NODE_ENV=dev node start.js",
     "serve": "NODE_ENV=prod node --max_old_space_size=4144 lib/start.js",
     "nuke": " cd lib/ && ./compile nuke",
     "test": "NODE_ENV=test mocha 'tests/*.spec.js'"
@@ -32,6 +32,7 @@
     "ethereumjs-wallet": "0.6.2",
     "express": "4.16.3",
     "express-fileupload": "0.4.0",
+    "fastest-stable-stringify": "^2.0.2",
     "fs-extra": "7.0.0",
     "image-resolver": "0.6.1",
     "jimp": "0.3.9",
