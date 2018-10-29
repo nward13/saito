@@ -1,5 +1,5 @@
 const Big = require('big.js');
-const crypto = require('../saito');
+const saito    = require('../saito');
 const sha256            = require('sha256');
 
 /**
@@ -814,10 +814,6 @@ Transaction.prototype.generateRebroadcastTransaction = function generateRebroadc
 /*
  * serializer for testing intended to replace JSON.stringify with something faster
  */
-function replacer(name, val) {
-  if (typeof val === 'string' || val instanceof String) { return val.replace(/\\"/g, '"'); }
-  return val;
-}
 Transaction.prototype.stringify = function stringify(escape_quotes=0) {
 
   if (escape_quotes == 0) {
@@ -840,11 +836,8 @@ Transaction.prototype.stringify = function stringify(escape_quotes=0) {
 
       json      += '],'
                 +  '"type":' + this.transaction.type + ','
-		+  '"msg":' + JSON.stringify(this.transaction.msg, replacer).replace(/"/, '\\"') + ','
+		+  '"msg":' + JSON.stringify(this.transaction.msg) + ','
 		+  '"ps":' + this.transaction.ps + '}}';
-
-
-console.log(JSON.stringify(obj, replacer).replace(/"/g, '\\"'));
 
     return json;
 
@@ -875,7 +868,6 @@ console.log(JSON.stringify(obj, replacer).replace(/"/g, '\\"'));
 
       json      += '],'
                 +  '\\"type\\":' + this.transaction.type + ','
-		//+  '\\"msg\\":' + JSON.stringify(this.transaction.msg).replace(/"/g, '\\"').replace(/\\\\"/g,'\\"') + ','
 		+  '\\"msg\\":' + JSON.stringify(this.transaction.msg).replace(/"/g, '\\"') + ','
 		+  '\\"ps\\":' + this.transaction.ps + '}}';
 
