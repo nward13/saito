@@ -25,7 +25,7 @@ if [ "$1" == "nuke" ]; then
   rm -f data/database.sq3
   rm -f data/bank.sq3
   rm -f data/registry.sq3
-  rm -f data/appstore.sq3
+  rm -f data/reddit.sq3
   rm -f data/log.txt
   rm -f data/*.sq3-journal
   rm -f data/blocks/*.blk
