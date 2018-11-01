@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/trevelyan/newsaito#readme",
   "dependencies": {
-    "axios": "^0.18.0",
     "base-58": "0.0.1",
     "big.js": "5.1.2",
     "bloom-filter": "0.2.0",
