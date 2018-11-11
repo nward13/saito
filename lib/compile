@@ -36,7 +36,7 @@ if [ "$1" == "nuke" ]; then
   rm -f options
   rm -f modules/mod/registry/web/addresses.txt
   rm -f logs/*
-
+  rm -f data/hashlinks/
 
 #  cp -rfp data/fork1/* data/blocks/
   cp options.conf options
