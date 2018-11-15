@@ -1,5 +1,6 @@
 .vscode
 .vscode/*
+.DS_Store
 options
 node_modules
 node_modules/*
